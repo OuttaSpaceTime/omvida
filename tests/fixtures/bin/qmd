@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# A stand-in for qmd: the fixture wiki's CSRF page for any query with "csrf"
+# or "forgery" in it, nothing otherwise.
+q="${*: -1}"
+case "${q,,}" in
+  *csrf*|*forgery*) printf '%s\n' '[{"file":"qmd://wiki/security/csrf.md","title":"CSRF (Cross-Site Request Forgery)","score":0.9,"line":3,"snippet":"@@ -2,3 @@\n\nAn attacker makes the victim'"'"'s browser send a state-changing request."}]' ;;
+  *) echo "[]" ;;
+esac

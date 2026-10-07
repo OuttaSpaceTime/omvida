@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Runs a command against fixtures instead of your data:
+#
+#   bin/sandbox <dir> -- <command...>
+#
+# <dir> (created if missing, under $TMPDIR) gets:
+#   home/          a HOME with the .omvida-test-home marker and no theme file
+#                  (so the Flexoki fallback is what is drawn)
+#   study/         a copy of tests/fixtures/study: the wiki, and the logs/ the
+#                  app writes its session entries into
+#   master.db      the fixture deck (tests/fixtures/make-deck.sh), built once
+#                  per run into $OMVIDA_DECK_CACHE when that is set
+#   out/           where the fake claude and kitty record their calls
+# and the command runs with HOME, OMVIDA_STUDY_DIR, FLASHCARD_DB and
+# OMVIDA_TEST_OUT pointing there, and tests/fixtures/bin (fake claude, kitty,
+# qmd) first on PATH. Nothing here can reach the real deck, wiki or logs.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+dir="${1:?sandbox dir}"; shift
+[ "${1:-}" = "--" ] && shift
+
+tmp_root="$(cd "${TMPDIR:-/tmp}" && pwd -P)"
+mkdir -p "$dir"
+dir="$(cd "$dir" && pwd -P)"
+case "$dir/" in "$tmp_root"/*|/tmp/*) ;; *) echo "sandbox: refusing $dir: not under $tmp_root" >&2; exit 2 ;; esac
+
+mkdir -p "$dir/home" "$dir/out"
+touch "$dir/home/.omvida-test-home"
+rm -rf "$dir/study"
+cp -r "$ROOT/tests/fixtures/study" "$dir/study"
+mkdir -p "$dir/study/logs"
+
+if [ -n "${OMVIDA_DECK_CACHE:-}" ]; then
+  [ -f "$OMVIDA_DECK_CACHE" ] || "$ROOT/tests/fixtures/make-deck.sh" "$OMVIDA_DECK_CACHE"
+  cp "$OMVIDA_DECK_CACHE" "$dir/master.db"
+else
+  "$ROOT/tests/fixtures/make-deck.sh" "$dir/master.db"
+fi
+
+# The fixture study has no .env.local, so flashcard-mcp is found through the
+# real one, before HOME and OMVIDA_STUDY_DIR move to the sandbox.
+fmd="$(env -u OMVIDA_STUDY_DIR "$ROOT/bin/flashcard-mcp-dir")"
+
+export FLASHCARD_MCP_DIR="$fmd"
+# The wiki service imports the study repo's scripts/wiki: the real checkout's
+# code, over the fixture's data.
+export OMVIDA_STUDY_CODE="${OMVIDA_STUDY_CODE:-$HOME/Code/study}"
+export PATH="$ROOT/tests/fixtures/bin:$HOME/.local/share/mise/shims:$PATH"
+export HOME="$dir/home"
+export OMVIDA_STUDY_DIR="$dir/study"
+export FLASHCARD_DB="$dir/master.db"
+export OMVIDA_TEST_OUT="$dir/out"
+export OMVIDA_SANDBOX="$dir"
+exec "$@"

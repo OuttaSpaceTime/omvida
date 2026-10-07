@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# A stand-in for `claude` in the app tests and screenshots: no network, no
+# cost, the same output shapes. Every call is recorded in
+# $OMVIDA_TEST_OUT/claude-calls.jsonl.
+#
+#   grading (--json-schema): rates 1 when the answer has "wrong" in it, 4 for
+#     "perfect", else 3; FAKE_CLAUDE_DELAY seconds first (default 0.3)
+#   asking (stream-json): a short streamed answer with a wikilink, one tool
+#     call, and a result carrying a session id
+set -euo pipefail
+out="${OMVIDA_TEST_OUT:-/tmp}"
+python3 -c 'import json,sys; print(json.dumps(sys.argv[1:]))' "$@" >>"$out/claude-calls.jsonl"
+case " $* " in
+  *" --json-schema "*)
+    input="$(cat)"
+    sleep "${FAKE_CLAUDE_DELAY:-0.3}"
+    answer="$(printf '%s' "$input" | sed -n '/<developer_answer>/,/<\/developer_answer>/p')"
+    rating=3; reason="Fixture grader: right idea, reasonable detail."
+    case "$answer" in
+      *wrong*) rating=1; reason="Fixture grader: that misses the concept. The back says what was needed." ;;
+      *perfect*) rating=4; reason="Fixture grader: complete and precise." ;;
+    esac
+    issue=none
+    case "$answer" in *flagme*) issue=two_questions ;; esac
+    printf '{"type":"result","subtype":"success","is_error":false,"structured_output":{"rating":%s,"reason":"%s","quality_issue":"%s","quality_detail":"Asks two things."}}\n' "$rating" "$reason" "$issue"
+    ;;
+  *" stream-json "*)
+    printf '%s\n' '{"type":"system","subtype":"init","session_id":"fake-session-1"}'
+    printf '%s\n' '{"type":"stream_event","event":{"type":"content_block_start","content_block":{"type":"text","text":""}}}'
+    printf '%s\n' '{"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"An origin is scheme, host and port. "}}}'
+    printf '%s\n' '{"type":"stream_event","event":{"type":"content_block_start","content_block":{"type":"tool_use","name":"mcp__qmd__query"}}}'
+    sleep 0.2
+    printf '%s\n' '{"type":"stream_event","event":{"type":"content_block_start","content_block":{"type":"text","text":""}}}'
+    printf '%s\n' '{"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"**Saved knowledge**: [[security/csrf]] covers it."}}}'
+    printf '%s\n' '{"type":"result","subtype":"success","is_error":false,"session_id":"fake-session-1","result":"ok"}'
+    ;;
+  *) echo "fake claude: interactive run recorded" ;;
+esac

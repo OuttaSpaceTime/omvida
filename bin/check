@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Everything a change should pass, in one command: lint, px, load, test (and
+# whatever else .qs-kit lists). Offscreen, on fixtures, never opens a window.
+# The steps live in ~/Code/qs-kit/bin/qs-check, shared by the Quickshell
+# apps; .qs-kit in this repo says what is particular to this one.
+# bin/check -h lists the steps and options.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+KIT="${QS_KIT:-$ROOT/../qs-kit}"
+if [ ! -x "$KIT/bin/qs-check" ]; then
+  echo "bin/check: needs qs-kit beside this repo ($KIT), or QS_KIT set to its checkout" >&2
+  exit 2
+fi
+exec "$KIT/bin/qs-check" "$ROOT" "$@"

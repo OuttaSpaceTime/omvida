@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Omvida mark: Omvision's double seal and four gates, its inner wall broken
+       by four offset gaps into a maze, around an alpha drawn as large as
+       Omvision's lambda. The alpha is the U+03B1 outline from Noto Serif Display
+       Black (SIL Open Font License 1.1), the face Omvision's lambda comes from,
+       thickened by a 2-unit stroke the same way. Black on transparent: the app
+       and the bar plugin tint it at runtime. -->
+  <g fill="none" stroke="#000" stroke-linecap="square">
+    <rect x="4" y="4" width="92" height="92" stroke-width="4.5"/>
+    <path d="M50 4V11M50 89V96M4 50H11M89 50H96" stroke-width="2.4"/>
+    <path d="M11 11H30M42 11H89V58M89 70V89H70M58 89H11V42M11 30V11" stroke-width="1.8"/>
+  </g>
+  <path fill="#000" stroke="#000" stroke-width="2" stroke-linejoin="round" d="M37.21 80.42Q31.84 80.42 27.26 77.58Q22.68 74.74 19.84 68.58Q17 62.42 17 52.32Q17 41.89 19.89 35.05Q22.79 28.21 27.68 24.89Q32.58 21.58 38.47 21.58Q43 21.58 46.37 23.42Q49.74 25.26 52.26 29.79Q54.79 34.32 56.47 42.42H56.79L60.05 22.95H81.32L65.63 52.42Q68.26 60.95 69.89 66.05Q71.53 71.16 72.58 73.68Q73.63 76.21 74.47 77Q75.32 77.79 76.37 77.79Q79 77.79 82.47 74.63L83 75.58Q81.21 77.16 77.95 78.79Q74.68 80.42 69.32 80.42Q64.58 80.42 62.21 78.74Q59.84 77.05 58.42 73.11Q57 69.16 55.11 62.42H54.89Q53.53 68.32 51.47 72.37Q49.42 76.42 46.05 78.42Q42.68 80.42 37.21 80.42ZM42.47 77.05Q46.26 77.05 49.47 70.32Q52.68 63.58 55.11 48.32Q53.53 40.84 52.05 36.42Q50.58 32 49.26 29.79Q47.95 27.58 46.68 26.84Q45.42 26.11 44.37 26.11Q42.79 26.11 41.42 27Q40.05 27.89 39 30.47Q37.95 33.05 37.32 38.11Q36.68 43.16 36.68 51.58Q36.68 60.11 37.05 65.16Q37.42 70.21 38.16 72.79Q38.89 75.37 40 76.21Q41.11 77.05 42.47 77.05Z"/>
+</svg>

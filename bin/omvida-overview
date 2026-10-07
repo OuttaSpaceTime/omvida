@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# One JSON line: the deck's overview (flashcard-mcp `master overview`), for
+# the bar widget (bar/), which must work without the app running. About a
+# second, so the widget runs it on a timer and when its panel opens.
+set -euo pipefail
+# The bar runs inside omarchy-shell, whose PATH has no mise.
+[ -d "$HOME/.local/share/mise/shims" ] && PATH="$HOME/.local/share/mise/shims:$PATH"
+dir="$("$(dirname "${BASH_SOURCE[0]}")/flashcard-mcp-dir")"
+cd "$dir"
+NODE_NO_WARNINGS=1 DATABASE_URL="file:${FLASHCARD_DB:-$dir/prisma/master.db}" exec node_modules/.bin/tsx src/cli/index.ts overview --pending "${1:-6}"

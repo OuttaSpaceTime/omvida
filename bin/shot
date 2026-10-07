@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Screenshots of the real app, offscreen, on fixtures: no window appears and
+# no real deck, wiki or log is read or written (bin/sandbox). Prints each PNG;
+# read them.
+#
+#   bin/shot                          home, 1440x900
+#   bin/shot -s study -a answer       a session, an answer typed and revealed
+#   bin/shot -s wiki:web/http-caching -w 720
+#   bin/shot -a search:csrf           the palette with results
+#
+#   -s  home | study | wiki | cards | graph | wiki:<path> | folder:<path>
+#   -a  search[:text] | ask[:question] | add[:flashcard|wiki] | addmenu |
+#       study | answer[:text] | pagecards
+#   -w/-h size, -f frames (ms, comma-separated), -t settle ms, -o out dir
+#   -R  your real wiki and deck instead of the fixtures, to see the layout at
+#       full size. Read-only by construction: it refuses the Study screen and
+#       every action that could write (study, answer, ask, add), and the fake
+#       claude and kitty stay first on PATH.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+screen=home width=1440 height=900 action="" frames=0 settle=2500
+out="${TMPDIR:-/tmp}/omvida-shots"
+real=0
+while getopts "s:w:h:a:f:t:o:R" opt; do
+  case "$opt" in
+    R) real=1 ;;
+    s) screen=$OPTARG ;; w) width=$OPTARG ;; h) height=$OPTARG ;; a) action=$OPTARG ;;
+    f) frames=$OPTARG ;; t) settle=$OPTARG ;; o) out=$OPTARG ;;
+    *) sed -n '2,17p' "$0"; exit 2 ;;
+  esac
+done
+mkdir -p "$out"
+export QT_QPA_PLATFORM=offscreen OMVIDA_SHOT_DIR="$out" OMVIDA_SHOT_SCREEN="$screen" \
+  OMVIDA_SHOT_ACTION="$action" OMVIDA_SHOT_WIDTH="$width" OMVIDA_SHOT_HEIGHT="$height" \
+  OMVIDA_SHOT_FRAMES="$frames" OMVIDA_SHOT_SETTLE="$settle"
+launcher=("$ROOT/bin/omvida")
+if [ "$real" = 1 ]; then
+  case "$screen" in study) echo "bin/shot: -R refuses the Study screen (it starts a session)" >&2; exit 2 ;; esac
+  case "${action%%:*}" in study|answer|ask|add) echo "bin/shot: -R refuses -a $action (it could write)" >&2; exit 2 ;; esac
+  export PATH="$ROOT/tests/fixtures/bin:$PATH" OMVIDA_TEST_OUT="${TMPDIR:-/tmp}"
+else
+  box="$(mktemp -d "${TMPDIR:-/tmp}/omvida-shot.XXXXXX")"
+  trap 'rm -rf -- "$box"' EXIT
+  launcher=("$ROOT/bin/sandbox" "$box" -- "$ROOT/bin/omvida")
+fi
+timeout 60 "${launcher[@]}" --no-color 2>&1 \
+  | grep -vE 'WAYLAND_DISPLAY is present|actually running wayland|--- WARNING ---|window masks' \
+  | sed -n 's/.*\[omvida-shot\] //p; /WARN\|ERROR\|rror:/p' || true

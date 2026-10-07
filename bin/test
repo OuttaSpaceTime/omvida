@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# Runs Omvida's tests. Offscreen, on fixtures: no window opens, and the real
+# deck, wiki and logs are never read or written (bin/sandbox).
+#
+#   bin/test              all three layers
+#   bin/test py           the wiki service (pytest)
+#   bin/test unit         the pure JS modules (qmltestrunner)
+#   bin/test app          the whole app, driven from inside qs
+#   bin/test app study    one file: tests/app/tst_study.qml
+#   bin/test app study test_shift_enter_reveals_and_grades
+#   -k  keep every app run's sandbox, not only failed ones
+#   -v  the runners' full output
+#
+# Layer 3 starts the real app once per tests/app/tst_*.qml in a fresh sandbox
+# (a fixture study repo and deck, fake claude/kitty/qmd), with OMVIDA_TEST
+# pointing omvida.qml's test hook at the file. A failed run keeps its sandbox:
+# the app's log, a screenshot per failed test, and the files as left.
+# The deck server's own tests live in flashcard-mcp (npm test there).
+set -uo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+QMLTESTRUNNER=/usr/lib/qt6/bin/qmltestrunner
+APP_TIMEOUT="${OMVIDA_TEST_TIMEOUT:-120}"
+
+keep=0 verbose=0 args=()
+for a in "$@"; do
+  case "$a" in
+    -k) keep=1 ;; -v) verbose=1 ;;
+    -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) args+=("$a") ;;
+  esac
+done
+layer="${args[0]:-all}" only_file="${args[1]:-}" only_test="${args[2]:-}"
+case "$layer" in all|py|unit|app) ;; *) echo "bin/test: unknown layer '$layer' (py, unit, app)" >&2; exit 2 ;; esac
+
+failed=0 summary=()
+
+run_py() {
+  local out code
+  out="$(cd "$ROOT" && uv run --quiet pytest -q 2>&1)"; code=$?
+  [ "$verbose" = 1 ] && printf '%s\n' "$out" || printf '%s\n' "$out" | grep -E '^(FAILED|ERROR)' || true
+  [ "$code" = 0 ] || failed=1
+  summary+=("py       $(printf '%s\n' "$out" | tail -1)")
+}
+
+run_unit() {
+  [ -x "$QMLTESTRUNNER" ] || { failed=1; summary+=("unit     not run: no qmltestrunner"); return; }
+  local out code totals
+  out="$(cd "$ROOT" && QT_QPA_PLATFORM=offscreen "$QMLTESTRUNNER" -platform offscreen -input tests/unit 2>&1)"; code=$?
+  if [ "$verbose" = 1 ]; then printf '%s\n' "$out"
+  else printf '%s\n' "$out" | awk '/^(FAIL!|XPASS)/ { show = 1; print; next } /^   / { if (show) print; next } { show = 0 }'; fi
+  totals="$(printf '%s\n' "$out" | sed -n 's/^Totals: \([0-9]* passed, [0-9]* failed\).*/\1/p' | tail -1)"
+  if [ "$code" != 0 ] || [ -z "$totals" ]; then failed=1; fi
+  summary+=("unit     ${totals:-did not finish (exit $code)}")
+}
+
+deck_cache=""
+run_app_file() {
+  local file="$1" name dir
+  name="$(basename "$file" .qml)"; name="${name#tst_}"
+  dir="$(mktemp -d "${TMPDIR:-/tmp}/omvida-test.$name.XXXXXX")"
+  env -u OMVIDA_SHOT_DIR QT_QPA_PLATFORM=offscreen OMVIDA_DECK_CACHE="$deck_cache" \
+    OMVIDA_TEST="$file" OMVIDA_TEST_ONLY="$only_test" \
+    timeout "$APP_TIMEOUT" "$ROOT/bin/sandbox" "$dir" -- "$ROOT/bin/omvida" --no-color >"$dir/app.log" 2>&1
+  local code=$? lines done_line ok=1
+  lines="$(sed -n 's/.*\[omvida-test\] //p' "$dir/app.log")"
+  if [ "$verbose" = 1 ]; then cat "$dir/app.log"
+  else printf '%s\n' "$lines" | grep -E '^(FAIL|XFAIL|SKIP|SHOT) ' | sed 's/^/  /' || true; fi
+  done_line="$(printf '%s\n' "$lines" | sed -n "s/^DONE $name //p" | tail -1)"
+  if [ -z "$done_line" ]; then
+    ok=0
+    if [ "$code" = 124 ]; then done_line="timed out after ${APP_TIMEOUT}s"; else done_line="the app exited ($code) before the tests finished"; fi
+  elif [ "$code" != 0 ] || printf '%s\n' "$lines" | grep -q '^FAIL '; then ok=0; fi
+  if [ "$ok" = 1 ]; then
+    summary+=("app      $name: $done_line")
+    if [ "$keep" = 1 ]; then summary+=("           kept $dir"); else rm -rf -- "$dir"; fi
+  else
+    failed=1; summary+=("app      $name: $done_line -- log, screenshots and sandbox kept in $dir")
+  fi
+}
+
+run_app() {
+  command -v qs >/dev/null || { failed=1; summary+=("app      not run: no qs"); return; }
+  local cache_dir; cache_dir="$(mktemp -d "${TMPDIR:-/tmp}/omvida-deck.XXXXXX")"
+  deck_cache="$cache_dir/master.db"
+  "$ROOT/tests/fixtures/make-deck.sh" "$deck_cache" || { failed=1; summary+=("app      couldn't build the fixture deck"); return; }
+  local files=()
+  if [ -n "$only_file" ]; then
+    files=("$ROOT/tests/app/tst_${only_file#tst_}"); files[0]="${files[0]%.qml}.qml"
+    [ -f "${files[0]}" ] || { echo "bin/test: no ${files[0]}" >&2; failed=1; return; }
+  else
+    for f in "$ROOT"/tests/app/tst_*.qml; do files+=("$f"); done
+  fi
+  for f in "${files[@]}"; do echo "app: $(basename "$f")"; run_app_file "$f"; done
+  rm -rf -- "$cache_dir"
+}
+
+if [ "$layer" = all ] || [ "$layer" = py ]; then echo "py: tests/py"; run_py; fi
+if [ "$layer" = all ] || [ "$layer" = unit ]; then echo "unit: tests/unit"; run_unit; fi
+if [ "$layer" = all ] || [ "$layer" = app ]; then run_app; fi
+echo; printf '%s\n' "${summary[@]}"
+if [ "$failed" = 0 ]; then echo "all passed"; else echo "FAILED"; fi
+exit "$failed"

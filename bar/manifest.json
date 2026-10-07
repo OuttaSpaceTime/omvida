@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "omvida.bar",
+  "name": "Omvida",
+  "version": "1.0.0",
+  "author": "outtaspacetime",
+  "description": "Study bar icon: reviews due as a badge, and a panel with your learning progress and the cards waiting. Click opens the panel, right-click starts a study session in Omvida.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Widget.qml"
+  },
+  "barWidget": {
+    "displayName": "Omvida",
+    "description": "Reviews due, learning progress and pending cards. Left: panel. Right: study now. Middle: refresh.",
+    "category": "Productivity",
+    "allowMultiple": false,
+    "defaultSection": "center",
+    "defaults": { "omvidaRoot": "~/Code/omvida", "refreshIntervalSec": 600 },
+    "schema": [
+      { "key": "omvidaRoot", "type": "path", "label": "Omvida checkout", "defaultValue": "~/Code/omvida" },
+      { "key": "refreshIntervalSec", "type": "integer", "label": "Refresh interval (seconds)", "min": 60, "max": 3600, "step": 60, "defaultValue": 600 }
+    ]
+  }
+}

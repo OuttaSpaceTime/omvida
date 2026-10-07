@@ -1,0 +1,16 @@
+# qmllint warnings that existed when bin/check was introduced, one per line:
+# file, category, message and the warning's source line, tab-separated.
+# bin/check fails only on warnings that are not listed here. Fix one and
+# drop its line (bin/check --update-baseline rewrites the whole file); never
+# add a line by hand to get a new warning past the check.
+AnkiSync.qml	signal-handler-parameters	Type QProcess::ExitStatus of parameter exitStatus in signal called exited was not found, but is required to compile onExited. Did you add all imports and dependencies?	onExited: function(code) {
+JsonLineClient.qml	signal-handler-parameters	Type QProcess::ExitStatus of parameter exitStatus in signal called exited was not found, but is required to compile onExited. Did you add all imports and dependencies?	onExited: function(code, status) {
+PageView.qml	missing-property	Member "anchorName" not found on type "QQuickItem"	if (it && it.anchorName === anchor) return it.y
+SearchPalette.qml	missing-property	Member "revealed" not found on type "QQuickItem"	if (item) item.revealed = !item.revealed
+SearchPalette.qml	signal-handler-parameters	Type QProcess::ExitStatus of parameter exitStatus in signal called exited was not found, but is required to compile onExited. Did you add all imports and dependencies?	onExited: function(code) {
+tests/app/OmvidaTest.qml	missing-property	Member "code" not found on type "QObject"	var r = { code: p.finished ? p.code : -1, out: p.out }
+tests/app/OmvidaTest.qml	missing-property	Member "finished" not found on type "QObject"	for (var t = 0; t < limit && !p.finished; t += 10) wait(10)
+tests/app/OmvidaTest.qml	missing-property	Member "finished" not found on type "QObject"	var r = { code: p.finished ? p.code : -1, out: p.out }
+tests/app/OmvidaTest.qml	missing-property	Member "out" not found on type "QObject"	var r = { code: p.finished ? p.code : -1, out: p.out }
+tests/app/OmvidaTest.qml	missing-property	Member "streamDone" not found on type "QObject"	for (var s = 0; s < 500 && !p.streamDone; s += 10) wait(10)
+tests/app/OmvidaTest.qml	signal-handler-parameters	Type QProcess::ExitStatus of parameter exitStatus in signal called exited was not found, but is required to compile onExited. Did you add all imports and dependencies?	onExited: function(exitCode) { proc.code = exitCode; proc.finished = true }

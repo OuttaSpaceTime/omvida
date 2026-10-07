@@ -1,0 +1,19 @@
+# editor / OS
+*~
+*.swp
+.DS_Store
+.idea/
+.vscode/
+
+# qml
+*.qmlc
+*.jsc
+
+# python
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# agent worktrees (Claude Code)
+/.claude/worktrees/

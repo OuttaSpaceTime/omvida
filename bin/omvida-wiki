@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# The wiki backend: backend/omvida_backend/server.py in this repo's uv venv.
+# Builds the venv on first run (uv sync), since a launch from the desktop
+# must not depend on someone having run it by hand.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ ! -x "$ROOT/.venv/bin/python" ]; then
+  echo "omvida-wiki: setting up the Python environment (uv sync)..." >&2
+  (cd "$ROOT" && uv sync --quiet --no-dev) >&2
+fi
+PYTHONPATH="$ROOT/backend${PYTHONPATH:+:$PYTHONPATH}" exec "$ROOT/.venv/bin/python" -u -m omvida_backend.server

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# A stand-in for kitty in the app tests: records its argv, opens nothing.
+python3 -c 'import json,sys; print(json.dumps(sys.argv[1:]))' "$@" >>"${OMVIDA_TEST_OUT:-/tmp}/kitty-calls.jsonl"

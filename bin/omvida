@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Launches Omvida, or brings the running one forward.
+#
+#   omvida                    open (or focus) the app on its home screen
+#   omvida study              straight into a study session
+#   omvida open <wiki-path>   a wiki page, e.g. `omvida open security/csrf`
+#   omvida cards | graph | wiki
+#   omvida search <text>      the search box, prefilled
+#
+# One Omvida at a time: when one is running, the request goes to it over
+# Quickshell IPC (the `omvida` IpcHandler in omvida.qml) instead of a second
+# window starting. The bar widget and the skills' "show in Omvida" use this
+# same entry point.
+#
+# Anything after the command that starts with `-` goes to qs (bin/shot and
+# bin/test pass --no-color).
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONFIG="$ROOT/omvida.qml"
+
+# A desktop launch does not run the login shell, so node and claude (both
+# from mise) may be missing from PATH; the backends and the grader need them.
+if ! command -v node >/dev/null 2>&1 || ! command -v claude >/dev/null 2>&1; then
+  [ -d "$HOME/.local/share/mise/shims" ] && PATH="$HOME/.local/share/mise/shims:$PATH"
+  [ -d "$HOME/.local/bin" ] && PATH="$HOME/.local/bin:$PATH"
+  export PATH
+fi
+export OMVIDA_ROOT="$ROOT"
+export OMVIDA_STUDY_DIR="${OMVIDA_STUDY_DIR:-$HOME/Code/study}"
+
+cmd="${1:-}"
+case "$cmd" in -*|"") cmd=show ;; *) shift ;; esac
+arg=""
+if [ "$cmd" = open ] || [ "$cmd" = search ]; then arg="${1:-}"; shift || true; fi
+
+# A test, screenshot or sandbox run (bin/sandbox: bin/check's load step) is
+# always its own instance: it must never reach, or focus, the Omvida you have
+# open.
+if [ -z "${OMVIDA_TEST:-}${OMVIDA_SHOT_DIR:-}${OMVIDA_SANDBOX:-}" ]; then
+  pid="$(qs list -p "$CONFIG" -j 2>/dev/null | jq -r '.[0].pid // empty' 2>/dev/null || true)"
+  if [ -n "$pid" ]; then
+    case "$cmd" in
+      open|search) qs ipc --pid "$pid" call omvida "$cmd" "$arg" >/dev/null ;;
+      *) qs ipc --pid "$pid" call omvida "$cmd" >/dev/null ;;
+    esac
+    # The window is the one titled Omvida; focusing it by that title, never
+    # an untargeted dispatch (Omvision's lesson: those land on whatever has focus).
+    command -v hyprctl >/dev/null && hyprctl dispatch focuswindow 'title:^Omvida$' >/dev/null 2>&1 || true
+    exit 0
+  fi
+fi
+
+export OMVIDA_START="$cmd"
+export OMVIDA_START_ARG="$arg"
+exec qs -p "$CONFIG" "$@"

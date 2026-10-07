@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# The deck backend: flashcard-mcp's app server (src/app/server.ts), which the
+# app keeps running for its whole life (JsonLineClient.qml). stdout is the
+# protocol, so everything here writes to stderr. FLASHCARD_DB points at a
+# database file directly (the tests' fixture deck).
+set -euo pipefail
+dir="$("$(dirname "${BASH_SOURCE[0]}")/flashcard-mcp-dir")"
+cd "$dir"
+NODE_NO_WARNINGS=1 DATABASE_URL="file:${FLASHCARD_DB:-$dir/prisma/master.db}" exec node_modules/.bin/tsx src/app/server.ts

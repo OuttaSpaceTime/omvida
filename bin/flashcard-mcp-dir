@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Prints the flashcard-mcp checkout's path, the one place it is resolved.
+#
+# It is the study repo's machine-local setting (FLASHCARD_MCP_DIR in
+# ~/Code/study/.env.local, AGENTS.md "Machine-local configuration"); the
+# environment wins. Exits non-zero, with the reason on stderr, when it doesn't
+# point at an installed checkout.
+set -euo pipefail
+study="${OMVIDA_STUDY_DIR:-$HOME/Code/study}"
+dir="${FLASHCARD_MCP_DIR:-}"
+if [ -z "$dir" ] && [ -f "$study/.env.local" ]; then
+  dir="$(sed -n 's/^FLASHCARD_MCP_DIR=//p' "$study/.env.local" | tail -1)"
+  dir="${dir%\"}"; dir="${dir#\"}"
+fi
+dir="${dir/#\$HOME/$HOME}"
+dir="${dir/#\~/$HOME}"
+if [ -z "$dir" ] || [ ! -x "$dir/node_modules/.bin/tsx" ]; then
+  echo "no installed flashcard-mcp checkout at ${dir:-(unset)}: set FLASHCARD_MCP_DIR in $study/.env.local, and run npm install there" >&2
+  exit 1
+fi
+printf '%s\n' "$dir"
