@@ -16,6 +16,16 @@ OmvidaTest {
            "the tile leaves room for a third page: " + web.height + " vs text " + text.implicitHeight)
   }
 
+  // The graph is laid out before it is first shown, not on screen: settling
+  // there, it grew and was refitted every frame, and jumped about.
+  function test_the_graph_opens_already_laid_out() {
+    app.setScreen("graph")
+    var view = item("graphView")
+    verify(view.layout !== null, "a layout")
+    verify(view.layout.alpha < 0.02, "at rest on first show: alpha " + view.layout.alpha)
+    compare(view.settling, false)
+  }
+
   function test_open_a_page_and_follow_a_wikilink() {
     app.openPage("web/http-caching", "")
     tryVerify(function() { return wiki.page !== null && wiki.loadedPath === "web/http-caching" }, 8000)

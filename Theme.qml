@@ -250,6 +250,9 @@ QtObject {
   readonly property int fadeDuration: 120
   readonly property int toastDuration: 4000
   readonly property int graphTickInterval: 16
+  // How long a new graph may lay itself out before its first paint; past it,
+  // the rest settles on screen.
+  readonly property int graphSettleBudget: 250
   // Over a typing gap, so a word is one search, not one per letter.
   readonly property int searchDebounce: 250
   readonly property int wikiPollInterval: 3000

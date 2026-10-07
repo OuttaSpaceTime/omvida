@@ -31,13 +31,30 @@ Item {
   readonly property var graph: app && app.store.wikiIndex ? app.store.wikiIndex.graph : null
   readonly property var shown: graph ? (local ? Graph.localSubgraph(graph, focusPath, 2) : graph) : null
 
+  // A new graph is laid out before it is shown: settled on screen, it grew
+  // out of its starting circle while fit() rescaled it to its bounds every
+  // frame, so for the first seconds the whole graph jumped about. Run to rest
+  // first, the first paint is the finished layout. It is a few hundred steps
+  // of well under a millisecond for a wiki this size; the budget only guards
+  // a much bigger one, which then settles the rest on screen. A graph that
+  // changes under a layout on screen (a page added, the local view moved)
+  // keeps the old positions and eases into the new ones; one that changes
+  // while hidden is laid out at once too, or it would still be moving when
+  // next shown.
   function rebuild() {
     if (!shown) { layout = null; canvas.requestPaint(); return }
     var prev = {}
     if (layout) layout.nodes.forEach(function(n) { prev[n.id] = n })
-    layout = Graph.initLayout(shown, prev)
-    if (Object.keys(prev).length > 0) layout.alpha = 0.3
-    settling = true
+    var next = Graph.initLayout(shown, prev)
+    var kept = Object.keys(prev).length > 0
+    if (kept) next.alpha = 0.3
+    if (!kept || !visible) {
+      var start = Date.now()
+      while (next.alpha >= Graph.REST_ALPHA && Date.now() - start < Theme.graphSettleBudget) Graph.step(next)
+    }
+    layout = next
+    settling = next.alpha >= Graph.REST_ALPHA
+    canvas.requestPaint()
   }
   onShownChanged: rebuild()
 
@@ -62,7 +79,7 @@ Item {
       var a = 1
       for (var i = 0; i < 3; i++) a = Graph.step(root.layout)
       canvas.requestPaint()
-      if (a < 0.02 && !root.dragNode) root.settling = false
+      if (a < Graph.REST_ALPHA && !root.dragNode) root.settling = false
     }
   }
 

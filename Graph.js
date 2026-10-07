@@ -60,7 +60,10 @@ function initLayout(graph, previous) {
   return { nodes: nodes, links: links, index: index, alpha: 1 }
 }
 
-// One tick. Returns the new alpha; the caller stops ticking below ~0.02.
+// Below this alpha the layout is at rest: nothing moves visibly any more.
+var REST_ALPHA = 0.02
+
+// One tick. Returns the new alpha; the caller stops ticking below REST_ALPHA.
 function step(layout) {
   var repulsion = 2400, springLen = 70, springK = 0.05, gravity = 0.02, damping = 0.82
   var nodes = layout.nodes, alpha = layout.alpha

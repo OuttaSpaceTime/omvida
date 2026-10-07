@@ -21,7 +21,7 @@ TestCase {
     var a = G.initLayout(graph), b = G.initLayout(graph)
     compare(a.nodes[2].x, b.nodes[2].x)
     var steps = 0
-    while (G.step(a) > 0.02 && steps < 2000) steps++
+    while (G.step(a) >= G.REST_ALPHA && steps < 2000) steps++
     verify(steps < 2000, "settles")
     // Linked nodes end up nearer each other than the unlinked one is to them.
     function dist(p, q) { return Math.hypot(p.x - q.x, p.y - q.y) }

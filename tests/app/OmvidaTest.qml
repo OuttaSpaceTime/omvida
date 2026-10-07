@@ -229,6 +229,11 @@ TestCase {
     base.app.setScreen("study")
     base.study.start()
     tryCompare(base.study, "phase", "answering", 15000)
+    // The answer box takes the keyboard a moment after the phase changes
+    // (StudyScreen focuses it with Qt.callLater); a key typed before that
+    // went to the screen, and the test lost its first letter.
+    var field = item("answerField")
+    tryVerify(function() { return field.activeFocus }, base.timeout, "the answer box has the keyboard")
   }
 
   // ---- finding and clicking -----------------------------------------------------------------
