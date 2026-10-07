@@ -4,10 +4,13 @@ import qs.Commons
 import qs.Ui
 import "Model.js" as Model
 
-// The panel under the Omvida icon: where studying stands, and what is
-// waiting. The hero is the review count with the pressure verdict; under it
-// the calibration verdict, the last seven days, how the deck has matured, the
-// oldest pending reviews, and the way into Omvida.
+// The panel under the Omvida icon: a glance at where studying stands, then
+// the way in. The count due with the pressure verdict as a small chip; one
+// sentence on what clears it; how the deck has matured, as one thin bar;
+// retention with the calibration verdict; the next few reviews; and one
+// primary action, Study now, beside two icon buttons. Verdicts are the deck's
+// own words. The week chart and the section headers it had before were cut:
+// the panel is opened for a glance, and Omvida's Home has the rest.
 //
 // Keys (PanelKeyCatcher): Enter studies now, Esc closes, Tab moves to the
 // neighbouring bar panel.
@@ -24,6 +27,7 @@ Panel {
   readonly property color fg: bar ? bar.foreground : Color.foreground
   readonly property color dim: Qt.rgba(fg.r, fg.g, fg.b, 0.62)
   readonly property color faint: Qt.rgba(fg.r, fg.g, fg.b, 0.42)
+  readonly property color hairline: Qt.rgba(fg.r, fg.g, fg.b, 0.12)
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
 
   function open() {
@@ -38,6 +42,16 @@ Panel {
     if (v === "pause" || v === "over-difficult") return Color.urgent
     if (v === "warn" || v === "under-difficult") return Color.accent
     return root.fg
+  }
+
+  // The maturity bar in the bar's own colours: the theme gives the shell a
+  // foreground and an accent, not a palette, so stages are told apart by
+  // strength, new cards in the accent.
+  function maturityColor(key) {
+    if (key === "new") return Color.accent
+    if (key === "learning") return Qt.rgba(fg.r, fg.g, fg.b, 0.3)
+    if (key === "familiar") return Qt.rgba(fg.r, fg.g, fg.b, 0.55)
+    return fg
   }
 
   KeyboardPanel {
@@ -62,31 +76,49 @@ Panel {
       Column {
         id: col
         width: parent.width
-        spacing: Style.space(12)
+        spacing: Style.space(14)
 
-        // ---- hero ----
-        Row {
-          spacing: Style.space(10)
-          Text {
-            text: root.o ? root.o.pressure.flashcardsDue : "–"
-            color: root.fg
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.displayLarge
-            font.bold: true
-          }
-          Column {
-            anchors.verticalCenter: parent.verticalCenter
+        // ---- the count, and its verdict ----
+        Item {
+          width: parent.width
+          height: countRow.height
+          Row {
+            id: countRow
+            spacing: Style.space(10)
             Text {
-              text: Model.headline(root.o)
+              id: count
+              text: root.o ? root.o.pressure.flashcardsDue : "–"
               color: root.fg
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.displayLarge
+              font.bold: true
+            }
+            Text {
+              anchors.baseline: count.baseline
+              text: Model.headline(root.o)
+              color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.title
             }
+          }
+          // The verdict as a chip, only when it asks for something: "ok" is
+          // the absence of news.
+          Rectangle {
+            visible: root.o !== null && root.o.pressure.verdict !== "ok"
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            width: verdict.implicitWidth + Style.space(14)
+            height: verdict.implicitHeight + Style.space(4)
+            color: "transparent"
+            border.width: 1
+            border.color: verdict.color
             Text {
-              text: root.o ? "pressure " + root.o.pressure.verdict : (root.hostWidget && root.hostWidget.loadError !== "" ? root.hostWidget.loadError : "")
-              color: root.o ? root.verdictColor(root.o.pressure.verdict) : Color.urgent
+              id: verdict
+              anchors.centerIn: parent
+              text: root.o ? root.o.pressure.verdict : ""
+              color: root.o ? root.verdictColor(root.o.pressure.verdict) : root.fg
               font.family: root.fontFamily
-              font.pixelSize: Style.font.bodySmall
+              font.pixelSize: Style.font.caption
             }
           }
         }
@@ -94,118 +126,121 @@ Panel {
           visible: text !== ""
           width: parent.width
           wrapMode: Text.Wrap
-          text: Model.clearance(root.o)
-          color: root.dim
+          text: root.o ? Model.glanceLine(root.o)
+                       : (root.hostWidget && root.hostWidget.loadError !== "" ? root.hostWidget.loadError : "")
+          color: root.o ? root.dim : Color.urgent
           font.family: root.fontFamily
           font.pixelSize: Style.font.bodySmall
         }
 
-        // ---- progress ----
-        PanelSectionHeader { text: "Progress"; foreground: root.fg; fontFamily: root.fontFamily }
-        Text {
-          text: "Calibration: " + Model.calibration(root.o)
-          color: root.o ? root.verdictColor(root.o.calibration.verdict) : root.dim
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.bodySmall
-        }
-        Text {
-          text: Model.today(root.o)
-          color: root.dim
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.bodySmall
-        }
-        Row {
-          spacing: Style.space(4)
-          Repeater {
-            model: root.o ? root.o.week : []
-            delegate: Column {
-              id: dayCol
-              required property var modelData
-              required property int index
-              spacing: Style.space(2)
-              Item {
-                width: Style.space(16)
-                height: Style.space(32)
-                Rectangle {
-                  anchors.bottom: parent.bottom
-                  width: parent.width
-                  height: parent.height * dayCol.modelData.reviews / Model.weekPeak(root.o)
-                  color: Qt.rgba(root.fg.r, root.fg.g, root.fg.b, dayCol.index === 6 ? 0.85 : 0.4)
-                }
-                Rectangle {
-                  anchors.bottom: parent.bottom
-                  width: parent.width
-                  height: parent.height * dayCol.modelData.again / Model.weekPeak(root.o)
-                  color: Color.urgent
-                }
+        // ---- the deck's maturity: one bar, its numbers under it ----
+        Column {
+          visible: root.o !== null
+          width: parent.width
+          spacing: Style.space(6)
+          Row {
+            id: maturityBar
+            width: parent.width
+            spacing: Style.space(2)
+            readonly property var parts: Model.maturityParts(root.o).filter(function(p) { return p.n > 0 })
+            Repeater {
+              model: maturityBar.parts
+              delegate: Rectangle {
+                required property var modelData
+                width: Math.max(Style.space(2), (maturityBar.width - maturityBar.spacing * (maturityBar.parts.length - 1)) * modelData.f)
+                height: Style.space(5)
+                color: root.maturityColor(modelData.key)
               }
-              Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: Model.weekday(dayCol.modelData.day)
-                color: dayCol.index === 6 ? root.fg : root.faint
+            }
+          }
+          Row {
+            spacing: Style.space(12)
+            Repeater {
+              model: Model.maturityParts(root.o)
+              delegate: Text {
+                required property var modelData
+                textFormat: Text.StyledText
+                text: "<b>" + modelData.n + "</b> " + modelData.key
+                color: root.faint
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
               }
             }
           }
         }
+        Text {
+          visible: text !== ""
+          width: parent.width
+          wrapMode: Text.Wrap
+          textFormat: Text.StyledText
+          text: Model.retentionLine(root.o, root.verdictColor(root.o ? root.o.calibration.verdict : "").toString())
+          color: root.dim
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+        }
+
+        // ---- next up ----
+        Rectangle { visible: pending.count > 0; width: parent.width; height: 1; color: root.hairline }
+        Text {
+          visible: pending.count > 0
+          text: "NEXT UP"
+          color: root.faint
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+          font.letterSpacing: Style.space(1)
+        }
         Column {
           width: parent.width
-          spacing: Style.space(4)
-          Row {
-            width: parent.width
-            Repeater {
-              model: Model.maturityParts(root.o)
-              delegate: Rectangle {
-                required property var modelData
-                required property int index
-                width: col.width * modelData.f
-                height: Style.space(6)
-                color: index === 3 ? root.fg : Qt.rgba(root.fg.r, root.fg.g, root.fg.b, 0.2 + index * 0.2)
-              }
+          spacing: Style.space(6)
+          Repeater {
+            id: pending
+            model: root.o ? root.o.pending.slice(0, 4) : []
+            delegate: Text {
+              required property var modelData
+              width: col.width
+              elide: Text.ElideRight
+              text: modelData.text
+              color: root.fg
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.bodySmall
             }
           }
           Text {
-            text: Model.maturityParts(root.o).map(function(p) { return p.n + " " + p.key }).join("  ")
+            readonly property int more: root.o ? root.o.pressure.flashcardsDue - pending.count : 0
+            visible: more > 0
+            text: "+ " + more + " more"
             color: root.faint
             font.family: root.fontFamily
             font.pixelSize: Style.font.caption
           }
         }
 
-        // ---- pending ----
-        PanelSectionHeader {
-          visible: root.o && root.o.pending.length > 0
-          text: "Pending"
-          foreground: root.fg
-          fontFamily: root.fontFamily
-        }
-        Repeater {
-          model: root.o ? root.o.pending : []
-          delegate: Text {
-            required property var modelData
-            width: col.width
-            elide: Text.ElideRight
-            text: "· " + modelData.text
-            color: root.dim
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.bodySmall
-          }
-        }
-
-        // ---- actions ----
+        // ---- the way in: one primary action, two icon buttons ----
+        Rectangle { width: parent.width; height: 1; color: root.hairline }
         Row {
+          id: actions
+          width: parent.width
           spacing: Style.space(8)
           Button {
+            width: actions.width - openBtn.width - cardsBtn.width - actions.spacing * 2
             text: "Study now"
+            tooltipText: "Enter"
+            background: Color.accent
+            foreground: Color.background
             onClicked: root.studyNow()
           }
           Button {
-            text: "Open Omvida"
+            id: openBtn
+            iconText: "\u{F03CC}"
+            tooltipText: "Open Omvida"
+            bordered: true
             onClicked: { root.close(); if (root.hostWidget) root.hostWidget.launch([]) }
           }
           Button {
-            text: "Cards"
+            id: cardsBtn
+            iconText: "\u{F0638}"
+            tooltipText: "Browse cards"
+            bordered: true
             onClicked: { root.close(); if (root.hostWidget) root.hostWidget.launch(["cards"]) }
           }
         }

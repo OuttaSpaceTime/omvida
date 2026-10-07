@@ -46,4 +46,20 @@ TestCase {
     compare(M.expandHome("$HOME/a", "/home/x"), "/home/x/a")
     compare(M.expandHome("/abs", "/home/x"), "/abs")
   }
+
+  function test_glance_line_says_what_clears_the_pressure() {
+    compare(M.glanceLine(overview(37, "warn")), "Review 18 to leave warn · 2 new waiting")
+    // With nothing to clear, it falls back to today's line.
+    compare(M.glanceLine(overview(3, "ok", { pressure: { verdict: "ok", flashcardsDue: 3, newAvailable: 0,
+                                                       clearance: { flashcards: {} } } })),
+            "12 reviews today · 3 days streak")
+    compare(M.glanceLine(null), "")
+  }
+
+  function test_retention_line_keeps_the_verdict_verbatim() {
+    compare(M.retentionLine(overview(1, "ok"), "#123456"),
+            'Retention 86% over 30 days · <font color="#123456">calibrated</font>')
+    var none = overview(1, "ok", { calibration: { verdict: "insufficient-data", true_retention: null, window_days: 30 } })
+    compare(M.retentionLine(none, "#000000"), "")
+  }
 }

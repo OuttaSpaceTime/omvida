@@ -30,6 +30,29 @@ function clearance(o) {
   return "Cards added today raised it; that resets tomorrow"
 }
 
+// The sentence under the count: what clears the pressure, and the new cards
+// it holds back.
+function glanceLine(o) {
+  if (!o) return ""
+  var parts = []
+  var c = clearance(o)
+  if (c !== "") parts.push(c)
+  if (o.pressure.newAvailable > 0) parts.push(o.pressure.newAvailable + " new waiting")
+  if (parts.length === 0) parts.push(today(o))
+  return parts.join(" · ")
+}
+
+// Retention over the calibration window, then the verdict, coloured (rich
+// text: `color` is the verdict's colour as #rrggbb).
+function retentionLine(o, color) {
+  if (!o) return ""
+  var c = o.calibration
+  if (c.true_retention === null || c.true_retention === undefined) return ""
+  var s = "Retention " + pct(c.true_retention) + " over " + c.window_days + " days"
+  var v = c.verdict + (c.marginal ? " (marginal)" : "")
+  return s + " · <font color=\"" + color + "\">" + v + "</font>"
+}
+
 function calibration(o) {
   if (!o) return ""
   var c = o.calibration
