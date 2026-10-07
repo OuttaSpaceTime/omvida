@@ -33,7 +33,7 @@ Column {
     width: parent.width
     visible: root.folder && root.folder.folders.length > 0
     spacing: Theme.spaceXs
-    SectionLabel { text: root.folderPath === "" ? "Topics" : "Folders" }
+    SectionLabel { divided: true; text: root.folderPath === "" ? "Topics" : "Folders" }
     Repeater {
       model: root.folder ? root.folder.folders : []
       delegate: ListRow {
@@ -53,7 +53,7 @@ Column {
     width: parent.width
     visible: root.folder && root.folder.pages.length > 0
     spacing: Theme.spaceXs
-    SectionLabel { text: "Pages" }
+    SectionLabel { divided: true; text: "Pages" }
     Repeater {
       model: root.folder ? root.folder.pages : []
       delegate: ListRow {

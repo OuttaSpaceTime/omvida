@@ -2,7 +2,9 @@ import QtQuick
 import Quickshell
 
 // A fenced code block: the highlighted HTML from the wiki service in <pre>,
-// on a fill, with its language and a copy button in the corner.
+// on a fill, with its language and a copy button in the corner. The fill
+// alone sets it off from the prose; the 1px border it also had, and the boxed
+// copy button, were the chrome the chosen style takes away.
 Rectangle {
   id: root
 
@@ -13,8 +15,6 @@ Rectangle {
 
   height: body.implicitHeight + Theme.spaceMd * 2
   color: Theme.codeFill
-  border.color: Theme.hairline
-  border.width: Theme.borderWidth
 
   Flickable {
     anchors.fill: parent
@@ -55,6 +55,8 @@ Rectangle {
     }
     ActionButton {
       small: true
+      quiet: true
+      tip: "Copy"
       icon: root.copied ? "check" : "copy"
       onActivated: {
         Quickshell.clipboardText = root.code

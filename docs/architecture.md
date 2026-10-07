@@ -21,7 +21,8 @@
 data screens share (the wiki index, the deck overview, all cards). Screens are files of their
 own. Pure logic is in `.js` modules, unit-tested without a window: `StudyKeys.js` (what a key
 means), `Session.js` (a session's record), `Format.js`, `Cards.js` (explorer filters, the
-viewer's), `Graph.js` (force layout), `Launch.js` (every argv and prompt handed to Claude).
+viewer's), `Graph.js` (force layout), `Launch.js` (every argv and prompt handed to Claude),
+`StatusBits.js` (the reading screens' status-line hints and alert).
 
 **The deck server** is flashcard-mcp's `src/app/server.ts`, started by `bin/omvida-deck`.
 It runs for the app's whole life rather than per call: a tsx start costs about a second, and

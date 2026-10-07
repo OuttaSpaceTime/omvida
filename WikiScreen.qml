@@ -5,6 +5,8 @@ import QtQuick.Controls
 import "Cards.js" as Cards
 import "Format.js" as Format
 import "Launch.js" as Launch
+import "StatusBits.js" as StatusBits
+import "bar/Model.js" as Overview
 
 // The wiki reader, the Next.js viewer's article view: the side panel (context
 // or tree) on the left, the page in the reading column, its connections under
@@ -28,6 +30,16 @@ Item {
   readonly property var meta: page ? page.meta : null
   readonly property var pageCards: meta && app ? Cards.cardsForPage(meta, app.store.allCards) : []
   readonly property bool showGraph: width >= Theme.sidePanelWidth * 2 + Theme.pageMeasure * 0.85
+
+  // ---- the window's status line ---------------------------------------------
+  // Where you are: the open page's file path, or the folder's.
+  readonly property string statusMode: "WIKI"
+  readonly property var statusSegments: {
+    var f = root.app ? root.app.wikiFolder : ""
+    return [{ text: root.path !== "" ? root.path : (f === "" ? "wiki" : f + "/") }]
+  }
+  readonly property var statusHints: StatusBits.common(root.app, [])
+  readonly property var statusAlerts: StatusBits.pressure(root.app, root.app ? Overview.clearance(root.app.store.overview) : "", Theme.verdictColor)
 
   function openPageCards() { if (root.meta && root.pageCards.length) root.app.openPageCards(root.meta.title, root.pageCards) }
 
@@ -146,19 +158,30 @@ Item {
                 color: Theme.topicColor(tagItem.modelData)
               }
             }
+            // Capped at the column and wrapped: a page with many aliases drew
+            // this line out past the column into the graph rail (rule 7).
             UiText {
+              width: Math.min(implicitWidth, parent.width)
+              wrapMode: Text.Wrap
               text: root.meta ? "updated " + root.meta.updated + (root.meta.aliases.length ? " · also " + root.meta.aliases.join(", ") : "") : ""
               font.pixelSize: Theme.captionSize
               color: Theme.faint
             }
           }
+          // The page's actions as quiet text buttons: a row of three boxes
+          // over the first paragraph read as a toolbar, louder than the page.
+          // Pulled left by a button's inset so the first label sits on the
+          // title's edge (layout rule 2), its hover fill in the margin.
           Flow {
-            width: parent.width
-            spacing: Theme.spaceSm
-            topPadding: Theme.spaceSm
+            x: -Theme.spaceSm
+            width: parent.width + Theme.spaceSm
+            spacing: Theme.spaceXs
+            topPadding: Theme.spaceXs
             ActionButton {
               objectName: "pageCardsButton"
               small: true
+              quiet: true
+              tint: enabled ? Theme.accentColor : Theme.secondaryInk
               icon: "cards"
               label: root.pageCards.length > 0
                 ? Format.plural(root.pageCards.length, "card") + ((root.meta && root.meta.flashcardIds.length === 0) ? " by tag" : "")
@@ -169,6 +192,7 @@ Item {
             ActionButton {
               objectName: "pageAddCards"
               small: true
+              quiet: true
               icon: "plus"
               label: "Cards on this page"
               onActivated: root.app.openAdd("flashcard", root.meta.title, "wiki page [[" + root.meta.path + "]]")
@@ -176,6 +200,7 @@ Item {
             ActionButton {
               objectName: "pageDeeper"
               small: true
+              quiet: true
               icon: "brain"
               label: "Go deeper"
               onActivated: root.app.launch(Launch.skillArgv(Paths.studyDir, "Omvida · Walkthrough", "/study-walkthrough",
@@ -210,7 +235,7 @@ Item {
               required property var modelData
               width: (col.width - Theme.spaceXl) / 2
               spacing: Theme.spaceXs
-              SectionLabel { text: linkColumn.modelData.label }
+              SectionLabel { divided: true; text: linkColumn.modelData.label }
               UiText {
                 visible: linkColumn.modelData.paths.length === 0
                 text: linkColumn.modelData.empty

@@ -38,4 +38,26 @@ OmvidaTest {
     var argv = kittyCalls()[before]
     compare(argv.slice(-2), ["--resume", "fake-session-1"])
   }
+
+  // The palette's keys are hints along its foot, each clickable: "open" does
+  // what Enter does, and once an answer is in, "back to search" what
+  // Backspace does (it replaced the Back to search button).
+  function test_foot_hints_run_what_their_keys_run() {
+    app.openSearch("caching")
+    tryVerify(function() { return searchPalette.rows.length > 0 && searchPalette.rows[0].kind === "page" }, 3000)
+    click("paletteHint:open")
+    tryCompare(app, "wikiPath", "web/http-caching")
+    verify(!searchPalette.opened)
+
+    app.openSearch("What is an origin?")
+    key(Qt.Key_Return, Qt.ControlModifier)
+    tryVerify(function() { return searchPalette.askDone }, 8000)
+    click("paletteHint:back to search")
+    tryVerify(function() { return !searchPalette.asking })
+    verify(item("searchField").activeFocus, "the field has the keyboard again")
+    key(Qt.Key_Return, Qt.ControlModifier)
+    tryVerify(function() { return searchPalette.askDone }, 8000)
+    key(Qt.Key_Backspace)
+    tryVerify(function() { return !searchPalette.asking }, 3000, "Backspace still goes back")
+  }
 }

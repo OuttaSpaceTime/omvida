@@ -211,7 +211,6 @@ QtObject {
   readonly property int railMarkSize: 26
   readonly property int railRowHeight: 40
   readonly property int railIconSize: 20
-  readonly property int railBarWidth: 2
   readonly property int topBarHeight: 56
   // The wiki's two side panels: the tree or context on the left, the page's
   // sections and links on the right (the viewer's 280px sidebar).
@@ -226,8 +225,36 @@ QtObject {
   readonly property int cardGridCellWidth: 320
   readonly property int paletteWidth: 720
   readonly property int paletteMaxHeight: 560
-  readonly property int menuWidth: 220
+  // As wide as a side panel: at 220 the Add menu's longest skill name
+  // ("/study-walkthrough --write") ran out of the menu's frame.
+  readonly property int menuWidth: sidePanelWidth
   readonly property int chipHitSlop: spaceXs
+
+  // ---- app-wide style ----------------------------------------------------------
+  // The "Glance" look the user chose for the bar overlay, carried into the
+  // app: one big figure with its word, a thin segmented bar, hairline-divided
+  // sections under small letter-spaced captions, and a single filled action
+  // beside square icon buttons. Key hints live in the window's status line, not
+  // on the buttons.
+  //
+  // The hero figure ("37 due"): larger than a screen title, because on Home it
+  // is the screen's subject and nothing else competes with it.
+  readonly property int heroSize: 44
+  // The maturity bar: thinner than the old 8px stacked bar, its segments
+  // parted by a 2px gap so a small share still reads as its own piece.
+  readonly property int segmentBarHeight: dotSize
+  readonly property int segmentGap: spaceXxs
+  // The one filled action of a screen and its square icon siblings, a step
+  // taller than an ordinary control so the primary reads as the way forward
+  // without needing a second, louder colour (layout rule 9 still holds: the
+  // hero figure stays the loudest thing on the screen).
+  readonly property int primaryControlHeight: controlHeight + spaceSm
+  // The week's reviews as a small sparkline beside the hero figure: half the
+  // old chart's height, with no day letters (today is the last, accent bar).
+  readonly property int glanceSparkHeight: sparkHeight / 2
+  readonly property int glanceSparkBarWidth: spaceSm
+  // How many pending reviews Home lists before "+ N more".
+  readonly property int nextUpRows: 4
 
   // The reading column: the viewer's max-w-3xl, in characters of the body
   // font so it follows the type size.

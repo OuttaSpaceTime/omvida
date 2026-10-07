@@ -19,8 +19,10 @@ Modal {
     keys.forceActiveFocus()
   }
 
+  // Pulled left by a chip's inset, so "Overview" starts on the title's edge.
   Row {
-    spacing: Theme.spaceSm
+    x: -Theme.spaceSm
+    spacing: Theme.spaceXs
     Chip { label: "Overview"; selected: root.mode === "overview"; onActivated: root.mode = "overview" }
     Chip { objectName: "pageCardsFlip"; label: "Flip through"; selected: root.mode === "flip"; onActivated: { root.mode = "flip"; flip.forceActiveFocus() } }
   }

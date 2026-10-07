@@ -3,18 +3,46 @@ import QtQuick
 import QtQuick.Controls
 
 import "Format.js" as Format
+import "StatusBits.js" as StatusBits
 import "WikiTree.js" as WikiTree
+import "bar/Model.js" as Overview
 
-// Home: what to do now (the study panel and what is pending), then the
-// Next.js viewer's dashboard: last studied pages, the deck, recently updated
-// pages and the topics.
+// Home: what to do now, then the Next.js viewer's dashboard (last studied
+// pages, recently updated pages, the topics).
+//
+// The top is the bar overlay's "Glance", the style the user chose for it,
+// so the overlay and its in-app twin read alike: the figure, the verdict and
+// the deck's maturity (ProgressPanel), the next reviews up, and one filled
+// action beside a square icon button. Sections are parted by a hairline and a
+// small caption instead of boxes; the "now" panel used to be a filled,
+// bordered card, which made the rest of the page look like an afterthought.
+//
+// The screen's title and its counts ("52 pages · 14 topics...") went to the
+// window's status line, as did the keys the buttons used to print: the mode
+// block already says where you are, and the figure is the screen's subject.
 Item {
   id: root
+  objectName: "homeScreen"
 
   property var app: null
   readonly property var index: app ? app.store.wikiIndex : null
   readonly property var overview: app ? app.store.overview : null
 
+  // ---- the window's status line ---------------------------------------------
+  readonly property string statusMode: "HOME"
+  readonly property var statusSegments: root.index ? [{
+    text: Format.plural(root.index.pages.length, "page") + " · "
+          + Format.plural(root.index.tree.folders.length, "topic") + " · "
+          + Format.plural(root.index.graph.links.length, "link")
+          + (root.overview ? " · " + Format.plural(root.overview.totalCards, "card") : "")
+  }] : []
+  readonly property var statusHints: StatusBits.common(root.app, root.app ? [StatusBits.study(root.app)] : [])
+  readonly property var statusAlerts: StatusBits.pressure(root.app, Overview.clearance(root.overview), Theme.verdictColor)
+
+  // Pending reviews past the rows shown, counted off the due figure rather
+  // than the list, which the deck server caps.
+  readonly property var nextUp: root.overview ? root.overview.pending.slice(0, Theme.nextUpRows) : []
+  readonly property int moreDue: root.overview ? Math.max(0, root.overview.pressure.flashcardsDue - root.nextUp.length) : 0
 
   GlideFlickable {
     id: flick
@@ -29,77 +57,70 @@ Item {
       width: Theme.pageWidth(root.width)
       spacing: Theme.sectionGap
 
+      // ---- now: the Glance -------------------------------------------------------
       Column {
-        spacing: Theme.spaceXs
-        UiText {
-          text: "Study"
-          font.pixelSize: Theme.displaySize
-          font.bold: true
-        }
-        UiText {
-          text: root.index ? Format.plural(root.index.pages.length, "page") + " · "
-                             + Format.plural(root.index.tree.folders.length, "topic") + " · "
-                             + Format.plural(root.index.graph.links.length, "link")
-                             + (root.overview ? " · " + Format.plural(root.overview.totalCards, "card") : "")
-                           : "Loading…"
-          font.pixelSize: Theme.bodySmallSize
-          color: Theme.dim
-        }
-      }
-
-      // ---- now -------------------------------------------------------------
-      Rectangle {
         width: parent.width
-        height: nowCol.implicitHeight + Theme.spaceXl * 2
-        color: Theme.fill
-        border.color: Theme.hairline
-        border.width: Theme.borderWidth
+        spacing: Theme.spaceXl
+
+        ProgressPanel {
+          width: parent.width
+          overview: root.overview
+        }
 
         Column {
-          id: nowCol
-          x: Theme.spaceXl
-          y: Theme.spaceXl
-          width: parent.width - Theme.spaceXl * 2
-          spacing: Theme.spaceLg
-
-          ProgressPanel {
-            width: parent.width
-            overview: root.overview
+          visible: root.nextUp.length > 0
+          width: parent.width
+          SectionLabel { divided: true; text: "Next up" }
+          Repeater {
+            model: root.nextUp
+            delegate: ListRow {
+              id: pendingRow
+              required property var modelData
+              width: col.width
+              dot: Theme.topicColor(pendingRow.modelData.deck.toLowerCase())
+              title: pendingRow.modelData.text
+              note: pendingRow.modelData.deck + (pendingRow.modelData.lapses > 0 ? " · " + Format.plural(pendingRow.modelData.lapses, "lapse") : "")
+              onActivated: root.app.startStudy()
+            }
           }
+          UiText {
+            visible: root.moreDue > 0
+            topPadding: Theme.spaceXs
+            text: "+ " + root.moreDue + " more"
+            font.pixelSize: Theme.captionSize
+            color: Theme.faint
+          }
+        }
+
+        // One filled action, the way forward, and the deck beside it as a
+        // square icon (the overlay's footer).
+        Column {
+          width: parent.width
+          spacing: Theme.spaceLg
+          Rectangle { width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
           Row {
-            spacing: Theme.spaceMd
+            spacing: Theme.spaceSm
             ActionButton {
               objectName: "homeStudyButton"
               filled: true
-              icon: "study"
+              prominent: true
               label: root.overview && root.overview.pressure.flashcardsDue > 0 ? "Study now" : "Study"
-              hint: "Ctrl+2"
               onActivated: root.app.startStudy()
             }
             ActionButton {
+              objectName: "homeCardsButton"
+              prominent: true
               icon: "cards"
-              label: "Browse the deck"
+              tip: "Browse the deck"
               onActivated: root.app.setScreen("cards")
             }
-          }
-        }
-      }
-
-      // ---- pending ----------------------------------------------------------
-      Column {
-        visible: root.overview && root.overview.pending.length > 0
-        width: parent.width
-        spacing: Theme.spaceSm
-        SectionLabel { text: "Pending reviews" }
-        Repeater {
-          model: root.overview ? root.overview.pending : []
-          delegate: ListRow {
-            id: pendingRow
-            required property var modelData
-            width: col.width
-            title: pendingRow.modelData.text
-            note: pendingRow.modelData.deck + (pendingRow.modelData.lapses > 0 ? " · " + Format.plural(pendingRow.modelData.lapses, "lapse") : "")
-            onActivated: root.app.startStudy()
+            ActionButton {
+              objectName: "homeWikiButton"
+              prominent: true
+              icon: "wiki"
+              tip: "Read the wiki"
+              onActivated: root.app.setScreen("wiki")
+            }
           }
         }
       }
@@ -107,10 +128,10 @@ Item {
       // ---- last studied -----------------------------------------------------
       Column {
         width: parent.width
-        spacing: Theme.spaceSm
-        SectionLabel { text: "Last studied" }
+        SectionLabel { divided: true; text: "Last studied" }
         UiText {
           visible: root.app && root.app.store.recentPages.length === 0
+          topPadding: Theme.spaceXs
           text: "No recent reviews touch a wiki page yet."
           font.pixelSize: Theme.bodySmallSize
           color: Theme.faint
@@ -134,8 +155,7 @@ Item {
       // ---- recently updated -------------------------------------------------
       Column {
         width: parent.width
-        spacing: Theme.spaceSm
-        SectionLabel { text: "Recently updated" }
+        SectionLabel { divided: true; text: "Recently updated" }
         Repeater {
           model: root.index ? root.index.pages.slice().sort(function(a, b) {
             return b.updated < a.updated ? -1 : b.updated > a.updated ? 1 : 0
@@ -156,7 +176,7 @@ Item {
       Column {
         width: parent.width
         spacing: Theme.spaceSm
-        SectionLabel { text: "Topics" }
+        SectionLabel { divided: true; text: "Topics" }
         // Every tile as tall as a full one (its name and three pages), so the
         // grid reads as rows of equal cards, not a ragged wall. Measured off
         // this unseen copy of a full tile rather than taken as the tallest
@@ -174,12 +194,16 @@ Item {
             delegate: UiText { text: "Page"; font.pixelSize: Theme.captionSize }
           }
         }
+        // A tile is a hairline over its words, not a filled box: a wall of
+        // fourteen bordered boxes was the loudest thing on the page. The rule
+        // in the topic's colour keeps the grid readable as tiles.
         Grid {
           id: grid
           width: parent.width
           columns: Math.max(1, Math.floor((width + Theme.spaceMd) / (Theme.cardGridCellWidth * 0.75)))
-          spacing: Theme.spaceMd
-          readonly property real cellWidth: (width - spacing * (columns - 1)) / columns
+          columnSpacing: Theme.spaceXl
+          rowSpacing: Theme.spaceSm
+          readonly property real cellWidth: (width - columnSpacing * (columns - 1)) / columns
           Repeater {
             model: root.index ? root.index.tree.folders : []
             delegate: Rectangle {
@@ -188,20 +212,17 @@ Item {
               objectName: "topic:" + topicTile.modelData.path
               width: grid.cellWidth
               height: fullTile.implicitHeight + Theme.spaceMd * 2
-              color: tArea.containsMouse ? Theme.hoverFill : Theme.fill
-              border.color: Theme.hairline
-              border.width: Theme.borderWidth
+              color: tArea.containsMouse ? Theme.hoverFill : "transparent"
+              // First child: tst_wiki measures the tile's padding off it.
               Column {
                 id: tcol
-                x: Theme.spaceMd
                 y: Theme.spaceMd
-                width: parent.width - Theme.spaceMd * 2
+                width: parent.width
                 spacing: Theme.spaceXs
                 Row {
                   width: parent.width
                   spacing: Theme.spaceSm
-                  Rectangle { width: Theme.dotSize; height: Theme.dotSize; radius: Theme.dotSize / 2; color: Theme.topicColor(topicTile.modelData.path); anchors.verticalCenter: parent.verticalCenter }
-                  UiText { text: topicTile.modelData.name }
+                  UiText { text: topicTile.modelData.name; color: Theme.topicColor(topicTile.modelData.path) }
                   UiText { text: topicTile.modelData.count; font.pixelSize: Theme.captionSize; color: Theme.faint; anchors.verticalCenter: parent.verticalCenter }
                 }
                 Repeater {
@@ -216,6 +237,11 @@ Item {
                     color: Theme.dim
                   }
                 }
+              }
+              Rectangle {
+                width: parent.width
+                height: Theme.hairlineWidth
+                color: Theme.alpha(Theme.topicColor(topicTile.modelData.path), 0.5)
               }
               MouseArea {
                 id: tArea

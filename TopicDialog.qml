@@ -8,6 +8,11 @@ import "Format.js" as Format
 // in the study repo with the skill and the topic. The topic starts as what is
 // on screen (the open page's title, the card being studied), and that is also
 // passed along as context, so "cards on this" is one Enter away.
+//
+// Styled as the rest of the app now is: the topic is typed on a line, not in
+// a box (the study answer's prompt), and the footer is one filled action with
+// Cancel as quiet text after it. The "Enter" the action used to print is the
+// default every dialog has; Esc cancels.
 Modal {
   id: root
 
@@ -68,10 +73,14 @@ Modal {
     font.pixelSize: Theme.bodySize
     color: Theme.ink
     placeholderTextColor: Theme.faint
-    background: Rectangle {
-      color: Theme.fill
-      border.color: field.activeFocus ? Theme.accentColor : Theme.border
-      border.width: Theme.borderWidth
+    leftPadding: 0
+    background: Item {
+      Rectangle {
+        anchors.bottom: parent.bottom
+        width: parent.width
+        height: Theme.hairlineWidth
+        color: field.activeFocus ? Theme.accentColor : Theme.border
+      }
     }
     Keys.onReturnPressed: root.submit()
     Keys.onEnterPressed: root.submit()
@@ -90,18 +99,18 @@ Modal {
       color: Theme.faint
       anchors.verticalCenter: parent.verticalCenter
     }
-    ActionButton { id: clear; small: true; icon: "close"; onActivated: root.context = "" }
+    ActionButton { id: clear; small: true; quiet: true; icon: "close"; tip: "Leave the context out"; onActivated: root.context = "" }
   }
 
   Row {
-    spacing: Theme.spaceMd
-    ActionButton { label: "Cancel"; onActivated: root.close() }
+    topPadding: Theme.spaceSm
+    spacing: Theme.spaceSm
     ActionButton {
       objectName: "topicSubmit"
       filled: true
       label: "Open in Claude Code"
-      hint: "Enter"
       onActivated: root.submit()
     }
+    ActionButton { quiet: true; label: "Cancel"; onActivated: root.close() }
   }
 }
