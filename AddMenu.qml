@@ -2,7 +2,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 
 // The Add dropdown: a flashcard or a wiki entry. Each opens the topic dialog,
-// which then opens Claude Code in kitty.
+// which then opens Claude Code in kitty. Plain rows under a 1px frame, the
+// icons in the rows' quiet ink rather than the accent: the menu is a list to
+// pick from, and the accent is kept for the one primary action on a screen.
 Rectangle {
   id: root
 
@@ -50,13 +52,16 @@ Rectangle {
         Row {
           anchors.left: parent.left
           anchors.leftMargin: Theme.spaceMd
+          anchors.right: parent.right
+          anchors.rightMargin: Theme.spaceMd
           anchors.verticalCenter: parent.verticalCenter
           spacing: Theme.spaceSm
-          Glyph { icon: addItem.modelData.icon; anchors.verticalCenter: parent.verticalCenter; color: Theme.accentColor }
+          Glyph { id: addGlyph; icon: addItem.modelData.icon; width: Theme.subtitleSize; anchors.verticalCenter: parent.verticalCenter; color: Theme.dim }
           Column {
+            width: parent.width - addGlyph.width - Theme.spaceSm
             anchors.verticalCenter: parent.verticalCenter
-            UiText { text: addItem.modelData.label }
-            UiText { text: addItem.modelData.note; font.pixelSize: Theme.captionSize; color: Theme.faint }
+            UiText { width: parent.width; elide: Text.ElideRight; text: addItem.modelData.label }
+            UiText { width: parent.width; elide: Text.ElideRight; text: addItem.modelData.note; font.pixelSize: Theme.captionSize; color: Theme.faint }
           }
         }
         MouseArea {

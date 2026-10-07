@@ -70,7 +70,9 @@ Rectangle {
     anchors.right: parent.right
     anchors.top: mark.bottom
     anchors.topMargin: Theme.spaceXl
-    spacing: Theme.spaceXxs
+    // Air between the icons, as the mockups' rail: with no bar and no badge
+    // to separate them, the gap is what makes each a target of its own.
+    spacing: Theme.spaceSm
 
     Repeater {
       model: root.navItems
@@ -82,14 +84,10 @@ Rectangle {
         height: Theme.railRowHeight
         readonly property bool selected: root.currentScreen === navRow.modelData.id
 
-        Rectangle {
-          visible: navRow.selected
-          anchors.left: parent.left
-          anchors.top: parent.top
-          anchors.bottom: parent.bottom
-          width: Theme.railBarWidth
-          color: Theme.accentColor
-        }
+        // The current screen is its icon in the accent, nothing more: the
+        // accent bar at the rail's edge that used to mark it doubled the
+        // signal, and the chosen style keeps each thing said once. The mode
+        // block in the status line names the screen too.
         Rectangle {
           visible: navArea.containsMouse
           anchors.fill: parent
@@ -99,26 +97,22 @@ Rectangle {
           anchors.centerIn: parent
           icon: navRow.modelData.icon
           font.pixelSize: Theme.railIconSize
-          color: navRow.selected ? Theme.accentColor : Theme.dim
+          color: navRow.selected ? Theme.accentColor : Theme.faint
         }
-        // The due badge: reviews only, never the new-card pool (pressure's rule).
-        Rectangle {
+        // The due count: reviews only, never the new-card pool (pressure's
+        // rule). A small accent figure by the icon rather than a filled pill,
+        // which was the one solid shape on the rail and drew the eye from
+        // whatever screen was open.
+        UiText {
           visible: navRow.modelData.id === "study" && root.dueCount > 0
-          anchors.right: parent.right
-          anchors.rightMargin: Theme.spaceSm
+          anchors.left: parent.horizontalCenter
+          anchors.leftMargin: Theme.railIconSize / 2
           anchors.top: parent.top
-          anchors.topMargin: Theme.spaceXs
-          height: badgeText.implicitHeight
-          width: Math.max(height, badgeText.implicitWidth + Theme.spaceSm)
-          radius: height / 2
+          anchors.topMargin: Theme.spaceXxs
+          text: root.dueCount > 99 ? "99+" : root.dueCount
+          font.pixelSize: Theme.captionSize
+          font.weight: Font.Medium
           color: Theme.accentColor
-          UiText {
-            id: badgeText
-            anchors.centerIn: parent
-            text: root.dueCount > 99 ? "99+" : root.dueCount
-            font.pixelSize: Theme.captionSize
-            color: Theme.paper
-          }
         }
         MouseArea {
           id: navArea

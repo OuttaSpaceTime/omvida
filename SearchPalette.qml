@@ -16,6 +16,12 @@ import "Launch.js" as Launch
 //     and a web check, then the log entry), streamed in here. "Continue in
 //     Claude" resumes that session in kitty.
 // ↑/↓ choose, Enter opens, Ctrl+Enter asks, Esc closes.
+//
+// Those keys are named once, in a line of hints along the palette's foot, the
+// way the window's status line names the screens' keys (the user's chosen
+// "keyboard, no buttons in the way" style). They used to be spread over a
+// note on the Ask row, the empty state's sentence and a Back button; each
+// hint is clickable and runs what its key does.
 Item {
   id: root
 
@@ -54,7 +60,7 @@ Item {
       out.push({ kind: "text", path: t.path, title: t.title, note: t.snippet })
     })
     cardHits.forEach(function(c) { out.push({ kind: "card", card: c, title: Format.stripHtml(c.front), note: c.deck }) })
-    if (query.trim() !== "") out.push({ kind: "ask", title: "Ask Claude: " + query.trim(), note: "Ctrl+Enter" })
+    if (query.trim() !== "") out.push({ kind: "ask", title: "Ask Claude: " + query.trim(), note: "" })
     return out
   }
 
@@ -68,6 +74,22 @@ Item {
     field.forceActiveFocus()
     field.selectAll()
   }
+
+  function backToSearch() {
+    if (!root.askDone) return
+    root.asking = false
+    field.forceActiveFocus()
+  }
+
+  // The foot line's hints, for what the palette is doing now. A hint with no
+  // run() is only a reminder (↑↓ has nothing to click).
+  readonly property var hints: root.asking
+    ? (root.askDone ? [{ keys: "⌫", label: "back to search", run: root.backToSearch }] : [])
+        .concat([{ keys: "esc", label: "close", run: root.close }])
+    : [{ keys: "↑↓", label: "choose" },
+       { keys: "↵", label: "open", run: function() { root.activate(root.selected) } },
+       { keys: "⌃↵", label: "ask Claude", run: root.ask },
+       { keys: "esc", label: "close", run: root.close }]
 
   function close() {
     root.opened = false
@@ -193,15 +215,21 @@ Item {
     // since the answer grows while it streams.
     height: Math.min(root.height - Theme.space3xl * 2,
                      root.asking ? Theme.paletteMaxHeight + Theme.space3xl * 2
-                                 : Math.min(Theme.paletteMaxHeight, field.height + modeRow.height + results.implicitHeight + Theme.space2xl + Theme.spaceSm))
+                                 : Math.min(Theme.paletteMaxHeight, field.height + modeRow.height + results.implicitHeight + Theme.space2xl + Theme.spaceSm)
+                                   + foot.height)
     color: Theme.paper
+    // A 1px line, as the Glance overlay's frame: the scrim already parts the
+    // palette from the window, so a heavier edge only added weight.
     border.color: Theme.border
-    border.width: Theme.dialogBorderWidth
+    border.width: Theme.borderWidth
     MouseArea { anchors.fill: parent }
 
     // ---- searching ----
     Item {
-      anchors.fill: parent
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      anchors.bottom: foot.top
       visible: !root.asking
 
       TextField {
@@ -229,12 +257,15 @@ Item {
       }
       Rectangle { id: rule; anchors.top: field.bottom; anchors.topMargin: Theme.spaceXs; width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
 
+      // Pulled left by a chip's inset, so "Keyword" starts on the field's
+      // text edge.
       Row {
         id: modeRow
         anchors.top: rule.bottom
+        anchors.topMargin: Theme.spaceMd
         anchors.left: parent.left
-        anchors.margins: Theme.spaceMd
-        spacing: Theme.spaceSm
+        anchors.leftMargin: Theme.spaceMd - Theme.spaceSm
+        spacing: Theme.spaceXs
         Chip { label: "Keyword"; selected: !root.deep; onActivated: { root.deep = false; root.runBackendSearch() } }
         Chip { objectName: "deepSearch"; label: "Deep (~6s)"; selected: root.deep; onActivated: { root.deep = true; root.runBackendSearch() } }
         UiText {
@@ -319,10 +350,10 @@ Item {
             }
           }
           UiText {
-            visible: root.rows.length === 0
+            visible: root.rows.length === 0 && root.query.trim() !== ""
             x: Theme.spaceMd
             topPadding: Theme.spaceMd
-            text: root.query.trim() === "" ? "Type to search. A question can go straight to Claude with Ctrl+Enter." : "Nothing found."
+            text: "Nothing found."
             font.pixelSize: Theme.bodySmallSize
             color: Theme.faint
           }
@@ -334,7 +365,10 @@ Item {
     Item {
       id: askView
       objectName: "askView"
-      anchors.fill: parent
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      anchors.bottom: foot.top
       anchors.margins: Theme.spaceXl
       visible: root.asking
 
@@ -342,7 +376,7 @@ Item {
         id: keyHolder
         Keys.onEscapePressed: root.close()
         Keys.onPressed: function(event) {
-          if (event.key === Qt.Key_Backspace && root.askDone) { root.asking = false; field.forceActiveFocus(); event.accepted = true }
+          if (event.key === Qt.Key_Backspace && root.askDone) { root.backToSearch(); event.accepted = true }
         }
       }
 
@@ -396,32 +430,75 @@ Item {
         }
       }
 
+      // One filled action, the way on (the Glance footer), with Copy and
+      // Stop as quiet text beside it. Back to search is the foot's ⌫ hint.
       Row {
         id: askButtons
         anchors.bottom: parent.bottom
         spacing: Theme.spaceSm
         ActionButton {
           objectName: "askContinue"
+          filled: true
           enabled: root.askSession !== "" && root.askDone
           icon: "discuss"
           label: "Continue in Claude"
           onActivated: { root.app.launch(Launch.resumeArgv(Paths.studyDir, root.askSession), "Opened Claude Code"); root.close() }
         }
         ActionButton {
+          quiet: true
           label: "Copy"
           icon: "copy"
           enabled: root.askText !== ""
           onActivated: Quickshell.clipboardText = root.askText
         }
         ActionButton {
-          label: "Back to search"
-          enabled: root.askDone
-          onActivated: { root.asking = false; field.forceActiveFocus() }
-        }
-        ActionButton {
           visible: !root.askDone
+          quiet: true
           label: "Stop"
           onActivated: askProc.running = false
+        }
+      }
+    }
+
+    // ---- the foot: the keys, as the window's status line names them ----------------
+    Item {
+      id: foot
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      anchors.margins: Theme.borderWidth
+      height: Theme.controlHeight
+      Rectangle { width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
+      Row {
+        anchors.left: parent.left
+        anchors.leftMargin: Theme.spaceMd - Theme.spaceSm
+        anchors.verticalCenter: parent.verticalCenter
+        Repeater {
+          model: root.hints
+          delegate: Rectangle {
+            id: hintItem
+            required property var modelData
+            readonly property bool clickable: typeof hintItem.modelData.run === "function"
+            objectName: "paletteHint:" + hintItem.modelData.label
+            width: hintRow.implicitWidth + Theme.spaceLg
+            height: Theme.smallControlHeight
+            color: hintItem.clickable && hintArea.containsMouse ? Theme.hoverFill : "transparent"
+            Row {
+              id: hintRow
+              anchors.centerIn: parent
+              spacing: Theme.spaceXs
+              UiText { text: hintItem.modelData.keys; font.pixelSize: Theme.captionSize; font.weight: Font.DemiBold; color: Theme.secondaryInk }
+              UiText { text: hintItem.modelData.label; font.pixelSize: Theme.captionSize; color: Theme.dim }
+            }
+            MouseArea {
+              id: hintArea
+              anchors.fill: parent
+              enabled: hintItem.clickable
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: hintItem.modelData.run()
+            }
+          }
         }
       }
     }

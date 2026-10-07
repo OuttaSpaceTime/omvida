@@ -41,7 +41,8 @@ and stops.
   output parser, the session log format and numbering, the protocol.
 - `tests/unit`: `StudyKeys.js` (every binding in every phase, US and German Shift+digit),
   `Format.js`, `Cards.js`, `Graph.js`, `Launch.js` (the prompts and the Ask tool allowlist),
-  `Session.js`, and the bar's `Model.js`.
+  `Session.js`, `StatusBits.js` (the reading screens' status-line hints and alert), and the
+  bar's `Model.js`.
 - `tests/app`: `OmvidaTest.qml` is Omvision's harness adapted: the app loads the test file
   through `OMVIDA_TEST`, and tests click and type into the real screens against the real
   backends. Helpers: `click`, `item`, `type`, `key`, `sql` (read the deck), `sqlWrite`,
@@ -68,11 +69,11 @@ and stops.
 | `panelMode:context`, `panelMode:tree`, `tree:<path>`, `sibling:<path>`, `section:<anchor>` | the wiki side panel |
 | `folderTitle`, `folder:<path>`, `folderPage:<path>` | a folder |
 | `pageCardsFlip`, `flipCard` | a page's cards |
-| `searchField`, `result:<kind>:<i>`, `deepSearch`, `askView`, `askAnswer`, `askAnswerBlocks`, `askContinue` | search and Ask |
+| `searchField`, `result:<kind>:<i>`, `deepSearch`, `askView`, `askAnswer`, `askAnswerBlocks`, `askContinue`, `paletteHint:<label>` | search and Ask |
 | `stateChip:<state>`, `stateBar:<state>`, `tagChip:<tag>`, `cardFilter`, `filteredCount`, `clearFilters`, `retentionPanel` | the deck explorer's filters |
 | `cardsStage` (its card is `flipCard`, the front `flipFront`), `stagePosition`, `cardsPrev`, `cardsNext`, `upNext`, `cardsRestart`, `cardTile:<card id>` | the deck explorer's stage and grid |
-| `graphAll`, `graphLocal`, `graphView` | the graph |
-| `homeStudyButton`, `recent:<path>`, `topic:<path>`, `pressureVerdict` | home |
+| `graphScreen`, `graphAll`, `graphLocal`, `graphView` | the graph |
+| `homeScreen`, `homeStudyButton`, `homeCardsButton`, `homeWikiButton`, `recent:<path>`, `topic:<path>`, `dueFigure`, `pressureVerdict`, `calibrationVerdict` | home |
 
 ## What the tests don't cover
 

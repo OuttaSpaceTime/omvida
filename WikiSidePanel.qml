@@ -55,11 +55,13 @@ Rectangle {
 
   Rectangle { anchors.right: parent.right; width: Theme.hairlineWidth; height: parent.height; color: Theme.hairline }
 
+  // Pulled left by a chip's inset, so "Context" starts on the panel's text
+  // edge now that an unselected chip has no box to align instead.
   Row {
     id: modes
-    x: Theme.spaceLg
+    x: Theme.spaceLg - Theme.spaceSm
     y: Theme.spaceLg
-    spacing: Theme.spaceSm
+    spacing: Theme.spaceXs
     Chip { objectName: "panelMode:context"; label: "Context"; selected: root.mode === "context"; onActivated: root.mode = "context" }
     Chip { objectName: "panelMode:tree"; label: "Tree"; selected: root.mode === "tree"; onActivated: root.mode = "tree" }
   }
@@ -176,7 +178,8 @@ Rectangle {
 
       SectionLabel {
         x: Theme.spaceLg
-        topPadding: Theme.spaceLg
+        divided: true
+        ruleGap: Theme.spaceMd
         text: root.folderPath === "" ? "Topics" : root.folderPath.split("/").pop()
       }
       Repeater {
@@ -241,7 +244,7 @@ Rectangle {
         }
       }
 
-      SectionLabel { x: Theme.spaceLg; topPadding: Theme.spaceLg; visible: root.meta && root.meta.outbound.length > 0; text: "Outgoing" }
+      SectionLabel { x: Theme.spaceLg; divided: true; ruleGap: Theme.spaceMd; visible: root.meta && root.meta.outbound.length > 0; text: "Outgoing" }
       Repeater {
         model: root.meta ? root.meta.outbound : []
         delegate: ListRow {
@@ -254,7 +257,7 @@ Rectangle {
           onActivated: root.app.openPage(outgoingRow.modelData, "")
         }
       }
-      SectionLabel { x: Theme.spaceLg; topPadding: Theme.spaceLg; visible: root.meta && root.meta.inbound.length > 0; text: "Linked from" }
+      SectionLabel { x: Theme.spaceLg; divided: true; ruleGap: Theme.spaceMd; visible: root.meta && root.meta.inbound.length > 0; text: "Linked from" }
       Repeater {
         model: root.meta ? root.meta.inbound : []
         delegate: ListRow {

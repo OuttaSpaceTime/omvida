@@ -2,6 +2,12 @@ import QtQuick
 
 // The bar over every screen: back, the search box (a button that opens the
 // palette, so typing never happens in two places), a status note, and Add.
+//
+// In the style the user chose ("no buttons in the way"), nothing here is
+// boxed: back and Add are quiet text buttons, and the search box is a faint
+// fill with no border, a prompt rather than a field. The keys they used to
+// print ("Ctrl+K", "Ctrl+N") are hints in the window's status line now, which
+// the screens hand it (StatusBits.js); the keys themselves are unchanged.
 Rectangle {
   id: root
 
@@ -28,7 +34,9 @@ Rectangle {
     anchors.left: parent.left
     anchors.leftMargin: Theme.spaceLg
     anchors.verticalCenter: parent.verticalCenter
+    quiet: true
     icon: "back"
+    tip: "Back  Alt+←"
     enabled: root.canGoBack
     onActivated: root.backRequested()
   }
@@ -37,18 +45,16 @@ Rectangle {
     id: searchBox
     objectName: "searchBox"
     anchors.left: back.right
-    anchors.leftMargin: Theme.spaceMd
+    anchors.leftMargin: Theme.spaceSm
     anchors.verticalCenter: parent.verticalCenter
     width: Math.min(Theme.paletteWidth, root.width - back.width - add.width - Theme.space4xl * 2)
     height: Theme.controlHeight
     color: searchArea.containsMouse ? Theme.hoverFill : Theme.fill
-    border.color: Theme.hairline
-    border.width: Theme.borderWidth
 
     Row {
       anchors.left: parent.left
       anchors.leftMargin: Theme.spaceMd
-      anchors.right: kbdHint.left
+      anchors.right: parent.right
       anchors.rightMargin: Theme.spaceMd
       anchors.verticalCenter: parent.verticalCenter
       spacing: Theme.spaceSm
@@ -62,15 +68,6 @@ Rectangle {
         color: Theme.faint
         elide: Text.ElideRight
       }
-    }
-    UiText {
-      id: kbdHint
-      anchors.right: parent.right
-      anchors.rightMargin: Theme.spaceMd
-      anchors.verticalCenter: parent.verticalCenter
-      text: "Ctrl+K"
-      font.pixelSize: Theme.captionSize
-      color: Theme.faint
     }
     MouseArea {
       id: searchArea
@@ -100,9 +97,9 @@ Rectangle {
     anchors.right: parent.right
     anchors.rightMargin: Theme.spaceLg
     anchors.verticalCenter: parent.verticalCenter
+    quiet: true
     icon: "plus"
     label: "Add"
-    hint: "Ctrl+N"
     onActivated: root.addRequested()
   }
 }
