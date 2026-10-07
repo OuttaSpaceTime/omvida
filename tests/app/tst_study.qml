@@ -20,7 +20,9 @@ OmvidaTest {
     startSession()
     var field = item("answerField")
     tryVerify(function() { return field.activeFocus }, 3000, "the answer box has the keyboard")
-    verify(/^Card 1\/\d+ · Web$/.test(item("positionLine").text), "position comes from the server: " + item("positionLine").text)
+    compare(item("statusMode").text, "STUDY")
+    verify(/^1\/\d+$/.test(item("statusSegment:0").text), "position comes from the server: " + item("statusSegment:0").text)
+    compare(item("statusSegment:1").text, "Web", "then the deck")
     type("abc")
     compare(field.text, "abc")
   }
@@ -34,8 +36,12 @@ OmvidaTest {
     tryCompare(study, "phase", "revealed", 8000)
     compare(gradeCalls().length, before + 1, "one grade call")
     verify(item("cardBack").visible, "the back is shown")
-    tryVerify(function() { return item("suggestionLine").text === "Suggested: Good (3)" }, 3000)
-    verify(item("suggestionReason").text.indexOf("Fixture grader") === 0, "the reason is shown")
+    tryVerify(function() { return item("suggestionLine").verdict === "claude: good" }, 3000)
+    verify(item("suggestionLine").reason.indexOf("Fixture grader") === 0, "the reason is shown")
+    compare(item("statusMode").text, "RATE")
+    verify(item("rate:3").suggested, "the suggested keycap is marked")
+    verify(!item("rate:1").suggested && !item("rate:2").suggested && !item("rate:4").suggested, "and only that one")
+    verify(findNamed(target, "statusHint:take good") !== null, "the status line offers to take it")
     key(Qt.Key_Return, Qt.ShiftModifier)
     tryVerify(function() { return study.card && study.card.id !== cardId && study.phase === "answering" }, 8000, "next card")
     var r = reviews()
@@ -116,8 +122,7 @@ OmvidaTest {
     key(Qt.Key_Return, Qt.ShiftModifier)
     tryVerify(function() { return study.suggestion !== null && study.suggestion.quality !== null }, 8000)
     var before = kittyCalls().length
-    var front = study.card.front
-    study.fixCard()
+    click("fixCardButton")
     tryVerify(function() { return kittyCalls().length === before + 1 }, 3000)
     var argv = kittyCalls()[before]
     compare(argv.slice(0, 2), ["--directory", studyDir])
@@ -139,6 +144,54 @@ OmvidaTest {
     verify(prompt.indexOf("My answer:\nmy attempt") !== -1)
     verify(prompt.indexOf("Suggested rating: Good (3)") !== -1)
     compare(study.phase, "revealed", "the card stays up to be rated")
+  }
+
+  // The status line's hints are buttons too: reveal, then a keycap.
+  function test_a_click_on_reveal_then_on_a_keycap_rates() {
+    startSession()
+    var cardId = study.card.id
+    type("a perfect answer")
+    click("statusHint:reveal")
+    tryVerify(function() { return study.suggestion !== null }, 8000)
+    verify(item("cardBack").visible)
+    verify(item("rate:4").suggested)
+    compare(item("answerField").activeFocus, true, "the answer box keeps the keyboard after a click")
+    click("rate:2")
+    tryVerify(function() { return study.card && study.card.id !== cardId }, 8000)
+    var r = reviews()
+    compare(r[r.length - 1], [cardId, 2])
+  }
+
+  function test_the_skip_hint_skips() {
+    startSession()
+    var before = reviews().length
+    var cardId = study.card.id
+    click("statusHint:skip")
+    tryVerify(function() { return study.card && study.card.id !== cardId }, 8000)
+    compare(reviews().length, before)
+  }
+
+  function test_escape_ends_the_session_and_what_was_rated_counts() {
+    startSession()
+    var cardId = study.card.id
+    key(Qt.Key_Exclam, Qt.ShiftModifier)   // Shift+1: Again
+    tryVerify(function() { return study.phase === "answering" && study.card.id !== cardId }, 8000)
+    key(Qt.Key_Escape)
+    tryCompare(study, "phase", "done", 3000)
+    compare(item("statusMode").text, "DONE")
+    var r = reviews()
+    compare(r[r.length - 1], [cardId, 1], "the rating before Esc was written")
+    var open = sql("SELECT COUNT(*) FROM StudySession WHERE endTime IS NULL AND cardsReviewed > 0")[0][0]
+    compare(open, 0, "the session was closed")
+  }
+
+  // A failed Anki sync is an alert on the status line, its message on hover.
+  function test_a_sync_failure_shows_on_the_status_line() {
+    startSession()
+    study.syncNote = "Anki sync failed: offline"
+    var alerts = []
+    for (var i = 0; findNamed(target, "statusAlert:" + i) !== null; i++) alerts.push(findNamed(target, "statusAlert:" + i).text)
+    verify(alerts.indexOf("sync ✕") !== -1, "alerts: " + JSON.stringify(alerts))
   }
 
   function test_skip_leaves_the_card_unreviewed() {

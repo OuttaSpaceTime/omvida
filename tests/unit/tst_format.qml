@@ -13,9 +13,15 @@ TestCase {
     compare(F.scheduleLine(2, null), "Hard (2)")
   }
 
-  function test_position_line_uses_the_servers_numbers() {
-    compare(F.positionLine({ card: { deck: "Web" }, position: 3, total: 12, repeat: false }), "Card 3/12 · Web")
-    compare(F.positionLine({ card: { deck: "Web" }, position: 13, total: 13, repeat: true }), "Card 13/13 · Web (repeat)")
+  function test_position_uses_the_servers_numbers() {
+    compare(F.position({ card: { deck: "Web" }, position: 3, total: 12, repeat: false }), "3/12")
+    compare(F.position({ card: { deck: "Web" }, position: null, total: null, repeat: false }), "")
+    compare(F.position(null), "")
+  }
+
+  function test_escape_html() {
+    compare(F.escapeHtml("a <b> & \"c\""), "a &lt;b&gt; &amp; &quot;c&quot;")
+    compare(F.escapeHtml(null), "")
   }
 
   function test_html_to_text() {

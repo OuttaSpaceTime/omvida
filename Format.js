@@ -29,15 +29,20 @@ function scheduleLine(rating, schedule) {
   return head + " · next review in " + plural(days, "day") + " (" + dayKey(new Date(schedule.due)) + ")"
 }
 
-// "Card 3/12 · Deck", with "(repeat)" for an intra-day learning repeat. Built
-// from nextCard's own position and total, never counted here: the server
-// already accounts for re-queues, skips and deletes.
-function positionLine(next) {
+// "3/12": where the session is, for the status line, which shows the deck
+// and a repeat as segments of their own. From nextCard's own position and
+// total, never counted here: the server already accounts for re-queues,
+// skips and deletes. "" when the server gives none.
+function position(next) {
   if (!next || !next.card) return ""
-  var s = next.position !== null && next.total !== null ? "Card " + next.position + "/" + next.total : "Card"
-  s += " · " + next.card.deck
-  if (next.repeat) s += " (repeat)"
-  return s
+  if (next.position === null || next.position === undefined || next.total === null || next.total === undefined) return ""
+  return next.position + "/" + next.total
+}
+
+// Text from elsewhere (Claude's reason) set inside StyledText.
+function escapeHtml(s) {
+  return String(s === null || s === undefined ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 }
 
 // Card HTML to one line of plain text (lists, search rows, prompts).

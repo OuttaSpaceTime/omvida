@@ -7,13 +7,17 @@ import "Launch.js" as Launch
 // The end of a session: what was studied and how it went, the wiki pages
 // connected to those cards (/study Phase 4), a walkthrough for what lapsed,
 // and the way on.
+//
+// Quiet, like the card before it: sections apart by hairlines, faint small
+// caps labels, and its actions as plain words (PlainButton). The status line
+// says DONE with the count, duration and accuracy, and carries the same ways
+// on as key hints (Enter studies again).
 Column {
   id: root
   objectName: "summary"
 
   property var session: null
   spacing: Theme.spaceXl
-
 
   UiText {
     visible: root.session.summaryData !== null && root.session.summaryData.reviews === 0
@@ -34,7 +38,6 @@ Column {
           + (root.session.summaryData.minutes !== null ? " in " + Format.durationText(root.session.summaryData.minutes) : "")
         : ""
       font.pixelSize: Theme.headingSize
-      font.bold: true
     }
     UiText {
       text: root.session.summaryData
@@ -60,6 +63,13 @@ Column {
       font.pixelSize: Theme.bodySmallSize
       color: Theme.orangeText
     }
+  }
+
+  Rectangle {
+    visible: root.session.summaryData !== null && root.session.summaryData.reviews > 0
+    width: parent.width
+    height: Theme.hairlineWidth
+    color: Theme.hairline
   }
 
   // /study Phase 4: pages connected to what was actually studied.
@@ -90,33 +100,42 @@ Column {
     }
   }
 
-  // Offers: a walkthrough for what lapsed, cards for the gaps.
+  // Offers: a walkthrough for what lapsed, cards for the gaps. Each is the
+  // skill's command as plain words, pulled left onto the page's edge.
   Column {
     visible: root.session.summaryData !== null && root.session.summaryData.lapses.length > 0
-    spacing: Theme.spaceSm
+    width: parent.width
+    spacing: Theme.spaceXs
     SectionLabel { text: "Go deeper" }
     Repeater {
       model: root.session.summaryData ? root.session.summaryData.lapses.slice(0, 3) : []
-      delegate: ActionButton {
+      delegate: PlainButton {
         id: walkthroughButton
         required property var modelData
-        small: true
+        x: -walkthroughButton.inset
+        size: Theme.bodySmallSize
+        tint: Theme.accentColor
         label: "/study-walkthrough " + (walkthroughButton.modelData.length > 48 ? walkthroughButton.modelData.slice(0, 47) + "…" : walkthroughButton.modelData)
         onActivated: root.session.app.launch(Launch.skillArgv(Paths.studyDir, "Omvida · Walkthrough", "/study-walkthrough", walkthroughButton.modelData, ""), "Opened Claude Code")
       }
     }
   }
 
+  Rectangle { width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
+
   Row {
-    spacing: Theme.spaceMd
-    ActionButton {
+    x: -studyAgain.inset
+    spacing: Theme.spaceSm
+    PlainButton {
+      id: studyAgain
       objectName: "studyAgainButton"
-      filled: true
-      label: "Start another session"
-      hint: "Enter"
+      keys: "↵"
+      label: "start another session"
+      size: Theme.bodySmallSize
+      tint: Theme.accentColor
       onActivated: root.session.start()
     }
-    ActionButton { label: "Browse the wiki"; onActivated: root.session.app.setScreen("wiki") }
-    ActionButton { label: "Home"; onActivated: root.session.app.setScreen("home") }
+    PlainButton { label: "browse the wiki"; size: Theme.bodySmallSize; onActivated: root.session.app.setScreen("wiki") }
+    PlainButton { label: "home"; size: Theme.bodySmallSize; onActivated: root.session.app.setScreen("home") }
   }
 }
