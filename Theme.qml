@@ -245,6 +245,33 @@ QtObject {
     return Math.max(panelPadding, Math.round((areaWidth - pageWidth(areaWidth)) / 2))
   }
 
+  // ---- cards screen ----
+  // The deck explorer is a grid of cards under a flip-through stage, not
+  // prose, so it is set in a wider column than the reading one: the reading
+  // column held one card a row, and the user asked for a few. Up to five
+  // tiles of at least cardTileMinWidth (two across at the window's minimum
+  // width, four at the default size); past five, tiles of a line or two of
+  // text would only grow wider and emptier, so the column stops there.
+  readonly property int cardTileMinWidth: 260
+  readonly property int cardTileMaxColumns: 5
+  readonly property int cardsMeasure: 1600
+  // Every tile shows this many lines of its front, elided, so a row of tiles
+  // is a row of equal cards (Home's topic tiles) rather than a ragged wall.
+  readonly property int cardTileLines: 5
+  // Retention and the filters sit beside the stage while the stage keeps at
+  // least cardStageMinWidth; below that they go above it.
+  readonly property int cardsAsideWidth: 320
+  readonly property int cardStageMinWidth: 480
+  // How long a click on a tile takes to bring the stage into view.
+  readonly property int cardsScrollDuration: 220
+
+  function cardsWidth(areaWidth) {
+    return Math.max(0, Math.min(cardsMeasure, areaWidth - panelPadding * 2))
+  }
+  function cardsX(areaWidth) {
+    return Math.max(panelPadding, Math.round((areaWidth - cardsWidth(areaWidth)) / 2))
+  }
+
   // ---- motion ----------------------------------------------------------------------
   readonly property int flipDuration: 260
   readonly property int fadeDuration: 120

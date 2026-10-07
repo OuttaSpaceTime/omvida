@@ -5,10 +5,24 @@ import QtQuick.Controls
 import "Cards.js" as Cards
 import "Format.js" as Format
 
-// The whole deck, the viewer's /flashcards: retention over the last 30 days
-// with the calibration verdict (flashcard-mcp's, shown verbatim), a state bar
-// that filters, deck, tag and text filters, then the cards as a list or one
-// at a time.
+// The whole deck, the viewer's /flashcards, as one screen: a flip-through
+// stage at the top, retention over the last 30 days (flashcard-mcp's
+// calibration verdict, shown verbatim) and the filters beside it, and a grid
+// of the cards still to come below.
+//
+// The stage and the grid are one walk through the filtered cards. The
+// stage shows the current card; the grid shows only the cards after it, so
+// paging forward takes the next tile off the grid and onto the stage, and
+// paging back puts it back. Clicking a tile jumps there: that card becomes
+// current and every card before it counts as passed, exactly as if it had
+// been paged to. The other reading, "the clicked card goes on the stage and
+// the grid stays as it was", was rejected: the grid would then no longer be
+// what comes next, and → would lead somewhere the grid doesn't show.
+//
+// There used to be a List / Flip through switch; the user asked for one
+// screen. A change of filter starts the walk over at the new list's first
+// card; a refresh of the deck keeps the current card (FlipThrough's
+// keepPlace).
 Item {
   id: root
 
@@ -17,17 +31,145 @@ Item {
   property string stateFilter: ""
   property string deckFilter: ""
   property string tagFilter: ""
-  property string mode: "list"
   readonly property var calibration: app && app.store.overview ? app.store.overview.calibration : null
 
   readonly property var all: app ? app.store.allCards : []
-  readonly property var filtered: Cards.filterCards(all, { query: query, state: stateFilter, tag: tagFilter, deck: deckFilter })
+  readonly property var filters: ({ query: query, state: stateFilter, tag: tagFilter, deck: deckFilter })
+  readonly property var filtered: Cards.filterCards(all, filters)
+  readonly property bool filtering: query !== "" || stateFilter !== "" || tagFilter !== "" || deckFilter !== ""
   readonly property var stateList: Cards.stateCounts(all)
   readonly property int deckSize: Math.max(1, all.length)
   readonly property var tags: Cards.tagCounts(all).slice(0, 14)
   readonly property var decks: Cards.deckNames(all)
 
-  onVisibleChanged: if (visible && app) app.store.refreshDeck()
+  // Where the walk is: the stage's card is filtered[current], the grid
+  // shows filtered[current + 1 ...].
+  readonly property int current: flip.index
+  readonly property int upNextCount: Math.max(0, filtered.length - current - 1)
+
+  // ---- the window's status line (StatusLine.qml reads these) -----------------
+  readonly property string statusMode: "CARDS"
+  readonly property var statusSegments: {
+    var segs = [{ text: filtered.length ? (current + 1) + "/" + filtered.length : "0/0" }]
+    var summary = Cards.filterSummary(filters)
+    if (summary !== "") segs.push({ text: summary, color: Theme.accentColor })
+    return segs
+  }
+  // The stage's keys (FlipThrough's): Space or Enter flips, ← or h and → or
+  // l page. They live here, not on the stage, so the screen stays quiet.
+  readonly property var statusHints: [
+    { keys: "space", label: "flip", run: function() { root.flipStage() } },
+    { keys: "←", label: "back", run: function() { root.page(-1) } },
+    { keys: "→", label: "next", run: function() { root.page(1) } }
+  ]
+  readonly property var statusAlerts: filtered.length === 0 && all.length > 0
+    ? [{ text: "no card matches", color: Theme.orangeText, tip: "Clear the filters", run: function() { root.clearFilters() } }]
+    : []
+
+  function flipStage() { flip.flipped = !flip.flipped }
+  function page(d) { flip.move(d) }
+
+  function clearFilters() {
+    search.text = ""
+    stateFilter = ""
+    tagFilter = ""
+    deckFilter = ""
+  }
+
+  // A tile's caption: the deck only when there are several (one deck's
+  // name on every tile says nothing), then the card's first tags and lapses.
+  function tileCaption(card) {
+    var parts = []
+    if (decks.length > 1) parts.push(card.deck)
+    var tags = (card.tags || []).slice(0, 2).map(function(t) { return "#" + t }).join(" ")
+    if (tags !== "") parts.push(tags)
+    if (card.lapses > 0) parts.push(Format.plural(card.lapses, "lapse"))
+    return parts.join(" · ")
+  }
+
+  // A tile was clicked: its card goes on the stage, front up, and the page
+  // scrolls back up to the stage if it was scrolled past it.
+  function showCard(i) {
+    flip.show(i)
+    flip.forceActiveFocus()
+    var y = Math.max(0, stageColumn.mapToItem(flick.contentItem, 0, 0).y - Theme.spaceXl)
+    if (y < flick.contentY) {
+      scroll.to = y
+      scroll.restart()
+    }
+  }
+
+  // The stage takes the keyboard whenever the screen has it, so Space and
+  // the arrows work without a click first. The app hands the keyboard to its
+  // own root on every change of screen and when an overlay closes
+  // (omvida.qml), after this screen's visibility has changed; so the stage
+  // takes it a turn later, and again whenever the root gets it back while
+  // this screen is up. Nothing is lost by that: keys the stage doesn't use
+  // (Ctrl+K, /, Alt+←) travel up to the root as before.
+  function focusStage() { if (root.visible && root.filtered.length > 0) flip.forceActiveFocus() }
+  readonly property Item focusedItem: Window.activeFocusItem
+  onFocusedItemChanged: if (focusedItem && focusedItem.objectName === "contentRoot") focusStage()
+
+  onVisibleChanged: if (visible && app) { app.store.refreshDeck(); Qt.callLater(focusStage) }
+  onFiltersChanged: flip.forget()
+
+  // A quiet text control: a filter toggle (label, count, optional colour
+  // dot) or an action (label only). The rows of bordered chips and buttons
+  // this screen had were the loudest thing on it; the selected filter is
+  // marked by the accent and an underline instead.
+  component TextLink: Item {
+    id: link
+    property string label: ""
+    property int count: -1
+    property color dot: "transparent"
+    property bool selected: false
+    property bool active: true
+    // A trailing gap of the link's own: a Flow has one `spacing` for both
+    // across and down, and links in a Flow want their rows closer than
+    // their columns. Zero for a link set against a right edge, which must
+    // end on it.
+    property int gap: 0
+    signal activated()
+
+    implicitWidth: linkRow.implicitWidth + gap
+    implicitHeight: linkRow.implicitHeight + Theme.spaceXs
+    opacity: active ? 1 : 0.45
+
+    Row {
+      id: linkRow
+      anchors.verticalCenter: parent.verticalCenter
+      spacing: Theme.spaceXs
+      Rectangle {
+        visible: link.dot.a > 0
+        width: Theme.dotSize; height: Theme.dotSize; radius: Theme.dotSize / 2
+        color: link.dot
+        anchors.verticalCenter: parent.verticalCenter
+      }
+      UiText {
+        text: link.label
+        font.pixelSize: Theme.bodySmallSize
+        font.underline: link.selected
+        color: link.selected ? Theme.accentColor : (linkArea.containsMouse && link.active ? Theme.ink : Theme.secondaryInk)
+        anchors.verticalCenter: parent.verticalCenter
+      }
+      UiText {
+        visible: link.count >= 0
+        text: link.count
+        font.pixelSize: Theme.captionSize
+        color: Theme.faint
+        anchors.verticalCenter: parent.verticalCenter
+      }
+    }
+    MouseArea {
+      id: linkArea
+      anchors.fill: parent
+      anchors.margins: -Theme.chipHitSlop
+      hoverEnabled: true
+      enabled: link.active
+      cursorShape: Qt.PointingHandCursor
+      onClicked: link.activated()
+    }
+  }
 
   GlideFlickable {
     id: flick
@@ -35,11 +177,19 @@ Item {
     contentHeight: col.implicitHeight + Theme.space3xl * 2
     ScrollBar.vertical: ScrollBar {}
 
+    NumberAnimation {
+      id: scroll
+      target: flick
+      property: "contentY"
+      duration: Theme.cardsScrollDuration
+      easing.type: Easing.OutCubic
+    }
+
     Column {
       id: col
-      x: Theme.pageX(root.width)
+      x: Theme.cardsX(root.width)
       y: Theme.space3xl
-      width: Theme.pageWidth(root.width)
+      width: Theme.cardsWidth(root.width)
       spacing: Theme.spaceXl
 
       Column {
@@ -52,206 +202,386 @@ Item {
         }
       }
 
-      // ---- retention -----------------------------------------------------------
-      Rectangle {
-        objectName: "retentionPanel"
+      // ---- the stage, and retention and the filters beside it ------------------
+      // Side by side while the stage keeps its minimum width, with a hairline
+      // between them; below that the aside goes above the stage, so the stage
+      // stays next to the grid it walks through. Placed by x and y, never by
+      // switching anchors (layout rule 6).
+      Item {
+        id: top
         width: parent.width
-        height: retCol.implicitHeight + Theme.spaceLg * 2
-        color: Theme.fill
-        border.color: Theme.hairline
-        border.width: Theme.borderWidth
+        readonly property bool sideBySide: width >= Theme.cardStageMinWidth + Theme.space3xl + Theme.cardsAsideWidth
+        readonly property real stageWidth: sideBySide ? width - Theme.cardsAsideWidth - Theme.space3xl : width
+        height: sideBySide ? Math.max(stageColumn.implicitHeight, aside.implicitHeight)
+                           : aside.implicitHeight + Theme.space2xl + stageColumn.implicitHeight
+
         Column {
-          id: retCol
-          x: Theme.spaceLg; y: Theme.spaceLg
-          width: parent.width - Theme.spaceLg * 2
+          id: stageColumn
+          y: top.sideBySide ? 0 : aside.implicitHeight + Theme.space2xl
+          width: top.stageWidth
           spacing: Theme.spaceSm
-          Row {
-            spacing: Theme.spaceMd
-            UiText {
-              text: root.calibration && root.calibration.true_retention !== null ? Format.pct(root.calibration.true_retention) : "–"
-              font.pixelSize: Theme.displaySize
-              font.bold: true
-              color: root.calibration ? Theme.verdictColor(root.calibration.verdict) : Theme.faint
-            }
-            Column {
-              anchors.verticalCenter: parent.verticalCenter
-              UiText {
-                text: "true retention, last " + (root.calibration ? root.calibration.window_days : 30) + " days"
-                font.pixelSize: Theme.bodySmallSize; color: Theme.dim
-              }
-              UiText {
-                text: root.calibration ? root.calibration.verdict + (root.calibration.marginal ? " (marginal)" : "") + " · " + Format.plural(root.calibration.reviews, "review") : "loading…"
-                font.pixelSize: Theme.bodySmallSize
-                color: root.calibration ? Theme.verdictColor(root.calibration.verdict) : Theme.faint
-              }
-            }
-          }
-          UiText {
-            visible: root.calibration !== null && root.calibration.reasons.length > 0
+
+          Item {
             width: parent.width
-            wrapMode: Text.Wrap
-            text: root.calibration ? root.calibration.reasons.join(" ") : ""
-            font.pixelSize: Theme.captionSize; color: Theme.faint
+            height: Theme.smallControlHeight
+            SectionLabel {
+              objectName: "stagePosition"
+              anchors.verticalCenter: parent.verticalCenter
+              text: root.filtered.length ? "Card " + (root.current + 1) + " of " + root.filtered.length : "No cards"
+            }
+            Row {
+              anchors.right: parent.right
+              anchors.verticalCenter: parent.verticalCenter
+              spacing: Theme.spaceLg
+              visible: root.filtered.length > 0
+              TextLink { objectName: "cardsPrev"; label: "‹ back"; active: !flip.atStart; onActivated: root.page(-1) }
+              TextLink { objectName: "cardsNext"; label: "next ›"; active: !flip.atEnd; onActivated: root.page(1) }
+            }
           }
+
+          FlipThrough {
+            id: flip
+            objectName: "cardsStage"
+            visible: root.filtered.length > 0
+            width: parent.width
+            cards: root.filtered
+            wraps: false
+            controls: false
+            keepPlace: true
+            frontSize: Theme.cardFrontSize
+          }
+
           Row {
-            visible: root.calibration !== null
-            spacing: Theme.spaceLg
-            Repeater {
-              model: root.calibration ? [
-                { n: 1, label: "again", v: root.calibration.rating_mix.again },
-                { n: 2, label: "hard", v: root.calibration.rating_mix.hard },
-                { n: 3, label: "good", v: root.calibration.rating_mix.good },
-                { n: 4, label: "easy", v: root.calibration.rating_mix.easy }
-              ] : []
-              delegate: UiText {
-                id: mixItem
-                required property var modelData
-                text: mixItem.modelData.v + " " + mixItem.modelData.label
-                font.pixelSize: Theme.captionSize
-                color: Theme.ratingColor(mixItem.modelData.n)
+            visible: root.filtered.length === 0 && root.all.length > 0
+            spacing: Theme.spaceMd
+            UiText { text: "No card matches these filters."; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+            TextLink { label: "clear filters"; onActivated: root.clearFilters() }
+          }
+        }
+
+        Rectangle {
+          visible: top.sideBySide
+          x: top.stageWidth + Theme.space3xl / 2
+          width: Theme.hairlineWidth
+          height: top.height
+          color: Theme.hairline
+        }
+
+        Column {
+          id: aside
+          x: top.sideBySide ? top.stageWidth + Theme.space3xl : 0
+          width: top.sideBySide ? Theme.cardsAsideWidth : top.width
+          spacing: Theme.spaceXl
+
+          // ---- retention ----------------------------------------------------------
+          Column {
+            objectName: "retentionPanel"
+            width: parent.width
+            spacing: Theme.spaceSm
+            SectionLabel { text: "Retention" }
+            Row {
+              spacing: Theme.spaceMd
+              UiText {
+                text: root.calibration && root.calibration.true_retention !== null ? Format.pct(root.calibration.true_retention) : "–"
+                font.pixelSize: Theme.headingSize
+                font.bold: true
+                color: root.calibration ? Theme.verdictColor(root.calibration.verdict) : Theme.faint
+                anchors.verticalCenter: parent.verticalCenter
+              }
+              Column {
+                anchors.verticalCenter: parent.verticalCenter
+                UiText {
+                  text: "true retention, last " + (root.calibration ? root.calibration.window_days : 30) + " days"
+                  font.pixelSize: Theme.captionSize; color: Theme.dim
+                }
+                UiText {
+                  text: root.calibration ? root.calibration.verdict + (root.calibration.marginal ? " (marginal)" : "") + " · " + Format.plural(root.calibration.reviews, "review") : "loading…"
+                  font.pixelSize: Theme.captionSize
+                  color: root.calibration ? Theme.verdictColor(root.calibration.verdict) : Theme.faint
+                }
+              }
+            }
+            UiText {
+              visible: root.calibration !== null && root.calibration.reasons.length > 0
+              width: parent.width
+              wrapMode: Text.Wrap
+              text: root.calibration ? root.calibration.reasons.join(" ") : ""
+              font.pixelSize: Theme.captionSize; color: Theme.faint
+            }
+            Flow {
+              visible: root.calibration !== null
+              width: parent.width
+              spacing: Theme.spaceLg
+              Repeater {
+                model: root.calibration ? [
+                  { n: 1, label: "again", v: root.calibration.rating_mix.again },
+                  { n: 2, label: "hard", v: root.calibration.rating_mix.hard },
+                  { n: 3, label: "good", v: root.calibration.rating_mix.good },
+                  { n: 4, label: "easy", v: root.calibration.rating_mix.easy }
+                ] : []
+                delegate: UiText {
+                  id: mixItem
+                  required property var modelData
+                  text: mixItem.modelData.v + " " + mixItem.modelData.label
+                  font.pixelSize: Theme.captionSize
+                  color: Theme.ratingColor(mixItem.modelData.n)
+                }
+              }
+            }
+          }
+
+          // ---- filters -------------------------------------------------------------
+          Column {
+            width: parent.width
+            spacing: Theme.spaceSm
+
+            Item {
+              width: parent.width
+              height: Theme.smallControlHeight
+              SectionLabel { text: "Filter"; anchors.verticalCenter: parent.verticalCenter }
+              Row {
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: Theme.spaceMd
+                TextLink { objectName: "clearFilters"; visible: root.filtering; label: "clear"; onActivated: root.clearFilters() }
+                UiText {
+                  objectName: "filteredCount"
+                  text: Format.plural(root.filtered.length, "card")
+                  font.pixelSize: Theme.captionSize; color: Theme.dim
+                  anchors.verticalCenter: parent.verticalCenter
+                }
+              }
+            }
+
+            // An underline, not a box: the field is one more quiet line.
+            // No side padding, so its text starts on the column's edge.
+            TextField {
+              id: search
+              objectName: "cardFilter"
+              width: parent.width
+              leftPadding: 0
+              rightPadding: 0
+              placeholderText: "filter by text"
+              font.family: Theme.fontFamily
+              font.pixelSize: Theme.bodySmallSize
+              color: Theme.ink
+              placeholderTextColor: Theme.faint
+              background: Item {
+                Rectangle {
+                  y: parent.height - height
+                  width: parent.width
+                  height: Theme.hairlineWidth
+                  color: search.activeFocus ? Theme.accentColor : Theme.border
+                }
+              }
+              onTextChanged: root.query = text
+              Keys.onEscapePressed: { text = ""; root.app.contentRootFocus() }
+            }
+
+            // The state bar: click a state to filter.
+            Row {
+              width: parent.width
+              topPadding: Theme.spaceSm
+              Repeater {
+                model: root.stateList
+                delegate: Rectangle {
+                  id: stateSegment
+                  required property var modelData
+                  objectName: "stateBar:" + stateSegment.modelData.state
+                  width: aside.width * stateSegment.modelData.count / root.deckSize
+                  height: Theme.statBarHeight
+                  color: Theme.stateColor(stateSegment.modelData.state)
+                  opacity: root.stateFilter === "" || root.stateFilter === stateSegment.modelData.state ? 1 : 0.3
+                  MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.stateFilter = root.stateFilter === stateSegment.modelData.state ? "" : stateSegment.modelData.state }
+                }
+              }
+            }
+            Flow {
+              width: parent.width
+              spacing: Theme.spaceSm
+              Repeater {
+                model: root.stateList
+                delegate: TextLink {
+                  id: stateLink
+                  required property var modelData
+                  gap: Theme.spaceSm
+                  objectName: "stateChip:" + stateLink.modelData.state
+                  label: stateLink.modelData.state
+                  count: stateLink.modelData.count
+                  dot: Theme.stateColor(stateLink.modelData.state)
+                  selected: root.stateFilter === stateLink.modelData.state
+                  onActivated: root.stateFilter = selected ? "" : stateLink.modelData.state
+                }
+              }
+            }
+            Flow {
+              width: parent.width
+              spacing: Theme.spaceSm
+              visible: root.decks.length > 1
+              Repeater {
+                model: root.decks
+                delegate: TextLink {
+                  id: deckLink
+                  required property var modelData
+                  gap: Theme.spaceSm
+                  label: deckLink.modelData
+                  selected: root.deckFilter === deckLink.modelData
+                  onActivated: root.deckFilter = selected ? "" : deckLink.modelData
+                }
+              }
+            }
+            Flow {
+              width: parent.width
+              spacing: Theme.spaceSm
+              Repeater {
+                model: root.tags
+                delegate: TextLink {
+                  id: tagLink
+                  required property var modelData
+                  gap: Theme.spaceSm
+                  objectName: "tagChip:" + tagLink.modelData.tag
+                  label: "#" + tagLink.modelData.tag
+                  count: tagLink.modelData.count
+                  selected: root.tagFilter === tagLink.modelData.tag
+                  onActivated: root.tagFilter = selected ? "" : tagLink.modelData.tag
+                }
               }
             }
           }
         }
       }
 
-      // ---- the state bar: click a state to filter ----------------------------------------
+      // ---- the grid: what comes after the stage's card ----------------------------
       Column {
         width: parent.width
-        spacing: Theme.spaceSm
-        Row {
+        spacing: Theme.spaceMd
+        visible: root.filtered.length > 0
+
+        Item {
           width: parent.width
+          height: Theme.smallControlHeight
+          SectionLabel {
+            objectName: "upNext"
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.upNextCount > 0
+              ? "Next up · " + root.upNextCount + (root.current > 0 ? " · " + root.current + " passed" : "")
+              : "That was the last card"
+          }
+          TextLink {
+            objectName: "cardsRestart"
+            visible: root.current > 0
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            label: "from the start"
+            onActivated: root.showCard(0)
+          }
+        }
+
+        // Every tile as tall as a full one (its caption and cardTileLines
+        // lines of front), measured off this unseen copy as Home's topic
+        // tiles are, so it follows the theme's type without a typed height.
+        // Positioners skip an invisible item, so it takes no room.
+        Column {
+          id: fullTile
+          visible: false
+          spacing: Theme.spaceXs
+          UiText { text: "X"; font.pixelSize: Theme.captionSize }
+          UiText {
+            textFormat: Text.PlainText
+            text: new Array(Theme.cardTileLines).fill("X").join("\n")
+            font.pixelSize: Theme.bodySmallSize
+            lineHeight: Theme.proseLineHeight
+          }
+        }
+
+        Grid {
+          id: grid
+          width: parent.width
+          columnSpacing: Theme.spaceXl
+          rowSpacing: Theme.spaceSm
+          columns: Math.max(1, Math.min(Theme.cardTileMaxColumns, Math.floor((width + columnSpacing) / (Theme.cardTileMinWidth + columnSpacing))))
+          readonly property real cellWidth: (width - columnSpacing * (columns - 1)) / columns
+
+          // One delegate per filtered card, built once per list; a passed
+          // card's tile is hidden, not removed, and the Grid closes the gap.
+          // A model sliced at the current card was the obvious way, and
+          // rejected: a JS array model is rebuilt whole on every change, so
+          // each → would have rebuilt some 350 tiles. Tiles are plain text
+          // (Cards.plainText) rather than the old rich-text CardTile, which
+          // is what makes building the whole deck at once cheap enough that
+          // the list no longer pages 60 at a time.
           Repeater {
-            model: root.stateList
-            delegate: Rectangle {
-              id: stateSegment
+            model: root.visible ? root.filtered : []
+            delegate: Item {
+              id: tile
               required property var modelData
-              objectName: "stateBar:" + stateSegment.modelData.state
-              width: col.width * stateSegment.modelData.count / root.deckSize
-              height: Theme.statBarHeight * 2
-              color: Theme.stateColor(stateSegment.modelData.state)
-              opacity: root.stateFilter === "" || root.stateFilter === stateSegment.modelData.state ? 1 : 0.3
-              MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.stateFilter = root.stateFilter === stateSegment.modelData.state ? "" : stateSegment.modelData.state }
+              required property int index
+              objectName: "cardTile:" + tile.modelData.id
+              visible: tile.index > root.current
+              width: grid.cellWidth
+              height: fullTile.implicitHeight + Theme.spaceMd * 2
+
+              // The hover fill bleeds into the column gap; the text keeps to
+              // the column's edge (layout rule 3).
+              Rectangle {
+                x: -Theme.spaceSm
+                width: parent.width + Theme.spaceSm * 2
+                height: parent.height
+                color: tileArea.containsMouse ? Theme.hoverFill : "transparent"
+              }
+              Rectangle { width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
+
+              Column {
+                y: Theme.spaceMd
+                width: parent.width
+                spacing: Theme.spaceXs
+                Item {
+                  width: parent.width
+                  height: tileCaption.implicitHeight
+                  Rectangle {
+                    id: tileDot
+                    width: Theme.dotSize; height: Theme.dotSize; radius: Theme.dotSize / 2
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Theme.stateColor(Cards.stateOf(tile.modelData))
+                  }
+                  UiText {
+                    id: tileCaption
+                    x: tileDot.width + Theme.spaceSm
+                    width: parent.width - x - tileNumber.implicitWidth - Theme.spaceSm
+                    elide: Text.ElideRight
+                    text: root.tileCaption(tile.modelData)
+                    font.pixelSize: Theme.captionSize
+                    color: Theme.faint
+                  }
+                  UiText {
+                    id: tileNumber
+                    anchors.right: parent.right
+                    text: tile.index + 1
+                    font.pixelSize: Theme.captionSize
+                    color: Theme.faint
+                  }
+                }
+                UiText {
+                  width: parent.width
+                  textFormat: Text.PlainText
+                  text: Cards.plainText(tile.modelData.front)
+                  font.pixelSize: Theme.bodySmallSize
+                  lineHeight: Theme.proseLineHeight
+                  wrapMode: Text.Wrap
+                  maximumLineCount: Theme.cardTileLines
+                  elide: Text.ElideRight
+                }
+              }
+
+              MouseArea {
+                id: tileArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.showCard(tile.index)
+              }
             }
           }
-        }
-        Flow {
-          width: parent.width
-          spacing: Theme.spaceSm
-          Repeater {
-            model: root.stateList
-            delegate: Chip {
-              id: stateChipItem
-              required property var modelData
-              objectName: "stateChip:" + stateChipItem.modelData.state
-              label: stateChipItem.modelData.state
-              count: stateChipItem.modelData.count
-              dot: Theme.stateColor(stateChipItem.modelData.state)
-              selected: root.stateFilter === stateChipItem.modelData.state
-              onActivated: root.stateFilter = selected ? "" : stateChipItem.modelData.state
-            }
-          }
-        }
-      }
-
-      // ---- filters --------------------------------------------------------------------------
-      Column {
-        width: parent.width
-        spacing: Theme.spaceSm
-        TextField {
-          id: search
-          objectName: "cardFilter"
-          width: parent.width
-          placeholderText: "Filter by text"
-          font.family: Theme.fontFamily
-          font.pixelSize: Theme.bodySize
-          color: Theme.ink
-          placeholderTextColor: Theme.faint
-          background: Rectangle { color: Theme.fill; border.color: search.activeFocus ? Theme.accentColor : Theme.hairline; border.width: Theme.borderWidth }
-          onTextChanged: root.query = text
-          Keys.onEscapePressed: { text = ""; root.app.contentRootFocus() }
-        }
-        Flow {
-          width: parent.width
-          spacing: Theme.spaceSm
-          visible: root.decks.length > 1
-          Repeater {
-            model: root.decks
-            delegate: Chip {
-              id: deckChip
-              required property var modelData
-              label: deckChip.modelData
-              selected: root.deckFilter === deckChip.modelData
-              onActivated: root.deckFilter = selected ? "" : deckChip.modelData
-            }
-          }
-        }
-        Flow {
-          width: parent.width
-          spacing: Theme.spaceSm
-          Repeater {
-            model: root.tags
-            delegate: Chip {
-              id: tagChipItem
-              required property var modelData
-              objectName: "tagChip:" + tagChipItem.modelData.tag
-              label: "#" + tagChipItem.modelData.tag
-              count: tagChipItem.modelData.count
-              selected: root.tagFilter === tagChipItem.modelData.tag
-              onActivated: root.tagFilter = selected ? "" : tagChipItem.modelData.tag
-            }
-          }
-        }
-      }
-
-      Row {
-        spacing: Theme.spaceSm
-        UiText {
-          objectName: "filteredCount"
-          text: Format.plural(root.filtered.length, "card")
-          font.pixelSize: Theme.bodySmallSize; color: Theme.dim
-          anchors.verticalCenter: parent.verticalCenter
-        }
-        Item { width: Theme.spaceLg; height: Theme.hairlineWidth }
-        Chip { label: "List"; selected: root.mode === "list"; onActivated: root.mode = "list" }
-        Chip { objectName: "cardsFlipMode"; label: "Flip through"; selected: root.mode === "flip"; onActivated: { root.mode = "flip"; flip.forceActiveFocus() } }
-        ActionButton {
-          visible: root.query !== "" || root.stateFilter !== "" || root.tagFilter !== "" || root.deckFilter !== ""
-          small: true
-          label: "Clear filters"
-          onActivated: { search.text = ""; root.stateFilter = ""; root.tagFilter = ""; root.deckFilter = "" }
-        }
-      }
-
-      FlipThrough {
-        id: flip
-        visible: root.mode === "flip"
-        width: parent.width
-        height: Theme.cardFaceMinHeight * 2
-        cards: root.mode === "flip" ? root.filtered : []
-      }
-
-      Column {
-        visible: root.mode === "list"
-        width: parent.width
-        spacing: Theme.spaceSm
-        Repeater {
-          // Long lists are paged: a Column of 350 rich-text tiles is slow to build.
-          model: root.visible && root.mode === "list" ? root.filtered.slice(0, shown.count) : []
-          delegate: CardTile {
-            id: cardItem
-            required property var modelData
-            width: col.width
-            card: cardItem.modelData
-          }
-        }
-        ActionButton {
-          id: shown
-          property int count: 60
-          visible: root.filtered.length > count
-          small: true
-          label: "Show more (" + (root.filtered.length - count) + " left)"
-          onActivated: count += 60
         }
       }
     }

@@ -43,7 +43,9 @@ related to what you studied, and a `## Session N — Study` entry in the study r
   sections, outgoing and linked-from) or the whole tree; the page's local graph; its flashcards
   as an overview or flip-through.
 - **Cards**: the whole deck with true retention and the calibration verdict, a state bar that
-  filters, deck, tag and text filters, list or flip-through.
+  filters, deck, tag and text filters. One card on a stage at the top (Space or Enter flips,
+  ←/→ or h/l page), the cards after it in a grid below: paging forward takes cards off the
+  grid, paging back puts them back, and clicking a tile jumps there.
 - **Graph**: every page and link, or two hops around the open page.
 - **Search** (Ctrl+K or `/`): titles as you type, the wiki's text through qmd, the cards, and
   **Ask Claude** (Ctrl+Enter), which answers under the study repo's Query Protocol (memory

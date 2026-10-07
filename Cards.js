@@ -64,3 +64,40 @@ function cardsForPage(page, allCards) {
     return (c.tags || []).some(function(t) { return tags.indexOf(t.toLowerCase()) !== -1 })
   }).slice(0, 12)
 }
+
+// A card's text with its markup gone, on one line: the grid's tiles show a
+// few lines of the front, and Qt only elides plain text (rich text runs on
+// past maximumLineCount), so a tile draws this rather than the HTML. Code
+// loses its shading here; the app's face is monospace, so it still reads as
+// code, and the stage above the grid shows the card as authored. &amp; is
+// decoded last, so "&amp;lt;" stays the literal text "&lt;".
+function plainText(html) {
+  return String(html || "")
+    .replace(/<br\s*\/?>|<\/(p|div|li|pre|tr|h[1-6])>/gi, " ")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"").replace(/&#39;|&apos;/g, "'")
+    .replace(/&#(\d+);/g, function(m, n) { return String.fromCharCode(parseInt(n, 10)) })
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ").trim()
+}
+
+// The active filters in a few words ("review · #http · “etag”"), "" for
+// none: the status line's segment for the deck explorer.
+function filterSummary(filters) {
+  var parts = []
+  if (filters.state) parts.push(filters.state)
+  if (filters.deck) parts.push(filters.deck)
+  if (filters.tag) parts.push("#" + filters.tag)
+  var q = String(filters.query || "").trim()
+  if (q) parts.push("“" + q + "”")
+  return parts.join(" · ")
+}
+
+// Where a card is in a list, by id, or -1: the flip-through keeps its place
+// across a refresh of the deck, which hands it a new list of the same cards.
+function indexOfId(cards, id) {
+  if (!id) return -1
+  for (var i = 0; i < cards.length; i++) if (cards[i].id === id) return i
+  return -1
+}
