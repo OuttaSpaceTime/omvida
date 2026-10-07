@@ -6,9 +6,10 @@ import qs.Commons
 import qs.Ui
 import "Model.js" as Model
 
-// Omvida's bar icon: the Omvida mark (an alpha in a maze) and the number of
-// reviews due. Left click opens the progress panel, right click starts a
-// study session in Omvida, middle click refreshes.
+// Omvida's bar icon: the alpha of the Omvida mark, alone. No count beside
+// it: the bar stays quiet, and the panel says how many are due. Left click
+// opens the progress panel, right click starts a study session in Omvida,
+// middle click refreshes.
 //
 // The figures come from `bin/omvida-overview` in the Omvida checkout, which
 // prints flashcard-mcp's overview: the same numbers, from the same code, as
@@ -30,7 +31,6 @@ BarWidget {
   readonly property string omvidaRoot: Model.expandHome(setting("omvidaRoot", "~/Code/omvida"), home)
   readonly property int refreshMs: Math.max(60, Number(setting("refreshIntervalSec", 600))) * 1000
   readonly property color foreground: bar ? bar.foreground : Color.foreground
-  readonly property string badge: Model.badge(overview)
 
   function refresh() {
     if (!overviewProc.running) overviewProc.running = true
@@ -122,16 +122,17 @@ BarWidget {
       anchors.centerIn: parent
       spacing: Style.space(5)
 
-      // The mark is black on transparent, tinted to the bar's text colour,
-      // the way ompom.bar tints Omvision's.
+      // Black on transparent, tinted to the bar's text colour, the way
+      // ompom.bar tints Omvision's. As tall as the bar's body text: the glyph
+      // is cropped tight, so a title-sized box drew it larger than the text.
       Item {
-        width: Style.font.title
-        height: Style.font.title
+        width: Style.font.body
+        height: Style.font.body
         anchors.verticalCenter: parent.verticalCenter
         Image {
           id: markSvg
           anchors.fill: parent
-          source: Qt.resolvedUrl("icons/omvida-mark.svg")
+          source: Qt.resolvedUrl("icons/omvida-alpha.svg")
           // Uncached: a plugin reload after the mark changes must draw the new file.
           cache: false
           sourceSize.width: parent.width
@@ -143,17 +144,9 @@ BarWidget {
           anchors.fill: parent
           source: markSvg
           colorization: 1.0
-          colorizationColor: root.badge !== "" ? Color.bar.text : root.foreground
+          colorizationColor: root.foreground
           brightness: 1.0
         }
-      }
-      Text {
-        visible: root.badge !== ""
-        anchors.verticalCenter: parent.verticalCenter
-        text: root.badge
-        color: root.overview && root.overview.pressure.verdict !== "ok" ? Color.urgent : Color.bar.text
-        font.family: root.bar ? root.bar.fontFamily : Style.font.family
-        font.pixelSize: Style.font.body
       }
     }
 

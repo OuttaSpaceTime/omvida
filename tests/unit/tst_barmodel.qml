@@ -20,13 +20,6 @@ TestCase {
     return o
   }
 
-  function test_badge_counts_reviews_only() {
-    compare(M.badge(overview(35, "warn")), "35")
-    compare(M.badge(overview(0, "ok")), "")
-    compare(M.badge(overview(150, "pause")), "99+")
-    compare(M.badge(null), "")
-  }
-
   function test_clearance() {
     compare(M.clearance(overview(35, "warn")), "Review 16 to leave warn")
     compare(M.clearance(overview(60, "pause")), "Review 11 to leave pause, 41 to leave warn")

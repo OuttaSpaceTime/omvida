@@ -4,7 +4,7 @@
   "name": "Omvida",
   "version": "1.0.0",
   "author": "outtaspacetime",
-  "description": "Study bar icon: reviews due as a badge, and a panel with your learning progress and the cards waiting. Click opens the panel, right-click starts a study session in Omvida.",
+  "description": "Study bar icon (the Omvida alpha), and a panel with your learning progress and the cards waiting. Click opens the panel, right-click starts a study session in Omvida.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "Widget.qml"
