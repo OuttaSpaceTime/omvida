@@ -4,6 +4,18 @@ import QtQuick
 OmvidaTest {
   name: "wiki"
 
+  // Every topic tile on Home is as tall as a full one (name and three
+  // pages), whatever it holds. The fixture's topics have two pages each, so a
+  // tile sized to its own text has only its padding around the text.
+  function test_topic_tiles_share_a_full_tile_height() {
+    app.setScreen("home")
+    var web = item("topic:web"), security = item("topic:security")
+    compare(web.height, security.height)
+    var text = web.children[0]
+    verify(web.height - text.implicitHeight > text.y * 2,
+           "the tile leaves room for a third page: " + web.height + " vs text " + text.implicitHeight)
+  }
+
   function test_open_a_page_and_follow_a_wikilink() {
     app.openPage("web/http-caching", "")
     tryVerify(function() { return wiki.page !== null && wiki.loadedPath === "web/http-caching" }, 8000)

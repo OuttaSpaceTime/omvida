@@ -157,6 +157,23 @@ Item {
         width: parent.width
         spacing: Theme.spaceSm
         SectionLabel { text: "Topics" }
+        // Every tile as tall as a full one (its name and three pages), so the
+        // grid reads as rows of equal cards, not a ragged wall. Measured off
+        // this unseen copy of a full tile rather than taken as the tallest
+        // tile shown: that would leave every tile short whenever no topic
+        // happened to have three pages, and follows the theme's font sizes
+        // without a typed height. Positioners skip an invisible item, so it
+        // takes no room in the column.
+        Column {
+          id: fullTile
+          visible: false
+          spacing: Theme.spaceXs
+          UiText { text: "Topic" }
+          Repeater {
+            model: 3
+            delegate: UiText { text: "Page"; font.pixelSize: Theme.captionSize }
+          }
+        }
         Grid {
           id: grid
           width: parent.width
@@ -170,7 +187,7 @@ Item {
               required property var modelData
               objectName: "topic:" + topicTile.modelData.path
               width: grid.cellWidth
-              height: tcol.implicitHeight + Theme.spaceMd * 2
+              height: fullTile.implicitHeight + Theme.spaceMd * 2
               color: tArea.containsMouse ? Theme.hoverFill : Theme.fill
               border.color: Theme.hairline
               border.width: Theme.borderWidth
