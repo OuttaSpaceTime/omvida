@@ -59,8 +59,9 @@ and stops.
 | `nav:<screen>` | the rail's icons |
 | `searchBox`, `addButton`, `backButton` | the top bar |
 | `add:flashcard`, `add:wiki`, `topicField`, `topicSubmit` | the Add menu and its dialog |
-| `answerField`, `positionLine`, `cardFront`, `cardBack`, `suggestionBox`, `suggestionLine`, `suggestionReason`, `lastResult` | the study card |
-| `rate:<1-4>`, `revealButton`, `discussButton`, `skipButton`, `endSessionButton`, `startSessionButton`, `studyAgainButton` | the study controls |
+| `statusLine`, `statusMode`, `statusSegment:<i>`, `statusHint:<label>`, `statusAlert:<i>` | the status line (each has a plain `text`; hints are buttons: `statusHint:reveal`, `statusHint:skip`, `statusHint:end`...) |
+| `answerField`, `cardFront`, `cardRecap`, `cardBack`, `suggestionBox`, `suggestionLine` (`verdict`, `reason`), `fixCardButton`, `lastResult` | the study card |
+| `rate:<1-4>` (`suggested`), `startSessionButton`, `studyAgainButton` | the study controls |
 | `leechRewrite`, `leechSplit`, `leechDrop`, `leechDropConfirm`, `leechKeep`, `leechContinue` | a leech |
 | `summary`, `summaryLine`, `related:<path>` | the session summary |
 | `pageTitle`, `wikiFlick`, `pageCardsButton`, `pageAddCards`, `pageDeeper`, `heading:<anchor>` | a wiki page |

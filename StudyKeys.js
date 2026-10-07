@@ -15,6 +15,13 @@
 //                 "I knew it" or "no idea" needs no typing.
 //   Ctrl+D        discuss the card in Claude Code.
 //   Ctrl+S        skip the card. It stays due.
+//   Esc           end the session: what was rated still counts, and the
+//                 summary follows. The status line shows it as the way out
+//                 (StatusLine.qml), so it is a key too. Overlays take Esc
+//                 first: an open palette or dialog has the keyboard, so the
+//                 press closes it and never reaches the answer box. The
+//                 Add menu is the exception: it never takes the keyboard,
+//                 so Esc under it still ends the session.
 // Plain Enter types a newline: answers are often code.
 //
 // Shift+digit is matched on the physical key, not the character. Shift+1
@@ -26,7 +33,7 @@
 // scan code, so the shifted characters of the common layouts are a fallback.
 
 var KEY = {
-  Return: 0x01000004, Enter: 0x01000005,
+  Return: 0x01000004, Enter: 0x01000005, Escape: 0x01000000,
   K1: 0x31, K2: 0x32, K3: 0x33, K4: 0x34,
   Exclam: 0x21, At: 0x40, QuoteDbl: 0x22, NumberSign: 0x23, Section: 0xa7, Dollar: 0x24,
   D: 0x44, S: 0x53
@@ -61,7 +68,7 @@ function isEnter(key) { return key === KEY.Return || key === KEY.Enter }
 //   accept         submit the suggestion now
 //   acceptLater    the grader is still running: submit its rating on arrival
 //   submit         submit `rating`
-//   discuss, skip
+//   discuss, skip, end
 function action(state, key, modifiers, scanCode) {
   var phase = state.phase
   var active = phase === "answering" || phase === "grading" || phase === "revealed"
@@ -73,6 +80,7 @@ function action(state, key, modifiers, scanCode) {
   var ctrl = !!(modifiers & MOD.Control), alt = !!(modifiers & MOD.Alt), shift = !!(modifiers & MOD.Shift)
   if (ctrl && !alt && !shift && key === KEY.D) return { action: "discuss" }
   if (ctrl && !alt && !shift && key === KEY.S) return { action: "skip" }
+  if (key === KEY.Escape && !ctrl && !alt && !shift && !(modifiers & MOD.Meta)) return { action: "end" }
 
   if (!isEnter(key)) return null
   if (shift && !ctrl && !alt) {

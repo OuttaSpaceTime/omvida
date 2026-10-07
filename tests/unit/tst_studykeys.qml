@@ -55,6 +55,13 @@ TestCase {
     compare(K.action(st("answering"), Qt.Key_S, Qt.ControlModifier, 0), { action: "skip" })
   }
 
+  function test_escape_ends_the_session() {
+    compare(K.action(st("answering"), Qt.Key_Escape, Qt.NoModifier, 0), { action: "end" })
+    compare(K.action(st("grading"), Qt.Key_Escape, Qt.NoModifier, 0), { action: "end" })
+    compare(K.action(st("revealed"), Qt.Key_Escape, Qt.NoModifier, 0), { action: "end" })
+    compare(K.action(st("answering"), Qt.Key_Escape, Qt.ShiftModifier, 0), null)
+  }
+
   function test_nothing_fires_outside_a_card() {
     compare(K.action(st("submitting"), Qt.Key_Return, Qt.ShiftModifier, 0), null)
     compare(K.action(st("blocked"), Qt.Key_Exclam, Qt.ShiftModifier, 10), null)

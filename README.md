@@ -23,11 +23,14 @@ A card's front, and the answer box already focused. Type an answer, or don't.
 | **Shift+1–4** | Again / Hard / Good / Easy, any time, overriding the suggestion. Before the reveal it rates without grading |
 | **Ctrl+D** | discuss the card in Claude Code (kitty), Socratic mode, with your answer and the suggestion |
 | **Ctrl+S** | skip; the card stays due |
+| **Esc** | end the session; what was rated counts, and the summary follows |
 | Enter | a newline: answers are often code |
 
 Shift+digit is matched on the physical key, so it works on US and German layouts alike
 (`StudyKeys.js` explains why). The grader's rubric is `/study`'s, fixed; it can also flag a
-card's own problem ("asks two things"), with a **Fix in Claude** button.
+card's own problem ("asks two things"), with a **fix in claude** action. The keys that work
+at each moment are on the status line at the bottom of the window, and each is also a button
+there; after the reveal the four ratings are keycaps under the card.
 
 Around the loop it keeps what `/study` does: Anki sync before (phone reviews first) and after,
 the pressure and calibration verdicts, new cards held back under pressure, the leech block

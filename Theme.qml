@@ -229,6 +229,18 @@ QtObject {
   readonly property int menuWidth: 220
   readonly property int chipHitSlop: spaceXs
 
+  // ---- study screen / status line ----
+  // The window's bottom line, as an editor's (StatusLine.qml): tall enough
+  // for a caption with room around it, quieter than a control row.
+  readonly property int statusLineHeight: 36
+  // The four rating keycaps after a reveal: the one row of buttons Study
+  // still has, so a little taller than a control, and the suggested one
+  // outlined at twice the hairline in its rating's colour.
+  readonly property int keycapHeight: 40
+  readonly property int keycapSuggestedBorder: 2
+  // The front once revealed: a recap, cut to a few lines.
+  readonly property int recapLines: 3
+
   // The reading column: the viewer's max-w-3xl, in characters of the body
   // font so it follows the type size.
   readonly property int readingColumns: 82

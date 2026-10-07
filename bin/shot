@@ -10,12 +10,13 @@
 #
 #   -s  home | study | wiki | cards | graph | wiki:<path> | folder:<path>
 #   -a  search[:text] | ask[:question] | add[:flashcard|wiki] | addmenu |
-#       study | answer[:text] | pagecards
+#       study | answer[:text] | pagecards | done (rate all Good: the summary) |
+#       leech (a blocked session) | syncfail (a card up, the sync's failure note)
 #   -w/-h size, -f frames (ms, comma-separated), -t settle ms, -o out dir
 #   -R  your real wiki and deck instead of the fixtures, to see the layout at
 #       full size. Read-only by construction: it refuses the Study screen and
-#       every action that could write (study, answer, ask, add), and the fake
-#       claude and kitty stay first on PATH.
+#       every action that could write (study, answer, ask, add, done, leech,
+#       syncfail), and the fake claude and kitty stay first on PATH.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 screen=home width=1440 height=900 action="" frames=0 settle=2500
@@ -26,7 +27,7 @@ while getopts "s:w:h:a:f:t:o:R" opt; do
     R) real=1 ;;
     s) screen=$OPTARG ;; w) width=$OPTARG ;; h) height=$OPTARG ;; a) action=$OPTARG ;;
     f) frames=$OPTARG ;; t) settle=$OPTARG ;; o) out=$OPTARG ;;
-    *) sed -n '2,17p' "$0"; exit 2 ;;
+    *) sed -n '2,19p' "$0"; exit 2 ;;
   esac
 done
 mkdir -p "$out"
@@ -36,7 +37,7 @@ export QT_QPA_PLATFORM=offscreen OMVIDA_SHOT_DIR="$out" OMVIDA_SHOT_SCREEN="$scr
 launcher=("$ROOT/bin/omvida")
 if [ "$real" = 1 ]; then
   case "$screen" in study) echo "bin/shot: -R refuses the Study screen (it starts a session)" >&2; exit 2 ;; esac
-  case "${action%%:*}" in study|answer|ask|add) echo "bin/shot: -R refuses -a $action (it could write)" >&2; exit 2 ;; esac
+  case "${action%%:*}" in study|answer|ask|add|done|leech|syncfail) echo "bin/shot: -R refuses -a $action (it could write)" >&2; exit 2 ;; esac
   export PATH="$ROOT/tests/fixtures/bin:$PATH" OMVIDA_TEST_OUT="${TMPDIR:-/tmp}"
 else
   box="$(mktemp -d "${TMPDIR:-/tmp}/omvida-shot.XXXXXX")"

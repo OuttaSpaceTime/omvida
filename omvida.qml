@@ -279,9 +279,14 @@ ShellRoot {
         anchors.left: sidebar.right
         anchors.right: parent.right
         anchors.top: topBar.bottom
-        anchors.bottom: parent.bottom
+        anchors.bottom: statusLine.top
+
+        // The screen on show, for the status line.
+        readonly property Item current: ({ home: homeScreen, study: studyScreen, wiki: wikiScreen,
+                                           cards: cardsScreen, graph: graphScreen })[root.currentScreen] || null
 
         HomeScreen {
+          id: homeScreen
           anchors.fill: parent
           visible: root.currentScreen === "home"
           app: root
@@ -306,10 +311,24 @@ ShellRoot {
           app: root
         }
         GraphScreen {
+          id: graphScreen
           anchors.fill: parent
           visible: root.currentScreen === "graph"
           app: root
         }
+      }
+
+      // The bottom line, as an editor's: each screen's mode, place, keys and
+      // alerts (StatusLine.qml has the contract the screens fill in).
+      StatusLine {
+        id: statusLine
+        objectName: "statusLine"
+        anchors.left: sidebar.right
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: Theme.statusLineHeight
+        screen: screens.current
+        screenName: root.currentScreen
       }
 
       AddMenu {
@@ -342,7 +361,7 @@ ShellRoot {
       Toast {
         id: toastItem
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
+        anchors.bottom: statusLine.top
         anchors.bottomMargin: Theme.spaceXl
       }
     }

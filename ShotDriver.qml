@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 // Screenshot driver, loaded only when OMVIDA_SHOT_DIR is set (bin/shot):
 // puts the real app in one state, grabs PNGs and quits. Offscreen, against
@@ -54,6 +55,60 @@ Rectangle {
     else if (a === "study") study.start()
     else if (a === "answer") { study.start(); answerLater.text = arg || "It stays fresh for sixty seconds"; answerLater.start() }
     else if (a === "pagecards") driver.wiki.openPageCards()
+    else if (a === "done") { study.start(); rateAll.start() }
+    else if (a === "syncfail") { study.start(); syncFailLater.start() }
+    else if (a === "leech") leechDeck.running = (Quickshell.env("OMVIDA_SANDBOX") || "") !== ""
+  }
+
+  // Rating every card Good until the queue is empty: the summary.
+  Timer {
+    id: rateAll
+    interval: 100
+    repeat: true
+    onTriggered: {
+      var study = driver.study
+      if (study.phase === "done") stop()
+      else if (study.phase === "answering") study.submit(3)
+    }
+  }
+
+  // The note a failed Anki sync leaves, once a card is up: the fixtures
+  // have no sync script, so a real failure cannot happen here.
+  Timer {
+    id: syncFailLater
+    interval: 200
+    repeat: true
+    onTriggered: {
+      if (driver.study.phase !== "answering") return
+      stop()
+      driver.study.syncNote = "Anki sync failed: offline (fixture)"
+    }
+  }
+
+  // A leech, as tests/app/tst_leech.qml makes one: the CSRF card at six
+  // lapses and the only one due, rated, so the next card is blocked. Only
+  // ever on the sandbox's deck (bin/sandbox sets OMVIDA_SANDBOX; bin/shot -R
+  // refuses this action).
+  Process {
+    id: leechDeck
+    command: ["python3", "-c",
+      "import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); "
+      + "c.execute(\"UPDATE Card SET lapses = 6 WHERE id = 'fixturecard0003'\"); "
+      + "c.execute(\"UPDATE Card SET due = '2099-01-01T00:00:00.000+00:00' WHERE id != 'fixturecard0003'\"); c.commit()",
+      Quickshell.env("FLASHCARD_DB") || ""]
+    // Not onExited: its QProcess::ExitStatus parameter is a type qmllint
+    // cannot see (the baselined warnings elsewhere).
+    onRunningChanged: if (!running) { driver.study.start(); leechLater.start() }
+  }
+  Timer {
+    id: leechLater
+    interval: 200
+    repeat: true
+    onTriggered: {
+      if (driver.study.phase !== "answering") return
+      stop()
+      driver.study.submit(3)
+    }
   }
 
   // Typing and revealing once the session has a card up.

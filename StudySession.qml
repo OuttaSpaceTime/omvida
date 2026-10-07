@@ -197,6 +197,7 @@ QtObject {
     case "submit": root.submit(a.rating); break
     case "discuss": root.discuss(); break
     case "skip": root.skip(); break
+    case "end": root.endNow(); break
     }
     return true
   }
