@@ -185,6 +185,26 @@ OmvidaTest {
     compare(open, 0, "the session was closed")
   }
 
+  // A reflex Esc with an answer typed keeps the answer and the session.
+  function test_escape_with_a_typed_answer_keeps_it() {
+    startSession()
+    type("half an answer")
+    key(Qt.Key_Escape)
+    wait(300)
+    compare(study.phase, "answering")
+    compare(item("answerField").text, "half an answer")
+  }
+
+  // The Add menu never takes the keyboard, so Esc on Study closes it first.
+  function test_escape_closes_the_add_menu_before_ending() {
+    startSession()
+    app.toggleAdd()
+    verify(app.addMenuOpen)
+    key(Qt.Key_Escape)
+    tryVerify(function() { return !app.addMenuOpen }, 2000)
+    compare(study.phase, "answering")
+  }
+
   // A failed Anki sync is an alert on the status line, its message on hover.
   function test_a_sync_failure_shows_on_the_status_line() {
     startSession()

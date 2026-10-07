@@ -37,8 +37,14 @@ ShellRoot {
   // Where the keyboard goes when an overlay closes.
   function contentRootFocus() {
     if (root.currentScreen === "study") studyScreen.focusAnswer()
+    else if (root.currentScreen === "cards") cardsScreen.focusStage()
     else contentRoot.forceActiveFocus()
   }
+  // The Add menu, for the status line's ⌃N hint (StatusBits.js) and for Esc
+  // on Study, which closes the menu before it would end the session.
+  readonly property bool addMenuOpen: addMenu.opened
+  function toggleAdd() { addMenu.toggle() }
+  function closeAdd() { addMenu.opened = false }
 
   function setScreen(s) {
     if (s === root.currentScreen) return

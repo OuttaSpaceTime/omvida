@@ -17,11 +17,13 @@
 //   Ctrl+S        skip the card. It stays due.
 //   Esc           end the session: what was rated still counts, and the
 //                 summary follows. The status line shows it as the way out
-//                 (StatusLine.qml), so it is a key too. Overlays take Esc
-//                 first: an open palette or dialog has the keyboard, so the
-//                 press closes it and never reaches the answer box. The
-//                 Add menu is the exception: it never takes the keyboard,
-//                 so Esc under it still ends the session.
+//                 (StatusLine.qml), so it is a key too. Not while an answer
+//                 is typed and not yet revealed: Esc is a reflex for a vim
+//                 or helix hand, and one press would throw the answer away
+//                 (the status line's hint still ends it, on purpose). Overlays
+//                 take Esc first: an open palette or dialog has the keyboard.
+//                 The Add menu never takes it, so StudySession closes that
+//                 menu instead of ending when it is open.
 // Plain Enter types a newline: answers are often code.
 //
 // Shift+digit is matched on the physical key, not the character. Shift+1
@@ -80,7 +82,10 @@ function action(state, key, modifiers, scanCode) {
   var ctrl = !!(modifiers & MOD.Control), alt = !!(modifiers & MOD.Alt), shift = !!(modifiers & MOD.Shift)
   if (ctrl && !alt && !shift && key === KEY.D) return { action: "discuss" }
   if (ctrl && !alt && !shift && key === KEY.S) return { action: "skip" }
-  if (key === KEY.Escape && !ctrl && !alt && !shift && !(modifiers & MOD.Meta)) return { action: "end" }
+  if (key === KEY.Escape && !ctrl && !alt && !shift && !(modifiers & MOD.Meta)) {
+    if (phase === "answering" && !state.answerEmpty) return { action: "none" }
+    return { action: "end" }
+  }
 
   if (!isEnter(key)) return null
   if (shift && !ctrl && !alt) {

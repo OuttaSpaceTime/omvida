@@ -56,7 +56,10 @@ TestCase {
   }
 
   function test_escape_ends_the_session() {
-    compare(K.action(st("answering"), Qt.Key_Escape, Qt.NoModifier, 0), { action: "end" })
+    compare(K.action(st("answering", { answerEmpty: true }), Qt.Key_Escape, Qt.NoModifier, 0), { action: "end" })
+    // A typed answer is not thrown away by a reflex Esc: the key is taken
+    // (it doesn't reach the box) and does nothing.
+    compare(K.action(st("answering"), Qt.Key_Escape, Qt.NoModifier, 0), { action: "none" })
     compare(K.action(st("grading"), Qt.Key_Escape, Qt.NoModifier, 0), { action: "end" })
     compare(K.action(st("revealed"), Qt.Key_Escape, Qt.NoModifier, 0), { action: "end" })
     compare(K.action(st("answering"), Qt.Key_Escape, Qt.ShiftModifier, 0), null)
