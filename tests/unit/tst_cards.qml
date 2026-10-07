@@ -32,4 +32,26 @@ TestCase {
     compare(ids(C.cardsForPage({ flashcardIds: [], tags: ["Rails"] }, deck)), ["c"])
     compare(C.cardsForPage({ flashcardIds: [], tags: [] }, deck), [])
   }
+
+  function test_plain_text_for_a_tile() {
+    compare(C.plainText("What is <b>HSTS</b>?<br>Say <code>max-age</code>."), "What is HSTS? Say max-age.")
+    compare(C.plainText("<pre>a  &lt;b&gt;\n  c</pre><p>x &amp; y</p>"), "a <b> c x & y")
+    // Decoded once: an escaped entity stays the entity's text.
+    compare(C.plainText("&amp;lt; &quot;q&quot; &#39;s&#39; &#65;"), "&lt; \"q\" 's' A")
+    compare(C.plainText(""), "")
+    compare(C.plainText(null), "")
+  }
+
+  function test_filter_summary() {
+    compare(C.filterSummary({ query: "", state: "", tag: "", deck: "" }), "")
+    compare(C.filterSummary({ query: " etag ", state: "review", tag: "http", deck: "Web" }), "review · Web · #http · “etag”")
+    compare(C.filterSummary({ query: null, state: null, tag: "web", deck: null }), "#web")
+  }
+
+  function test_index_of_id() {
+    compare(C.indexOfId(deck, "b"), 1)
+    compare(C.indexOfId(deck, "zz"), -1)
+    compare(C.indexOfId(deck, ""), -1)
+    compare(C.indexOfId([], "a"), -1)
+  }
 }

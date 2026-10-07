@@ -14,6 +14,7 @@ Rectangle {
   property var studyView: null
   property var wiki: null
   property var searchPalette: null
+  property var cardsScreen: null
   property var addMenu: null
   property Item target: null
 
@@ -54,6 +55,10 @@ Rectangle {
     else if (a === "study") study.start()
     else if (a === "answer") { study.start(); answerLater.text = arg || "It stays fresh for sixty seconds"; answerLater.start() }
     else if (a === "pagecards") driver.wiki.openPageCards()
+    // On Cards: page the stage forward n cards (default 3) as → would, or
+    // flip its card as Space would.
+    else if (a === "cardsnext") { for (var n = parseInt(arg || "3"); n > 0; n--) driver.cardsScreen.page(1) }
+    else if (a === "cardsflip") driver.cardsScreen.flipStage()
   }
 
   // Typing and revealing once the session has a card up.

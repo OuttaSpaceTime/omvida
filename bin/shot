@@ -10,7 +10,7 @@
 #
 #   -s  home | study | wiki | cards | graph | wiki:<path> | folder:<path>
 #   -a  search[:text] | ask[:question] | add[:flashcard|wiki] | addmenu |
-#       study | answer[:text] | pagecards
+#       study | answer[:text] | pagecards | cardsnext[:n] | cardsflip
 #   -w/-h size, -f frames (ms, comma-separated), -t settle ms, -o out dir
 #   -R  your real wiki and deck instead of the fixtures, to see the layout at
 #       full size. Read-only by construction: it refuses the Study screen and

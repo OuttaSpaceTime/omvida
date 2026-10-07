@@ -42,8 +42,21 @@ before the reading column narrows below ~60% of its measure.
 
 ## Cards
 
-Retention (true retention, verdict, reasons, rating mix), the state bar and chips, text, deck
-and tag filters, a count, List (60 at a time) or Flip through.
+Set in a wider column than the reading one (`Theme.cardsWidth`, up to 1600px), since it is a
+grid. At the top, the stage: the current card large, front first, its position (`Card 12 of
+357`, a progress hairline) and quiet ‹ back / next › links; beside it (above it when the stage
+would drop under 480px), retention (true retention, verdict, reasons, rating mix) and the
+filters (text, state bar and states, decks, tags, a count, clear), all text links, no boxes.
+Below, `NEXT UP · n · m passed` and the grid: 2–5 tiles a row, each a hairline rule, the card's
+tags and lapses, its position, and five lines of its front as plain text, so every tile is the
+same height.
+
+The stage and the grid are one walk through the filtered cards: the grid holds only the cards
+after the stage's. Space or Enter flips; → or l moves on, taking that card off the grid; ← or
+h moves back, putting it back. The walk stops at both ends (`from the start` goes back).
+Clicking a tile makes it current, front up, and the cards before it count as passed. A change
+of filter starts over; a refresh of the deck keeps the current card. The keys are listed in
+the window's status line (`statusMode`, `statusSegments`, `statusHints`, `statusAlerts`).
 
 ## Graph
 
