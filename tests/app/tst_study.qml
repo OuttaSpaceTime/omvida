@@ -47,7 +47,7 @@ OmvidaTest {
       verify(/^(<1m|\d+m|\d+h|\d+d|[\d.]+mo|[\d.]+y)$/.test(label(n)), "rate:" + n + " shows an interval: " + label(n))
     verify(/m$/.test(label(1)), "again repeats within minutes: " + label(1))
     verify(/d$|mo$|y$/.test(label(4)), "easy waits days: " + label(4))
-    verify(findNamed(target, "statusHint:take good") !== null, "the status line offers to take it")
+    verify(studyView.keyList.some(function(h) { return h.label === "take good" }), "the key list offers to take it")
     key(Qt.Key_Return, Qt.ShiftModifier)
     tryVerify(function() { return study.card && study.card.id !== cardId && study.phase === "answering" }, 8000, "next card")
     var r = reviews()
@@ -150,12 +150,13 @@ OmvidaTest {
     compare(study.phase, "revealed", "the card stays up to be rated")
   }
 
-  // The status line's hints are buttons too: reveal, then a keycap.
+  // The key list's rows are buttons too: reveal, then a keycap.
   function test_a_click_on_reveal_then_on_a_keycap_rates() {
     startSession()
     var cardId = study.card.id
     type("a perfect answer")
-    click("statusHint:reveal")
+    click("statusHint:keys")
+    click("keyHelp:reveal")
     tryVerify(function() { return study.suggestion !== null }, 8000)
     verify(item("cardBack").visible)
     verify(item("rate:4").suggested)
@@ -170,7 +171,8 @@ OmvidaTest {
     startSession()
     var before = reviews().length
     var cardId = study.card.id
-    click("statusHint:skip")
+    click("statusHint:keys")
+    click("keyHelp:skip")
     tryVerify(function() { return study.card && study.card.id !== cardId }, 8000)
     compare(reviews().length, before)
   }
@@ -280,5 +282,23 @@ OmvidaTest {
     verify(log.indexOf("- **Surface:** Omvida app") !== -1)
     var open = sql("SELECT COUNT(*) FROM StudySession WHERE endTime IS NULL AND cardsReviewed > 0")[0][0]
     compare(open, 0, "every session that reviewed something was closed")
+  }
+
+  // The status line names one key; Alt+? lists the rest, and Esc closes the
+  // list without ending the session or touching the answer.
+  function test_alt_question_lists_the_keys_and_esc_closes_it() {
+    startSession()
+    var hints = item("statusLine").hints.map(function(h) { return h.keys })
+    compare(hints, ["alt+?"])
+    type("half")
+    key(Qt.Key_Question, Qt.AltModifier | Qt.ShiftModifier)
+    item("keyHelp:reveal")
+    item("keyHelp:discuss")
+    key(Qt.Key_Escape)
+    tryVerify(function() { return findNamed(target, "keyHelp:reveal") === null }, 2000, "closed")
+    compare(study.phase, "answering")
+    var field = item("answerField")
+    tryVerify(function() { return field.activeFocus }, 2000, "the answer box has the keyboard back")
+    compare(field.text, "half")
   }
 }

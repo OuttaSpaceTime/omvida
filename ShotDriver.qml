@@ -69,6 +69,7 @@ Rectangle {
     else if (a === "cardsdelete") driver.cardsScreen.askDelete()
     else if (a === "studydelete") { study.start(); whenCardUp.run(function() { driver.study.askDelete() }) }
     else if (a === "done") { study.start(); rateAll.start() }
+    else if (a === "keys") { study.start(); whenCardUp.run(function() { driver.study.keysWanted() }) }
     else if (a === "syncfail") { study.start(); whenCardUp.run(function() { driver.study.syncNote = "Anki sync failed: offline (fixture)" }) }
     else if (a === "leech") leechDeck.running = (Quickshell.env("OMVIDA_SANDBOX") || "") !== ""
   }

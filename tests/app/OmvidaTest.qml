@@ -11,7 +11,7 @@ import Quickshell.Io
 // own sandbox (bin/sandbox), with fake claude, kitty and qmd first on PATH.
 //
 // What a test file gets:
-//   app, study, wiki, cardsScreen, searchPalette, target, window   set by the hook
+//   app, study, studyView, wiki, cardsScreen, searchPalette, target, window   set by the hook
 //   click(name), item(name)       by objectName, waiting for it
 //   type(text), key(k, mods)      real key events to the focused item
 //   run(argv)                     { code, out }
@@ -31,6 +31,7 @@ TestCase {
 
   property var app: null
   property var study: null
+  property var studyView: null
   property var wiki: null
   property var cardsScreen: null
   property var searchPalette: null

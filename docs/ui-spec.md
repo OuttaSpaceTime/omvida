@@ -90,9 +90,11 @@ while it fits.
   2px in its colour.
 - Status line: STUDY (accent) while answering, RATE after the reveal in the suggested rating's
   colour, SYNC, LEECH (orange), DONE, ERROR (red). Segments: the position from the server
-  (`3/12`), the deck, `repeat`. Hints: answering `⇧↵ reveal`, `⌥↵ reveal+accept`, `⇧1-4 rate`,
-  `⌃D discuss`, `⌃S skip`, `esc end`, `del delete`; revealed `⌥↵ take <rating>` (or `⇧↵ good`
-  with no suggestion), `⇧1-4 rate` as a legend, discuss, skip, end, delete. Del asks in the
+  (`3/12`), the deck, `repeat`. One hint, `alt+? keys`: Alt+? (or a click) opens the key list
+  (KeyHelp.qml), a modal of the keys that work now, each row clickable; Esc or Alt+? closes it.
+  Answering it lists `⇧↵ reveal`, `⌥↵ reveal+accept`, `⇧1-4 rate`, `⌃D discuss`, `⌃S skip`,
+  `esc end`, `del delete`; revealed `⌥↵ take <rating>` (or `⇧↵ good` with no suggestion),
+  `⇧1-4 rate` as a legend, discuss, skip, end, delete. Del asks in the
   confirm dialog, then deletes the card and the session goes on; with an answer typed and not
   yet revealed, Del edits the answer instead. Alerts: the pressure verdict when
   not ok (`● warn` in its colour), new cards held back, and the Anki sync (`sync ✕` in red on

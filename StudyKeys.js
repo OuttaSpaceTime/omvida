@@ -19,6 +19,8 @@
 //                 Not while an answer is typed and not yet revealed, for
 //                 Esc's reason below: there Del edits the answer, as in any
 //                 text box.
+//   Alt+?         the list of keys that work now (KeyHelp.qml), in any
+//                 phase: the status line names only this one.
 //   Esc           end the session: what was rated still counts, and the
 //                 summary follows. The status line shows it as the way out
 //                 (StatusLine.qml), so it is a key too. Not while an answer
@@ -41,7 +43,7 @@ var KEY = {
   Return: 0x01000004, Enter: 0x01000005, Escape: 0x01000000, Delete: 0x01000007,
   K1: 0x31, K2: 0x32, K3: 0x33, K4: 0x34,
   Exclam: 0x21, At: 0x40, QuoteDbl: 0x22, NumberSign: 0x23, Section: 0xa7, Dollar: 0x24,
-  D: 0x44, S: 0x53
+  D: 0x44, S: 0x53, Question: 0x3f, Slash: 0x2f
 }
 var MOD = { Shift: 0x02000000, Control: 0x04000000, Alt: 0x08000000, Meta: 0x10000000 }
 
@@ -75,10 +77,14 @@ function isEnter(key) { return key === KEY.Return || key === KEY.Enter }
 //   acceptLater    the grader is still running: submit its rating on arrival
 //   submit         submit `rating`
 //   discuss, skip, end, delete
+//   help           show the keys (Alt+?, in every phase)
 //   start          a new session (Enter with no card up: idle, done, error)
 //   continue       go on past a leech (Enter on one)
 function action(state, key, modifiers, scanCode) {
   var phase = state.phase
+  // "?" is Shift+/ on most layouts; some report the slash with Shift held.
+  if ((modifiers & MOD.Alt) && (key === KEY.Question || (key === KEY.Slash && (modifiers & MOD.Shift))))
+    return { action: "help" }
   if (phase === "idle" || phase === "done" || phase === "error") return isEnter(key) ? { action: "start" } : null
   if (phase === "blocked") {
     if (isEnter(key)) return { action: "continue" }

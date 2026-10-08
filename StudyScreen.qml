@@ -98,7 +98,12 @@ Item {
     return []
   }
 
-  readonly property var statusHints: {
+  // The status line names one key, the one that lists the others: Study's
+  // keys change with every phase, and a row of them under the card was more
+  // to read than the card. The list (KeyHelp.qml) is `keyList`, whose rows
+  // run what their keys do.
+  readonly property var statusHints: [{ keys: "alt+?", label: "keys", run: function() { keysHelp.open() } }]
+  readonly property var keyList: {
     var s = root.session
     var discuss = { keys: "⌃D", label: "discuss", run: function() { s.discuss() } }
     var skip = { keys: "⌃S", label: "skip", run: function() { s.skip() } }
@@ -225,5 +230,16 @@ Item {
         session: root.session
       }
     }
+  }
+
+  KeyHelp {
+    id: keysHelp
+    anchors.fill: parent
+    keys: root.keyList
+    onClosed: root.takeFocus()
+  }
+  Connections {
+    target: root.session
+    function onKeysWanted() { if (keysHelp.opened) keysHelp.close(); else keysHelp.open() }
   }
 }

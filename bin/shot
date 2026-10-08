@@ -13,7 +13,7 @@
 #       study | answer[:text] | pagecards | cardsnext[:n] | cardsflip |
 #       cardsdelete | studydelete (Del's dialog, left open) |
 #       done (rate all Good: the summary) | leech (a blocked session) |
-#       syncfail (a card up, the sync's failure note)
+#       syncfail (a card up, the sync's failure note) | keys (the key list)
 #   -w/-h size, -f frames (ms, comma-separated), -t settle ms, -o out dir
 #   -R  your real wiki and deck instead of the fixtures, to see the layout at
 #       full size. Read-only by construction: it refuses the Study screen and

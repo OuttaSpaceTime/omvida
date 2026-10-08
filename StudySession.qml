@@ -61,6 +61,8 @@ QtObject {
 
   // The view empties the answer box: a new card is on its way.
   signal answerReset()
+  // Alt+?: the view shows the list of keys (KeyHelp.qml).
+  signal keysWanted()
 
   property AnkiSync sync: AnkiSync {}
 
@@ -226,6 +228,7 @@ QtObject {
     case "end": root.endNow(); break
     case "start": root.start(); break
     case "continue": root.loadNext(); break
+    case "help": root.keysWanted(); break
     }
     return true
   }

@@ -44,8 +44,9 @@ OmvidaTest {
     compare(study.card.id, c)
     compare(cardCount(c), 1)
 
-    click("statusHint:delete")
-    verify(app.confirmOpen, "the hint asks too")
+    click("statusHint:keys")
+    click("keyHelp:delete")
+    verify(app.confirmOpen, "the key list's row asks too")
     key(Qt.Key_Return)
     tryVerify(function() { return study.phase === "answering" || study.phase === "done" }, 8000)
     compare(cardCount(c), 0)
