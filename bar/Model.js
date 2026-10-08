@@ -62,14 +62,6 @@ function retentionLine(o, color) {
   return s + " · <font color=\"" + color + "\">" + v + "</font>"
 }
 
-function calibration(o) {
-  if (!o) return ""
-  var c = o.calibration
-  var s = c.verdict + (c.marginal ? " (marginal)" : "")
-  if (c.true_retention !== null) s += " · retention " + pct(c.true_retention)
-  return s
-}
-
 function today(o) {
   if (!o) return ""
   var s = plural(o.reviewedToday, "review") + " today"
@@ -95,10 +87,6 @@ function weekPeak(o) {
   var peak = 1
   if (o) o.week.forEach(function(d) { peak = Math.max(peak, d.reviews) })
   return peak
-}
-
-function weekday(day) {
-  return "MTWTFSS".charAt((new Date(day + "T12:00:00").getDay() + 6) % 7)
 }
 
 function expandHome(path, home) {

@@ -37,7 +37,6 @@ TestCase {
   function test_lines() {
     compare(M.headline(overview(1, "ok")), "review due")
     compare(M.headline(overview(0, "ok")), "nothing due")
-    compare(M.calibration(overview(0, "ok")), "calibrated · retention 86%")
     compare(M.today(overview(0, "ok")), "12 reviews today · 3 days streak · 2 new waiting")
     compare(M.weekPeak(overview(0, "ok")), 12)
     compare(M.maturityParts(overview(0, "ok"))[3], { key: "internalized", n: 4, f: 0.4 })
