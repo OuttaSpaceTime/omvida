@@ -21,30 +21,46 @@ import "Format.js" as Format
 //
 // A change of filter starts the walk over at the new list's first card; a
 // refresh of the deck keeps the current card (FlipThrough's stage mode).
+//
+// The filter column is as tall as its content and never scrolls: it shows
+// the most common few tags, and "N more tags" opens the rest in a sheet from
+// the right (TagPanel.qml) with a field to find one. It used to unfold every
+// tag in place and scroll inside the column; the user found a scrolling list
+// beside the stage hard to use, and the column's clip cut the outline of a
+// picked chip.
 Item {
   id: root
 
   property var app: null
-  // What narrows the grid: the text, and one state, deck and tag at most
-  // ("" for any). Changed only through setFilter(), as a new object, so
-  // every binding on it updates.
-  property var filters: ({ query: "", state: "", deck: "", tag: "" })
+  // What narrows the grid: the text, one state and deck at most ("" for
+  // any), and any number of tags, all of which a card must carry
+  // (Cards.filterCards). Changed only through setFilter(), addTag() and
+  // dropTag(), as a new object, so every binding on it updates.
+  property var filters: ({ query: "", state: "", deck: "", tags: [] })
   readonly property var calibration: app && app.store.overview ? app.store.overview.calibration : null
 
   readonly property var all: app ? app.store.allCards : []
   readonly property var filtered: Cards.filterCards(all, filters)
   readonly property bool filtering: filters.query !== "" || selectedFilters.length > 0
-  readonly property var stateList: Cards.stateCounts(all)
-  readonly property int deckSize: Math.max(1, all.length)
-  readonly property var tags: Cards.tagCounts(all)
-  // The filter section: open, or folded down to what is selected; and the
-  // tags, the most common few or every one.
+  // The states, counted over what every filter but the state leaves, so
+  // the bar shows how the picked tags' cards split, and switching from one
+  // state to another stays one click (counting over `filtered` would leave
+  // only the picked state).
+  readonly property var stateBase: filters.state === "" ? filtered : Cards.filterCards(all, Object.assign({}, filters, { state: "" }))
+  readonly property var stateList: Cards.stateCounts(stateBase)
+  readonly property int deckSize: Math.max(1, stateBase.length)
+  // The tags still worth picking: those of the cards the filters left, less
+  // the picked ones, each counted as the cards a pick would leave. Counting
+  // over the whole deck instead offered tags that would empty the grid.
+  readonly property var tags: Cards.tagCounts(filtered, filters.tags)
+  // The filter section: open, or folded down to what is selected. Its tags
+  // are the most common tagLimit (a property so a test with a small deck
+  // can lower it); the rest are in the tag panel.
   property bool filtersOpen: true
-  property bool tagsOpen: false
-  property real asideHeight: 0
-  readonly property var unpickedTags: tags.filter(function(t) { return t.tag !== filters.tag })
-  readonly property var tagsShown: tagsOpen ? unpickedTags : unpickedTags.slice(0, Theme.cardsTagsShown)
-  readonly property int tagsHidden: unpickedTags.length - tagsShown.length
+  property int tagLimit: Theme.cardsTagsShown
+  readonly property var tagsShown: tags.slice(0, tagLimit)
+  readonly property int tagsHidden: tags.length - tagsShown.length
+  readonly property bool tagPanelOpen: tagPanel.opened
   // What narrows the grid, in the order the section lists it.
   readonly property var selectedFilters: Cards.selectedFilters(filters)
   readonly property var decks: Cards.deckNames(all)
@@ -64,7 +80,14 @@ Item {
   // The stage's keys (FlipThrough's): Space or Enter flips, ← or h and → or
   // l page; and Del, this screen's. They live here, not on the stage, so the
   // screen stays quiet.
-  readonly property var statusHints: [
+  // While the tag panel is up its keys replace them: the stage has no
+  // keyboard then.
+  readonly property var statusHints: tagPanel.opened ? [
+    { keys: "↑↓", label: "choose", run: function() { tagPanel.move(1) } },
+    { keys: "↵", label: "pick", run: function() { tagPanel.pick(tagPanel.highlight) } },
+    { keys: "⌫", label: "drop last", run: function() { tagPanel.dropLast() } },
+    { keys: "esc", label: "close", run: function() { tagPanel.close() } }
+  ] : [
     { keys: "space", label: "flip", run: function() { root.flipStage() } },
     { keys: "←", label: "back", run: function() { root.page(-1) } },
     { keys: "→", label: "next", run: function() { root.page(1) } },
@@ -110,10 +133,33 @@ Item {
     filters = f
   }
 
+  function addTag(tag) {
+    if (filters.tags.indexOf(tag) !== -1) return
+    var f = Object.assign({}, filters)
+    f.tags = filters.tags.concat([tag])
+    filters = f
+  }
+
+  function dropTag(tag) {
+    var f = Object.assign({}, filters)
+    f.tags = filters.tags.filter(function(t) { return t !== tag })
+    filters = f
+  }
+
+  // A selected chip's ✕: a tag leaves the list, a state or deck goes back
+  // to "any".
+  function dropFilter(kind, value) {
+    if (kind === "tag") dropTag(value)
+    else setFilter(kind, "")
+  }
+
   function clearFilters() {
     search.text = ""
-    filters = { query: "", state: "", deck: "", tag: "" }
+    filters = { query: "", state: "", deck: "", tags: [] }
   }
+
+  function openTags() { tagPanel.open() }
+  function closeTags() { tagPanel.close() }
 
   // Each card's front as plain text, worked out once per load of the deck
   // rather than in every tile each time the grid is rebuilt.
@@ -147,12 +193,18 @@ Item {
   // focusScreen()), so Space and the arrows work without a click first;
   // keys it doesn't use (Ctrl+K, /, Alt+←) travel up to the window.
   function takeFocus() {
+    if (root.visible && tagPanel.opened) { tagPanel.focusField(); return true }
     if (!root.visible || root.filtered.length === 0) return false
     flip.forceActiveFocus()
     return true
   }
 
-  onVisibleChanged: if (visible && app) app.store.refreshDeck()
+  // Leaving the screen (Alt+←, the rail) leaves the tag panel shut, so a
+  // return finds the stage, not a sheet left over from before.
+  onVisibleChanged: {
+    if (!visible) tagPanel.opened = false
+    else if (app) app.store.refreshDeck()
+  }
   onFiltersChanged: flip.forget()
 
   // Del reaches here from the stage, which passes on the keys it doesn't
@@ -214,7 +266,7 @@ Item {
             stage: true
             // As tall as the column beside it, so neither leaves a gap or
             // cuts the other off.
-            stageHeight: top.sideBySide ? root.asideHeight : 0
+            stageHeight: top.sideBySide ? aside.implicitHeight : 0
           }
 
           // Clearing is the filter header's "clear" (and the status line's
@@ -234,34 +286,17 @@ Item {
           color: Theme.hairline
         }
 
-        // Retention and the filters, exactly as tall as the stage beside it:
-        // longer content (every tag shown) scrolls inside the column rather
-        // than growing it, so the stage never stretches and no gap opens
-        // under either side.
-        GlideFlickable {
-          id: asideView
+        // Retention and the filters. The stage takes this column's height,
+        // which stays short because it lists only a few tags (the rest are
+        // in the tag panel), so the two end together and neither scrolls.
+        // Nothing clips it: chips pulled out past its edges (layout rule 2)
+        // keep their outline whole.
+        Column {
+          id: aside
           objectName: "cardsAside"
           x: top.sideBySide ? top.stageWidth + Theme.space3xl : 0
           width: top.sideBySide ? Theme.cardsAsideWidth : top.width
-          height: top.sideBySide ? stageColumn.implicitHeight : aside.implicitHeight
-          contentHeight: aside.implicitHeight
-          interactive: contentHeight > height
-          ScrollBar.vertical: ScrollBar { policy: asideView.interactive ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff }
-
-        Column {
-          id: aside
-          width: asideView.width
           spacing: Theme.spaceXl
-          // The stage follows the column's height, but not while every tag
-          // is listed: that list scrolls inside the column instead, so the
-          // card doesn't stretch to the length of a tag list.
-          Binding {
-            target: root
-            property: "asideHeight"
-            value: aside.implicitHeight
-            when: !root.tagsOpen
-            restoreMode: Binding.RestoreNone
-          }
 
           // ---- retention ----------------------------------------------------------
           Column {
@@ -308,7 +343,8 @@ Item {
           // selected. The selected filters always sit on top, each with ✕,
           // so what narrows the grid is never lost among the choices; under
           // them the field and what is left to choose: states, decks, and
-          // the most common tags, the rest one click away ("N more tags").
+          // the most common tags still worth picking, the rest in the tag
+          // panel ("N more tags").
           Column {
             width: parent.width
             spacing: Theme.spaceSm
@@ -318,7 +354,6 @@ Item {
               height: Theme.smallControlHeight
               PlainButton {
                 objectName: "filtersToggle"
-                x: -inset
                 anchors.verticalCenter: parent.verticalCenter
                 label: (root.filtersOpen ? "▾ " : "▸ ") + "FILTER"
                 onActivated: root.filtersOpen = !root.filtersOpen
@@ -337,14 +372,15 @@ Item {
               }
             }
 
-            // What is selected, on top: a click drops it. The chips' own
-            // padding is pulled out past the column's edges, so their words
-            // line up with the field's.
+            // What is selected, on top: a click drops it.
             Flow {
               objectName: "selectedFilters"
               visible: root.selectedFilters.length > 0
-              x: -Theme.chipInset
-              width: parent.width + Theme.chipInset * 2
+              // A chip's outline reaches past its words into the gap its
+              // width keeps, so two picked chips side by side would share
+              // an edge without this.
+              spacing: Theme.spaceXs
+              width: parent.width
               Repeater {
                 model: root.selectedFilters
                 delegate: Chip {
@@ -354,7 +390,7 @@ Item {
                   label: picked.modelData.label + " ✕"
                   dot: picked.modelData.kind === "state" ? Theme.stateColor(picked.modelData.value) : "transparent"
                   selected: true
-                  onActivated: root.setFilter(picked.modelData.kind, "")
+                  onActivated: root.dropFilter(picked.modelData.kind, picked.modelData.value)
                 }
               }
             }
@@ -413,8 +449,7 @@ Item {
                 }
               }
               Flow {
-                x: -Theme.chipInset
-                width: parent.width + Theme.chipInset * 2
+                width: parent.width
                 Repeater {
                   model: root.stateList.filter(function(s) { return s.state !== root.filters.state })
                   delegate: Chip {
@@ -429,8 +464,7 @@ Item {
                 }
               }
               Flow {
-                x: -Theme.chipInset
-                width: parent.width + Theme.chipInset * 2
+                width: parent.width
                 visible: root.decks.length > 1
                 Repeater {
                   model: root.decks.filter(function(d) { return d !== root.filters.deck })
@@ -443,8 +477,7 @@ Item {
                 }
               }
               Flow {
-                x: -Theme.chipInset
-                width: parent.width + Theme.chipInset * 2
+                width: parent.width
                 Repeater {
                   model: root.tagsShown
                   delegate: Chip {
@@ -453,20 +486,18 @@ Item {
                     objectName: "tagChip:" + tagLink.modelData.tag
                     label: "#" + tagLink.modelData.tag
                     count: tagLink.modelData.count
-                    onActivated: root.setFilter("tag", tagLink.modelData.tag)
+                    onActivated: root.addTag(tagLink.modelData.tag)
                   }
                 }
               }
               PlainButton {
                 objectName: "moreTags"
-                x: -inset
-                visible: root.tagsHidden > 0 || root.tagsOpen
-                label: root.tagsOpen ? "fewer tags ▴" : root.tagsHidden + " more tags ▾"
-                onActivated: root.tagsOpen = !root.tagsOpen
+                visible: root.tagsHidden > 0
+                label: root.tagsHidden + " more tags ›"
+                onActivated: root.openTags()
               }
             }
           }
-        }
         }
       }
 
@@ -603,5 +634,16 @@ Item {
         }
       }
     }
+  }
+
+  TagPanel {
+    id: tagPanel
+    anchors.fill: parent
+    counts: root.tags
+    selected: root.filters.tags
+    cardCount: root.filtered.length
+    onPicked: function(tag) { root.addTag(tag) }
+    onDropped: function(tag) { root.dropTag(tag) }
+    onClosed: if (root.app) root.app.focusScreen()
   }
 }

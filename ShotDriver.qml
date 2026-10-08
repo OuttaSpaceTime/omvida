@@ -64,6 +64,12 @@ Rectangle {
     // flip its card as Space would.
     else if (a === "cardsnext") { for (var n = parseInt(arg || "3"); n > 0; n--) driver.cardsScreen.page(1) }
     else if (a === "cardsflip") driver.cardsScreen.flipStage()
+    // On Cards: pick tags (comma-separated) as a click on each would; or
+    // open the tag panel, picking any tags given first. Filters only read.
+    else if (a === "cardstags" || a === "cardspanel") {
+      arg.split(",").filter(function(t) { return t !== "" }).forEach(function(t) { driver.cardsScreen.addTag(t) })
+      if (a === "cardspanel") driver.cardsScreen.openTags()
+    }
     // Del's dialog on Cards or on a study card, open; the shot never answers
     // it, so nothing is deleted.
     else if (a === "cardsdelete") driver.cardsScreen.askDelete()

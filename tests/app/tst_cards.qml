@@ -5,6 +5,10 @@ import QtQuick
 OmvidaTest {
   name: "cards"
 
+  // The screen's tag limit as the app set it, put back before each test
+  // (one lowers it, to make "N more tags" appear in a five-card deck).
+  property int tagLimitAtStart: -1
+
   function stage() { return item("cardsStage") }
   function tile(i) { return findNamed(target, "cardTile:" + cardsScreen.filtered[i].id) }
 
@@ -14,7 +18,9 @@ OmvidaTest {
   function init() {
     cardsScreen.clearFilters()
     cardsScreen.filtersOpen = true
-    cardsScreen.tagsOpen = false
+    if (tagLimitAtStart < 0) tagLimitAtStart = cardsScreen.tagLimit
+    cardsScreen.tagLimit = tagLimitAtStart
+    cardsScreen.closeTags()
     app.setScreen("home")
     app.setScreen("cards")
     tryVerify(function() { return cardsScreen.filtered.length === 5 }, 5000)
@@ -56,21 +62,77 @@ OmvidaTest {
     compare(cardsScreen.filtered.length, 2, "folding changes nothing that is selected")
 
     click("filtersToggle")
-    item("tagChip:security")
+    item("tagChip:web")
     click("selected:tag:http")
     // "review" is still selected: the three review cards.
     tryVerify(function() { return cardsScreen.filtered.length === 3 })
   }
 
-  // The stage is as tall as the column of filters beside it, and its front
-  // sits mid-card, set left in a block with equal margins.
+  // Tags narrow together: a card must carry every picked one, and the tags
+  // left to pick are only those of the cards still shown, counted as the
+  // cards each pick would leave.
+  function test_tags_narrow_together() {
+    click("tagChip:security")
+    tryVerify(function() { return cardsScreen.filtered.length === 3 })
+    verify(findNamed(target, "tagChip:http") === null, "no security card is tagged http, so http is not offered")
+    compare(item("tagChip:web").count, 1)
+    click("tagChip:web")
+    tryVerify(function() { return cardsScreen.filtered.length === 1 })
+    item("selected:tag:security")
+    item("selected:tag:web")
+    compare(cardsScreen.statusSegments[1].text, "#security · #web")
+    // The states count what the tags left, not the whole deck.
+    compare(cardsScreen.stateList, [{ state: "review", count: 1 }])
+    click("selected:tag:security")
+    tryVerify(function() { return cardsScreen.filtered.length === 3 })
+    compare(cardsScreen.filters.tags, ["web"])
+  }
+
+  // The filter column never scrolls: past the first few tags, "N more tags"
+  // opens the tag panel, where a field finds a tag by name, Enter picks it,
+  // Backspace in the empty field drops the last pick and Esc closes.
+  function test_more_tags_opens_the_tag_panel() {
+    verify(!("contentY" in item("cardsAside")), "the filter column is not a scroller")
+    cardsScreen.tagLimit = 1
+    compare(item("moreTags").label, "2 more tags ›")
+    click("moreTags")
+    tryVerify(function() { return item("tagPanelField").activeFocus }, timeout, "the panel's field has the keyboard")
+    compare(item("statusHint:close").visible, true)
+
+    type("ht")
+    tryVerify(function() { return findNamed(target, "tagRow:security") === null })
+    item("tagRow:http")
+    key(Qt.Key_Return)
+    compare(cardsScreen.filters.tags, ["http"])
+    compare(item("tagPanelField").text, "", "cleared for the next name")
+    verify(cardsScreen.tagPanelOpen, "still open for another pick")
+    tryVerify(function() { return findNamed(target, "tagRow:web") !== null })
+    compare(item("tagRow:web").modelData.count, 2)
+    verify(findNamed(target, "tagRow:security") === null, "no http card is tagged security")
+
+    key(Qt.Key_Backspace)
+    compare(cardsScreen.filters.tags, [])
+    click("tagRow:security")
+    compare(cardsScreen.filters.tags, ["security"])
+    click("tagPanelSelected:security")
+    compare(cardsScreen.filters.tags, [])
+
+    key(Qt.Key_Escape)
+    verify(!cardsScreen.tagPanelOpen)
+    tryVerify(function() { return stage().activeFocus }, timeout, "the stage has the keyboard again")
+  }
+
+  // The stage is as tall as the column of filters beside it, or its least
+  // height when the column is shorter (a small deck's few tags): the column
+  // never runs on past the card. Its front sits mid-card, set left in a
+  // block with equal margins.
   function test_stage_keeps_its_height_and_centres_the_card() {
     var face = item("flipCard")
     var aside = item("cardsAside")
     // The stage, not the card: a card still turning in is rotated, and a
     // rotated item's corners map elsewhere.
     var faceEnd = stage().mapToItem(null, 0, stage().height).y, asideEnd = aside.mapToItem(null, 0, aside.height).y
-    verify(Math.abs(faceEnd - asideEnd) <= 1, "the card and the filter column end together: " + faceEnd + " vs " + asideEnd)
+    verify(faceEnd >= asideEnd - 1, "the filter column ends with the card or above it: " + faceEnd + " vs " + asideEnd)
     var front = item("flipFront")
     compare(front.horizontalAlignment, Text.AlignLeft)
     compare(front.x, face.width - front.x - front.width, "equal margins")

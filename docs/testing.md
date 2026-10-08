@@ -72,7 +72,8 @@ and stops.
 | `folderTitle`, `folder:<path>`, `folderPage:<path>` | a folder |
 | `pageCardsFlip`, `flipCard` | a page's cards |
 | `searchField`, `result:<kind>:<i>`, `deepSearch`, `askView`, `askAnswer`, `askAnswerBlocks`, `askContinue`, `paletteHint:<label>` | search and Ask |
-| `stateChip:<state>`, `stateBar:<state>`, `tagChip:<tag>`, `cardFilter`, `filteredCount`, `clearFilters`, `retentionPanel`, `filtersToggle`, `selectedFilters`, `selected:<state|deck|tag>:<value>`, `moreTags` | the deck explorer's filters |
+| `stateChip:<state>`, `stateBar:<state>`, `tagChip:<tag>`, `cardFilter`, `filteredCount`, `clearFilters`, `retentionPanel`, `filtersToggle`, `selectedFilters`, `selected:<state|deck|tag>:<value>`, `moreTags`, `cardsAside` | the deck explorer's filters |
+| `tagPanel` (`cardsScreen.tagPanelOpen` says whether it is up), `tagPanelField`, `tagPanelList`, `tagRow:<tag>`, `tagPanelSelected:<tag>`, `tagPanelClose` | the deck explorer's tag panel |
 | `cardsStage` (its card is `flipCard`, the front `flipFront`), `upNext`, `cardsRestart`, `cardTile:<card id>` | the deck explorer's stage and grid |
 | `graphScreen`, `graphAll`, `graphLocal`, `graphView` | the graph |
 | `graphRailHandle`, `graphFullScreen` | the wiki page's graph rail: its drag edge, its full-screen icon |

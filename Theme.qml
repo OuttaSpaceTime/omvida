@@ -310,14 +310,21 @@ QtObject {
   // The stage's text margin either side: wide, so the left-set lines sit as
   // a balanced block in the card.
   readonly property int cardStageInset: space4xl
-  // How many tags the filter shows before "N more tags".
+  // How many tags the filter shows before "N more tags", which opens the
+  // tag panel: a fixed few, so the filter column never needs to scroll.
   readonly property int cardsTagsShown: 6
+  // The tag panel, a sheet from the window's right edge: wide enough for a
+  // long tag name ("#Software::Design") and its count on one row.
+  readonly property int sheetWidth: 360
 
   // ---- motion ----------------------------------------------------------------------
   // A card turning over, or turning in as you page: slow enough to read as
   // a card turning, not a cut.
   readonly property int flipDuration: 560
   readonly property int fadeDuration: 120
+  // A sheet sliding in from the edge: quick, but long enough to be seen
+  // arriving from somewhere.
+  readonly property int sheetDuration: 180
   readonly property int toastDuration: 4000
   readonly property int graphTickInterval: 16
   // How long a new graph may lay itself out before its first paint; past it,

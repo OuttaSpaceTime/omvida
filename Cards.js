@@ -14,22 +14,32 @@ function searchableText(card) {
     .replace(/<[^>]*>/g, " ").toLowerCase()
 }
 
-// filters: { query, state, tag, deck }, each "" or null for "any".
+// filters: { query, state, deck, tags }: query, state and deck "" or null
+// for "any"; tags a list, every one of which a card must carry. All, not
+// any: picking a second tag narrows to the cards that have both, so each
+// pick is a step further in, the way the user asked for it. "Any of them"
+// would widen with every pick and leave no way to say "security and csp".
 function filterCards(cards, filters) {
   var q = String(filters.query || "").trim().toLowerCase()
+  var tags = filters.tags || []
   return cards.filter(function(card) {
     if (filters.state && stateOf(card) !== filters.state) return false
     if (filters.deck && card.deck !== filters.deck) return false
-    if (filters.tag && (card.tags || []).indexOf(filters.tag) === -1) return false
+    var own = card.tags || []
+    for (var i = 0; i < tags.length; i++) if (own.indexOf(tags[i]) === -1) return false
     if (q && searchableText(card).indexOf(q) === -1) return false
     return true
   })
 }
 
-// Tags across the deck, most frequent first, then by name.
-function tagCounts(cards) {
-  var counts = {}
-  cards.forEach(function(c) { (c.tags || []).forEach(function(t) { counts[t] = (counts[t] || 0) + 1 }) })
+// Tags across the given cards, most frequent first, then by name, leaving
+// out those in `except`. Given the cards a filter left, these are the tags
+// still worth picking, each counted as the cards a pick would leave.
+function tagCounts(cards, except) {
+  var counts = {}, skip = except || []
+  cards.forEach(function(c) {
+    (c.tags || []).forEach(function(t) { if (skip.indexOf(t) === -1) counts[t] = (counts[t] || 0) + 1 })
+  })
   return Object.keys(counts).map(function(t) { return { tag: t, count: counts[t] } })
     .sort(function(a, b) { return b.count - a.count || (a.tag < b.tag ? -1 : a.tag > b.tag ? 1 : 0) })
 }
@@ -71,8 +81,24 @@ function selectedFilters(filters) {
   var out = []
   if (filters.state) out.push({ kind: "state", value: filters.state, label: filters.state })
   if (filters.deck) out.push({ kind: "deck", value: filters.deck, label: filters.deck })
-  if (filters.tag) out.push({ kind: "tag", value: filters.tag, label: "#" + filters.tag })
+  var tags = filters.tags || []
+  for (var i = 0; i < tags.length; i++) out.push({ kind: "tag", value: tags[i], label: "#" + tags[i] })
   return out
+}
+
+// The tag counts whose name holds `text`, ignoring case and a leading "#":
+// the tag panel's list as you type. Tags that start with it come first, so
+// "sec" puts #security above #websecurity; each keeps its count order.
+function matchTags(counts, text) {
+  var t = String(text || "").trim().toLowerCase().replace(/^#/, "")
+  if (t === "") return counts
+  var starts = [], within = []
+  counts.forEach(function(c) {
+    var i = c.tag.toLowerCase().indexOf(t)
+    if (i === 0) starts.push(c)
+    else if (i > 0) within.push(c)
+  })
+  return starts.concat(within)
 }
 
 // The active filters in a few words ("review · #http · “etag”"), "" for

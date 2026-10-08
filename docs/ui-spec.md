@@ -126,12 +126,20 @@ Set in a wider column than the reading one (`Theme.pageWidth` with `Theme.cardsM
 grid. At the top, the stage: the current card at a fixed height (`Theme.cardStageFaceHeight`),
 its front set large (`Theme.cardStageFrontSize`) and centred, under a progress hairline; the
 position ("12/357") and the ←/→ keys are in the status line. Paging shows the next card front up. Beside it (above it when the stage would drop
-under 480px), a column exactly as tall as the stage, its overflow scrolling inside it:
-retention (`Retention · 30 days`, the figure with verdict and review count, the rating mix),
-then the filters. The `▾ FILTER` header folds the section to what is selected; the selected
-filters always sit on top, each with ✕ to drop it; then the text field (kept when folded), the
-state bar and the remaining states, decks, and the six most common tags with `N more tags ▾`
-for the rest. All text links, no boxes.
+under 480px), a column that never scrolls; the stage takes its height, or its own least height
+when the column is shorter: retention (`Retention · 30 days`, the figure with verdict and review
+count, the rating mix), then the filters. The `▾ FILTER` header folds the section to what is
+selected; the selected filters always sit on top, each with ✕ to drop it; then the text field
+(kept when folded), the state bar and the remaining states, decks, and the six most common tags
+with `N more tags ›` for the rest. All text links, no boxes.
+
+Tags combine: a card must carry every picked tag. The tags offered, and the state bar, count only
+the cards the other filters leave, so each choice shows how many cards it would leave and none
+empties the grid. `N more tags ›` opens the tag panel, a sheet from the right over a scrim: the
+picks on top with ✕, a `find a tag` field (tags starting with the text first), and every tag
+still worth picking with its count. ↑/↓ choose, Enter picks and clears the field, Backspace in
+the empty field drops the last pick, Esc or a click on the scrim closes; the status line names
+those keys while it is up.
 Below, `NEXT UP · n · m passed` and the grid: 2–5 tiles a row, each a hairline rule, the card's
 tags and lapses, its position, and five lines of its front as plain text, so every tile is the
 same height.
