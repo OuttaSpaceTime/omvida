@@ -214,6 +214,31 @@ OmvidaTest {
     verify(alerts.indexOf("sync ✕") !== -1, "alerts: " + JSON.stringify(alerts))
   }
 
+  // The fixture study has no scripts/ at all (the sync counts as skipped);
+  // these put a fake anki-sync there for one session start and take it away.
+  function withFakeSync(script, fn) {
+    var path = studyDir + "/scripts/anki-sync"
+    compare(run(["sh", "-c", "mkdir -p \"$(dirname \"$1\")\" && printf '%s' \"$2\" > \"$1\" && chmod +x \"$1\"", "sh", path, script]).code, 0, "fake written")
+    try { fn() } finally { run(["rm", "-f", "--", path]) }
+  }
+
+  // bin/sandbox resolves its directory, so studyDir is what pwd -P prints.
+  function test_anki_sync_runs_in_the_study_repo() {
+    withFakeSync("#!/bin/sh\necho \"sync: done (ran in $(pwd -P))\"\n", function() {
+      startSession()
+      compare(study.syncNote, "Anki sync: ran in " + studyDir)
+    })
+  }
+
+  // A crash's reason is the traceback's last line, on stderr, not the plan
+  // stdout printed before it.
+  function test_a_crashed_anki_sync_says_why() {
+    withFakeSync("#!/bin/sh\necho 'plan: create 1'\nprintf 'Traceback (most recent call last):\\n  File \"x\"\\nModuleNotFoundError: No module named fastanki\\n' >&2\nexit 1\n", function() {
+      startSession()
+      compare(study.syncNote, "Anki sync failed: ModuleNotFoundError: No module named fastanki")
+    })
+  }
+
   function test_skip_leaves_the_card_unreviewed() {
     startSession()
     var before = reviews().length

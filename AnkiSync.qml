@@ -23,18 +23,14 @@ Item {
   }
 
   function lastLine(text) {
-    var lines = String(text).trim().split("\n").filter(function(l) { return l.trim() !== "" })
-    return lines.length ? lines[lines.length - 1].trim() : ""
+    var lines = String(text).split("\n").map(function(l) { return l.trim() }).filter(Boolean)
+    return lines.length ? lines[lines.length - 1] : ""
   }
 
   // A missing script (a machine without the sync set up, the tests' fixture)
-  // exits 99 and counts as skipped, not failed.
-  //
-  // It runs in the study repo, as /study runs it. The script's shebang is
-  // `uv run python3`, and outside the repo uv doesn't find its project and
-  // starts a bare interpreter; the app started from ~ and the sync died on
-  // `import fastanki` (the script now re-execs into its venv from anywhere,
-  // but the repo is still where it belongs).
+  // exits 99 and counts as skipped, not failed. It runs in the study repo, as
+  // /study runs it: there its `uv run` shebang starts the venv directly, where
+  // from elsewhere the script re-execs into it, a second interpreter start.
   Process {
     id: proc
     workingDirectory: Paths.studyDir
@@ -48,7 +44,11 @@ Item {
       if (code === 99) { cb({ ran: false, moved: false, note: "" }); return }
       var last = root.lastLine(root.output)
       var m = /^sync: done \((.*)\)$/.exec(last)
-      if (code === 0 && m) { cb({ ran: true, moved: m[1] !== "nothing to do", note: m[1] === "nothing to do" ? "" : "Anki sync: " + m[1] }); return }
+      if (code === 0 && m) {
+        var idle = m[1] === "nothing to do"
+        cb({ ran: true, moved: !idle, note: idle ? "" : "Anki sync: " + m[1] })
+        return
+      }
       // The script reports what it knows (not logged in) on stdout; a crash
       // is a traceback on stderr, whose last line is the exception. Prefer
       // that: after a crash stdout's last line is a plan that never ran.
