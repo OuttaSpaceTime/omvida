@@ -6,11 +6,11 @@ import "Model.js" as Model
 
 // The panel under the Omvida icon: a glance at where studying stands, then
 // the way in. The count due with the pressure verdict as a small chip; one
-// sentence on what clears it; how the deck has matured, as one thin bar;
-// retention with the calibration verdict; the next few reviews; and one
-// primary action, Study now, beside two icon buttons. Verdicts are the deck's
-// own words. No week chart and no section headers: the panel is opened for
-// a glance, and Omvida's Home has the rest.
+// sentence on what clears it; how the deck has matured, as one bar;
+// retention with the calibration verdict; and one primary action, Study now,
+// beside two icon buttons. Verdicts are the deck's own words. No list of the
+// cards waiting and no week chart: the panel is opened for a glance, and
+// Omvida's Home has the rest.
 //
 // Keys (PanelKeyCatcher): Enter studies now, Esc closes, Tab moves to the
 // neighbouring bar panel.
@@ -75,7 +75,7 @@ Panel {
       Column {
         id: col
         width: parent.width
-        spacing: Style.space(14)
+        spacing: Style.space(18)
 
         // ---- the count, and its verdict ----
         Item {
@@ -149,7 +149,7 @@ Panel {
               delegate: Rectangle {
                 required property var modelData
                 width: Math.max(Style.space(2), (maturityBar.width - maturityBar.spacing * (maturityBar.parts.length - 1)) * modelData.f)
-                height: Style.space(5)
+                height: Style.space(8)
                 color: root.maturityColor(modelData.key)
               }
             }
@@ -164,7 +164,7 @@ Panel {
                 text: "<b>" + modelData.n + "</b> " + modelData.key
                 color: root.faint
                 font.family: root.fontFamily
-                font.pixelSize: Style.font.caption
+                font.pixelSize: Style.font.bodySmall
               }
             }
           }
@@ -177,43 +177,7 @@ Panel {
           text: Model.retentionLine(root.o, root.verdictColor(root.o ? root.o.calibration.verdict : "").toString())
           color: root.dim
           font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
-        }
-
-        // ---- next up ----
-        PanelSeparator { visible: pending.count > 0; foreground: root.fg }
-        Text {
-          visible: pending.count > 0
-          text: "NEXT UP"
-          color: root.faint
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
-          font.letterSpacing: Style.space(1)
-        }
-        Column {
-          width: parent.width
-          spacing: Style.space(6)
-          Repeater {
-            id: pending
-            model: root.o ? root.o.pending.slice(0, 4) : []
-            delegate: Text {
-              required property var modelData
-              width: col.width
-              elide: Text.ElideRight
-              text: modelData.text
-              color: root.fg
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.bodySmall
-            }
-          }
-          Text {
-            readonly property int more: root.o ? root.o.pressure.flashcardsDue - pending.count : 0
-            visible: more > 0
-            text: "+ " + more + " more"
-            color: root.faint
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.caption
-          }
+          font.pixelSize: Style.font.bodySmall
         }
 
         // ---- the way in: one primary action, two icon buttons ----

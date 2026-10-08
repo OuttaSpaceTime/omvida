@@ -88,7 +88,7 @@ BarWidget {
 
   Process {
     id: overviewProc
-    command: [root.omvidaRoot + "/bin/omvida-overview", "6"]
+    command: [root.omvidaRoot + "/bin/omvida-overview", "0"]   // no pending list: the panel shows none
     stdout: StdioCollector {
       onStreamFinished: {
         var o = Model.parse(text)
