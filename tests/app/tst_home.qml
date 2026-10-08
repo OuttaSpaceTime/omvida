@@ -28,15 +28,27 @@ OmvidaTest {
     tryCompare(app, "currentScreen", "wiki")
   }
 
+  // The line shows a screen's own hints, then the ones every reading screen
+  // shares (StatusLine.qml).
   function test_home_hands_the_status_line_its_counts_and_keys() {
-    var home = item("homeScreen")
-    compare(home.statusMode, "HOME")
+    var home = item("homeScreen"), line = item("statusLine")
+    compare(item("statusMode").text, "HOME")
     verify(home.statusSegments[0].text.indexOf("3 pages") === 0, home.statusSegments[0].text)
-    var keys = home.statusHints.map(function(h) { return h.keys })
-    verify(keys.indexOf("⌃2") !== -1 && keys.indexOf("⌃K") !== -1, keys.join(" "))
+    var keys = line.hints.map(function(h) { return h.keys })
+    compare(keys.slice(0, 3), ["⌃2", "⌃K", "⌃N"])
     // The search hint is Ctrl+K: it opens the palette.
-    home.statusHints.filter(function(h) { return h.keys === "⌃K" })[0].run()
+    line.hints.filter(function(h) { return h.keys === "⌃K" })[0].run()
     tryVerify(function() { return searchPalette.opened })
+  }
+
+  // The Add menu holds the keyboard while open, so Esc closes it on any
+  // screen, and the keyboard goes back to the screen.
+  function test_escape_closes_the_add_menu_anywhere() {
+    app.toggleAdd()
+    verify(app.addMenuOpen)
+    key(Qt.Key_Escape)
+    tryVerify(function() { return !app.addMenuOpen }, 2000)
+    compare(app.currentScreen, "home")
   }
 
   // Ctrl+K and Ctrl+N no longer print in the top bar; the keys still work.
@@ -50,16 +62,16 @@ OmvidaTest {
   function test_wiki_and_graph_hand_their_own_status() {
     app.openPage("web/http-caching", "")
     tryVerify(function() { return wiki.loadedPath === "web/http-caching" }, 8000)
-    compare(wiki.statusMode, "WIKI")
+    compare(item("statusMode").text, "WIKI")
     compare(wiki.statusSegments[0].text, "web/http-caching")
-    var back = wiki.statusHints.filter(function(h) { return h.keys === "alt+←" })
+    var back = item("statusLine").hints.filter(function(h) { return h.keys === "alt+←" })
     compare(back.length, 1, "history behind the page, so a back hint")
     back[0].run()
     tryCompare(app, "currentScreen", "home")
 
     app.setScreen("graph")
     var graph = item("graphScreen")
-    compare(graph.statusMode, "GRAPH")
+    compare(item("statusMode").text, "GRAPH")
     verify(graph.statusSegments[0].text.indexOf("page") !== -1, graph.statusSegments[0].text)
   }
 }

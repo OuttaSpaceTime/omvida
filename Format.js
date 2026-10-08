@@ -46,12 +46,18 @@ function escapeHtml(s) {
 }
 
 // Card HTML to one line of plain text (lists, search rows, prompts).
+// Line and block ends become spaces, so "a</li><li>b" stays two words, and
+// &amp; is decoded last, so "&amp;lt;" stays the literal text "&lt;". The
+// Cards grid draws this, not the HTML, because Qt only elides plain text
+// (rich text runs on past maximumLineCount).
 function stripHtml(html) {
   return String(html || "")
-    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<br\s*\/?>|<\/(p|div|li|pre|tr|h[1-6])>/gi, " ")
     .replace(/<[^>]*>/g, "")
-    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"")
-    .replace(/&#39;/g, "'").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
+    .replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"").replace(/&#39;|&apos;/g, "'")
+    .replace(/&#(\d+);/g, function(m, n) { return String.fromCharCode(parseInt(n, 10)) })
+    .replace(/&amp;/g, "&")
     .replace(/\s+/g, " ").trim()
 }
 

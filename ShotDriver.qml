@@ -54,14 +54,18 @@ Rectangle {
     else if (a === "add") driver.app.openAdd(arg || "flashcard", "", "")
     else if (a === "addmenu") driver.addMenu.opened = true
     else if (a === "study") study.start()
-    else if (a === "answer") { study.start(); answerLater.text = arg || "It stays fresh for sixty seconds"; answerLater.start() }
+    else if (a === "answer") {
+      var text = arg || "It stays fresh for sixty seconds"
+      study.start()
+      whenCardUp.run(function() { driver.studyView.answerField.text = text; driver.study.reveal(false) })
+    }
     else if (a === "pagecards") driver.wiki.openPageCards()
     // On Cards: page the stage forward n cards (default 3) as → would, or
     // flip its card as Space would.
     else if (a === "cardsnext") { for (var n = parseInt(arg || "3"); n > 0; n--) driver.cardsScreen.page(1) }
     else if (a === "cardsflip") driver.cardsScreen.flipStage()
     else if (a === "done") { study.start(); rateAll.start() }
-    else if (a === "syncfail") { study.start(); syncFailLater.start() }
+    else if (a === "syncfail") { study.start(); whenCardUp.run(function() { driver.study.syncNote = "Anki sync failed: offline (fixture)" }) }
     else if (a === "leech") leechDeck.running = (Quickshell.env("OMVIDA_SANDBOX") || "") !== ""
   }
 
@@ -74,19 +78,6 @@ Rectangle {
       var study = driver.study
       if (study.phase === "done") stop()
       else if (study.phase === "answering") study.submit(3)
-    }
-  }
-
-  // The note a failed Anki sync leaves, once a card is up: the fixtures
-  // have no sync script, so a real failure cannot happen here.
-  Timer {
-    id: syncFailLater
-    interval: 200
-    repeat: true
-    onTriggered: {
-      if (driver.study.phase !== "answering") return
-      stop()
-      driver.study.syncNote = "Anki sync failed: offline (fixture)"
     }
   }
 
@@ -103,31 +94,22 @@ Rectangle {
       Quickshell.env("FLASHCARD_DB") || ""]
     // Not onExited: its QProcess::ExitStatus parameter is a type qmllint
     // cannot see (the baselined warnings elsewhere).
-    onRunningChanged: if (!running) { driver.study.start(); leechLater.start() }
+    onRunningChanged: if (!running) { driver.study.start(); whenCardUp.run(function() { driver.study.submit(3) }) }
   }
+
+  // Once the session has a card up, `then` runs: typing and revealing an
+  // answer, a failed sync's note (the fixtures have no sync script, so a
+  // real failure cannot happen here), or the rating that blocks on a leech.
   Timer {
-    id: leechLater
+    id: whenCardUp
+    property var then: null
+    function run(fn) { then = fn; start() }
     interval: 200
     repeat: true
     onTriggered: {
       if (driver.study.phase !== "answering") return
       stop()
-      driver.study.submit(3)
-    }
-  }
-
-  // Typing and revealing once the session has a card up.
-  Timer {
-    id: answerLater
-    property string text: ""
-    interval: 200
-    repeat: true
-    onTriggered: {
-      var study = driver.study
-      if (study.phase !== "answering") return
-      stop()
-      driver.studyView.answerField.text = text
-      study.reveal(false)
+      then()
     }
   }
 

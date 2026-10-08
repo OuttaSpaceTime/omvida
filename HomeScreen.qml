@@ -5,7 +5,6 @@ import QtQuick.Controls
 import "Format.js" as Format
 import "StatusBits.js" as StatusBits
 import "WikiTree.js" as WikiTree
-import "bar/Model.js" as Overview
 
 // Home: what to do now, then the Next.js viewer's dashboard (last studied
 // pages, recently updated pages, the topics).
@@ -29,15 +28,13 @@ Item {
   readonly property var overview: app ? app.store.overview : null
 
   // ---- the window's status line ---------------------------------------------
-  readonly property string statusMode: "HOME"
   readonly property var statusSegments: root.index ? [{
     text: Format.plural(root.index.pages.length, "page") + " · "
           + Format.plural(root.index.tree.folders.length, "topic") + " · "
           + Format.plural(root.index.graph.links.length, "link")
           + (root.overview ? " · " + Format.plural(root.overview.totalCards, "card") : "")
   }] : []
-  readonly property var statusHints: StatusBits.common(root.app, root.app ? [StatusBits.study(root.app)] : [])
-  readonly property var statusAlerts: StatusBits.pressure(root.app, Overview.clearance(root.overview), Theme.verdictColor)
+  readonly property var statusHints: root.app ? [StatusBits.study(root.app)] : []
 
   // Pending reviews past the rows shown, counted off the due figure rather
   // than the list, which the deck server caps.

@@ -34,17 +34,18 @@ ShellRoot {
     study.startIfIdle()
   }
   function toast(msg) { toastItem.show(msg) }
-  // Where the keyboard goes when an overlay closes.
-  function contentRootFocus() {
-    if (root.currentScreen === "study") studyScreen.focusAnswer()
-    else if (root.currentScreen === "cards") cardsScreen.focusStage()
-    else contentRoot.forceActiveFocus()
+  // Where the keyboard goes after a change of screen or when an overlay
+  // closes: into the screen's own field if it has one (a screen declares
+  // `takeFocus()`, returning false when it has nothing to focus: Study's
+  // answer box, the Cards stage), else the window's root, whose keys are
+  // the app's. Keys a screen's field doesn't use travel up to the root.
+  function focusScreen() {
+    var s = screens.current
+    if (!s || typeof s.takeFocus !== "function" || !s.takeFocus()) contentRoot.forceActiveFocus()
   }
-  // The Add menu, for the status line's ⌃N hint (StatusBits.js) and for Esc
-  // on Study, which closes the menu before it would end the session.
+  // The Add menu, for the status line's ⌃N hint (StatusBits.js).
   readonly property bool addMenuOpen: addMenu.opened
   function toggleAdd() { addMenu.toggle() }
-  function closeAdd() { addMenu.opened = false }
 
   function setScreen(s) {
     if (s === root.currentScreen) return
@@ -218,10 +219,14 @@ ShellRoot {
 
       // Hiding a screen does not take the keyboard from it (Omvision's
       // lesson: typing then landed in the hidden journal). Every change of
-      // screen hands it back here; Study takes it again when shown.
+      // screen takes it back here at once, then hands it to the new screen
+      // a turn later, once that screen is visible and can hold it.
       Connections {
         target: root
-        function onCurrentScreenChanged() { if (root.currentScreen !== "study") contentRoot.forceActiveFocus() }
+        function onCurrentScreenChanged() {
+          contentRoot.forceActiveFocus()
+          Qt.callLater(root.focusScreen)
+        }
       }
 
       Loader {
@@ -288,7 +293,7 @@ ShellRoot {
         anchors.bottom: statusLine.top
 
         // The screen on show, for the status line.
-        readonly property Item current: ({ home: homeScreen, study: studyScreen, wiki: wikiScreen,
+        readonly property var current: ({ home: homeScreen, study: studyScreen, wiki: wikiScreen,
                                            cards: cardsScreen, graph: graphScreen })[root.currentScreen] || null
 
         HomeScreen {
@@ -333,6 +338,7 @@ ShellRoot {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         height: Theme.statusLineHeight
+        app: root
         screen: screens.current
         screenName: root.currentScreen
       }
@@ -342,6 +348,7 @@ ShellRoot {
         x: parent.width - width - Theme.spaceLg
         y: topBar.height - Theme.spaceXs
         onPicked: function(kind) { root.openAdd(kind, "", "") }
+        onClosed: root.focusScreen()
       }
 
       SearchPalette {
@@ -355,7 +362,7 @@ ShellRoot {
       PageCardsDialog {
         id: pageCardsDialog
         anchors.fill: parent
-        onClosed: root.contentRootFocus()
+        onClosed: root.focusScreen()
       }
 
       TopicDialog {

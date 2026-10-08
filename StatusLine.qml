@@ -2,6 +2,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 
+import "StatusBits.js" as StatusBits
+import "bar/Model.js" as Overview
+
 // The window's bottom line, the way helix or vim keep one: what mode the
 // screen is in, where you are, the keys that work right now and anything
 // that needs a look. It replaced Study's session line, its button rows and its
@@ -17,13 +20,17 @@ import QtQuick.Controls
 //   readonly property var statusHints        // [{ keys, label, run: function() {} }] clickable
 //   readonly property var statusAlerts       // [{ text, color?, tip?, run? }] right edge
 //
+//   readonly property bool statusShared      // default true: see below
+//
 // A hint without `run` is drawn as a legend, not a button. A screen that
 // declares none of these gets its name only (HOME, WIKI, CARDS, GRAPH).
+// After a screen's own hints and alerts the line adds what every screen
+// shares: ⌃K search, ⌃N add, alt+← back, and the pressure verdict while it
+// is not ok (StatusBits.js). Study, whose keys and pressure are its
+// session's, sets statusShared to false.
 //
 // The properties are read off a `var`, not typed, so a screen opts in by
-// declaring them and nothing here has to know the screen's type. A base
-// type every screen inherits was the alternative; it would have tied five
-// files being changed in parallel to one more.
+// declaring them and nothing here has to know the screen's type.
 //
 // Narrow windows: the mode and the alerts always show, the segments clip,
 // and the hints drop from the end, whole, rather than overlap (layout
@@ -31,6 +38,7 @@ import QtQuick.Controls
 Rectangle {
   id: root
 
+  property var app: null
   property var screen: null
   property string screenName: ""
 
@@ -45,8 +53,11 @@ Rectangle {
   }
   readonly property color modeColor: prop("statusModeColor", Theme.accentColor)
   readonly property var segments: prop("statusSegments", [])
-  readonly property var hints: prop("statusHints", [])
-  readonly property var alerts: prop("statusAlerts", [])
+  readonly property bool shared: prop("statusShared", true)
+  readonly property var hints: shared ? StatusBits.common(app, prop("statusHints", [])) : prop("statusHints", [])
+  readonly property var alerts: shared && app
+    ? prop("statusAlerts", []).concat(StatusBits.pressure(app, Overview.clearance(app.store.overview), Theme.verdictColor))
+    : prop("statusAlerts", [])
 
   implicitHeight: Theme.statusLineHeight
   color: Theme.paper
@@ -138,6 +149,7 @@ Rectangle {
         id: hint
         required property var modelData
         required property int index
+        size: Theme.captionSize
         objectName: "statusHint:" + hint.modelData.label
         visible: hint.index < root.hintsShown
         height: hintRow.height

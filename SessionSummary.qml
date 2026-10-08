@@ -113,7 +113,6 @@ Column {
         id: walkthroughButton
         required property var modelData
         x: -walkthroughButton.inset
-        size: Theme.bodySmallSize
         tint: Theme.accentColor
         label: "/study-walkthrough " + (walkthroughButton.modelData.length > 48 ? walkthroughButton.modelData.slice(0, 47) + "…" : walkthroughButton.modelData)
         onActivated: root.session.app.launch(Launch.skillArgv(Paths.studyDir, "Omvida · Walkthrough", "/study-walkthrough", walkthroughButton.modelData, ""), "Opened Claude Code")
@@ -131,11 +130,10 @@ Column {
       objectName: "studyAgainButton"
       keys: "↵"
       label: "start another session"
-      size: Theme.bodySmallSize
       tint: Theme.accentColor
       onActivated: root.session.start()
     }
-    PlainButton { label: "browse the wiki"; size: Theme.bodySmallSize; onActivated: root.session.app.setScreen("wiki") }
-    PlainButton { label: "home"; size: Theme.bodySmallSize; onActivated: root.session.app.setScreen("home") }
+    PlainButton { label: "browse the wiki"; onActivated: root.session.app.setScreen("wiki") }
+    PlainButton { label: "home"; onActivated: root.session.app.setScreen("home") }
   }
 }

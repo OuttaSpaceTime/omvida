@@ -3,9 +3,8 @@ import QtQuick.Controls
 
 // The app's control: controlHeight tall, a 1px border, square, quiet
 // (Omvision's layout rule 9). `filled` is for the one primary action on a
-// screen. `hint` shows the key that does the same thing, dimmed after the
-// label; the screens outside Study now leave it empty and put their keys in
-// the window's status line instead, so a button says only what it does.
+// screen. Keys are not printed on buttons: they live in the window's status
+// line, so a button says only what it does.
 //
 // `quiet` drops the border: a text button for secondary actions that sit in a
 // line of prose-like controls (a page's "2 cards · Go deeper"), where a row of
@@ -18,7 +17,6 @@ Rectangle {
 
   property string label: ""
   property string icon: ""
-  property string hint: ""
   property string tip: ""
   property bool filled: false
   property bool small: false
@@ -62,13 +60,6 @@ Rectangle {
       font.pixelSize: root.small ? Theme.bodySmallSize : Theme.bodySize
       font.weight: root.filled && root.prominent ? Font.Medium : Font.Normal
       color: root.filled ? Theme.paper : root.tint
-    }
-    UiText {
-      visible: root.hint !== ""
-      anchors.verticalCenter: parent.verticalCenter
-      text: root.hint
-      font.pixelSize: Theme.captionSize
-      color: root.filled ? Theme.alpha(Theme.paper, 0.75) : Theme.faint
     }
   }
 

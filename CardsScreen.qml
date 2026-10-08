@@ -22,7 +22,7 @@ import "Format.js" as Format
 // There used to be a List / Flip through switch; the user asked for one
 // screen. A change of filter starts the walk over at the new list's first
 // card; a refresh of the deck keeps the current card (FlipThrough's
-// keepPlace).
+// stage mode).
 Item {
   id: root
 
@@ -36,7 +36,7 @@ Item {
   readonly property var all: app ? app.store.allCards : []
   readonly property var filters: ({ query: query, state: stateFilter, tag: tagFilter, deck: deckFilter })
   readonly property var filtered: Cards.filterCards(all, filters)
-  readonly property bool filtering: query !== "" || stateFilter !== "" || tagFilter !== "" || deckFilter !== ""
+  readonly property bool filtering: query !== "" || selectedFilters.length > 0
   readonly property var stateList: Cards.stateCounts(all)
   readonly property int deckSize: Math.max(1, all.length)
   readonly property var tags: Cards.tagCounts(all)
@@ -63,7 +63,6 @@ Item {
   readonly property int upNextCount: Math.max(0, filtered.length - current - 1)
 
   // ---- the window's status line (StatusLine.qml reads these) -----------------
-  readonly property string statusMode: "CARDS"
   readonly property var statusSegments: {
     var segs = [{ text: filtered.length ? (current + 1) + "/" + filtered.length : "0/0" }]
     var summary = Cards.filterSummary(filters)
@@ -92,9 +91,18 @@ Item {
 
   function clearFilters() {
     search.text = ""
+    query = ""
     stateFilter = ""
     tagFilter = ""
     deckFilter = ""
+  }
+
+  // Each card's front as plain text, worked out once per load of the deck
+  // rather than in every tile each time the grid is rebuilt.
+  readonly property var tileTexts: {
+    var m = {}
+    all.forEach(function(c) { m[c.id] = Format.stripHtml(c.front) })
+    return m
   }
 
   // A tile's caption: the deck only when there are several (one deck's
@@ -120,77 +128,17 @@ Item {
     }
   }
 
-  // The stage takes the keyboard whenever the screen has it, so Space and
-  // the arrows work without a click first. The app hands the keyboard to its
-  // own root on every change of screen and when an overlay closes
-  // (omvida.qml), after this screen's visibility has changed; so the stage
-  // takes it a turn later, and again whenever the root gets it back while
-  // this screen is up. Nothing is lost by that: keys the stage doesn't use
-  // (Ctrl+K, /, Alt+←) travel up to the root as before.
-  function focusStage() { if (root.visible && root.filtered.length > 0) flip.forceActiveFocus() }
-  readonly property Item focusedItem: Window.activeFocusItem
-  onFocusedItemChanged: if (focusedItem && focusedItem.objectName === "contentRoot") focusStage()
-
-  onVisibleChanged: if (visible && app) { app.store.refreshDeck(); Qt.callLater(focusStage) }
-  onFiltersChanged: flip.forget()
-
-  // A quiet text control: a filter toggle (label, count, optional colour
-  // dot) or an action (label only). The rows of bordered chips and buttons
-  // this screen had were the loudest thing on it; the selected filter is
-  // marked by the accent and an underline instead.
-  component TextLink: Item {
-    id: link
-    property string label: ""
-    property int count: -1
-    property color dot: "transparent"
-    property bool selected: false
-    property bool active: true
-    // A trailing gap of the link's own: a Flow has one `spacing` for both
-    // across and down, and links in a Flow want their rows closer than
-    // their columns. Zero for a link set against a right edge, which must
-    // end on it.
-    property int gap: 0
-    signal activated()
-
-    implicitWidth: linkRow.implicitWidth + gap
-    implicitHeight: linkRow.implicitHeight + Theme.spaceXs
-    opacity: active ? 1 : 0.45
-
-    Row {
-      id: linkRow
-      anchors.verticalCenter: parent.verticalCenter
-      spacing: Theme.spaceXs
-      Rectangle {
-        visible: link.dot.a > 0
-        width: Theme.dotSize; height: Theme.dotSize; radius: Theme.dotSize / 2
-        color: link.dot
-        anchors.verticalCenter: parent.verticalCenter
-      }
-      UiText {
-        text: link.label
-        font.pixelSize: Theme.bodySmallSize
-        font.underline: link.selected
-        color: link.selected ? Theme.accentColor : (linkArea.containsMouse && link.active ? Theme.ink : Theme.secondaryInk)
-        anchors.verticalCenter: parent.verticalCenter
-      }
-      UiText {
-        visible: link.count >= 0
-        text: link.count
-        font.pixelSize: Theme.captionSize
-        color: Theme.faint
-        anchors.verticalCenter: parent.verticalCenter
-      }
-    }
-    MouseArea {
-      id: linkArea
-      anchors.fill: parent
-      anchors.margins: -Theme.chipHitSlop
-      hoverEnabled: true
-      enabled: link.active
-      cursorShape: Qt.PointingHandCursor
-      onClicked: link.activated()
-    }
+  // The stage takes the keyboard when the screen is shown (the window's
+  // focusScreen()), so Space and the arrows work without a click first;
+  // keys it doesn't use (Ctrl+K, /, Alt+←) travel up to the window.
+  function takeFocus() {
+    if (!root.visible || root.filtered.length === 0) return false
+    flip.forceActiveFocus()
+    return true
   }
+
+  onVisibleChanged: if (visible && app) app.store.refreshDeck()
+  onFiltersChanged: flip.forget()
 
   GlideFlickable {
     id: flick
@@ -208,9 +156,9 @@ Item {
 
     Column {
       id: col
-      x: Theme.cardsX(root.width)
+      x: Theme.pageX(root.width, Theme.cardsMeasure)
       y: Theme.space3xl
-      width: Theme.cardsWidth(root.width)
+      width: Theme.pageWidth(root.width, Theme.cardsMeasure)
       spacing: Theme.spaceXl
 
       Column {
@@ -255,8 +203,8 @@ Item {
               anchors.verticalCenter: parent.verticalCenter
               spacing: Theme.spaceLg
               visible: root.filtered.length > 0
-              TextLink { objectName: "cardsPrev"; label: "‹ back"; active: !flip.atStart; onActivated: root.page(-1) }
-              TextLink { objectName: "cardsNext"; label: "next ›"; active: !flip.atEnd; onActivated: root.page(1) }
+              PlainButton { objectName: "cardsPrev"; label: "‹ back"; enabled: !flip.atStart; onActivated: root.page(-1) }
+              PlainButton { objectName: "cardsNext"; label: "next ›"; enabled: !flip.atEnd; onActivated: root.page(1) }
             }
           }
 
@@ -266,19 +214,14 @@ Item {
             visible: root.filtered.length > 0
             width: parent.width
             cards: root.filtered
-            wraps: false
-            controls: false
-            keepPlace: true
-            centred: true
-            frontSize: Theme.cardStageFrontSize
-            faceHeight: Theme.cardStageFaceHeight
+            stage: true
           }
 
           Row {
             visible: root.filtered.length === 0 && root.all.length > 0
             spacing: Theme.spaceMd
             UiText { text: "No card matches these filters."; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
-            TextLink { label: "clear filters"; onActivated: root.clearFilters() }
+            PlainButton { label: "clear filters"; onActivated: root.clearFilters() }
           }
         }
 
@@ -296,6 +239,7 @@ Item {
         // under either side.
         GlideFlickable {
           id: asideView
+          objectName: "cardsAside"
           x: top.sideBySide ? top.stageWidth + Theme.space3xl : 0
           width: top.sideBySide ? Theme.cardsAsideWidth : top.width
           height: top.sideBySide ? stageColumn.implicitHeight : aside.implicitHeight
@@ -365,8 +309,9 @@ Item {
             Item {
               width: parent.width
               height: Theme.smallControlHeight
-              TextLink {
+              PlainButton {
                 objectName: "filtersToggle"
+                x: -inset
                 anchors.verticalCenter: parent.verticalCenter
                 label: (root.filtersOpen ? "▾ " : "▸ ") + "FILTER"
                 onActivated: root.filtersOpen = !root.filtersOpen
@@ -375,7 +320,7 @@ Item {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.spaceMd
-                TextLink { objectName: "clearFilters"; visible: root.filtering; label: "clear"; onActivated: root.clearFilters() }
+                PlainButton { objectName: "clearFilters"; visible: root.filtering; label: "clear"; onActivated: root.clearFilters() }
                 UiText {
                   objectName: "filteredCount"
                   text: Format.plural(root.filtered.length, "card")
@@ -385,18 +330,19 @@ Item {
               }
             }
 
-            // What is selected, on top: a click drops it.
+            // What is selected, on top: a click drops it. The chips' own
+            // padding is pulled out past the column's edges, so their words
+            // line up with the field's.
             Flow {
               objectName: "selectedFilters"
               visible: root.selectedFilters.length > 0
-              width: parent.width
-              spacing: Theme.spaceSm
+              x: -Theme.chipInset
+              width: parent.width + Theme.chipInset * 2
               Repeater {
                 model: root.selectedFilters
-                delegate: TextLink {
+                delegate: Chip {
                   id: picked
                   required property var modelData
-                  gap: Theme.spaceSm
                   objectName: "selected:" + picked.modelData.kind + ":" + picked.modelData.value
                   label: picked.modelData.label + " ✕"
                   dot: picked.modelData.kind === "state" ? Theme.stateColor(picked.modelData.value) : "transparent"
@@ -429,8 +375,11 @@ Item {
                   color: search.activeFocus ? Theme.accentColor : Theme.border
                 }
               }
-              onTextChanged: root.query = text
-              Keys.onEscapePressed: { text = ""; root.app.contentRootFocus() }
+              // The grid follows a pause in the typing, not each key: every
+              // change of filter rebuilds its tiles.
+              onTextChanged: queryPause.restart()
+              Timer { id: queryPause; interval: Theme.searchDebounce; onTriggered: root.query = search.text }
+              Keys.onEscapePressed: { text = ""; root.app.focusScreen() }
             }
 
             Column {
@@ -457,14 +406,13 @@ Item {
                 }
               }
               Flow {
-                width: parent.width
-                spacing: Theme.spaceSm
+                x: -Theme.chipInset
+                width: parent.width + Theme.chipInset * 2
                 Repeater {
                   model: root.stateList.filter(function(s) { return s.state !== root.stateFilter })
-                  delegate: TextLink {
+                  delegate: Chip {
                     id: stateLink
                     required property var modelData
-                    gap: Theme.spaceSm
                     objectName: "stateChip:" + stateLink.modelData.state
                     label: stateLink.modelData.state
                     count: stateLink.modelData.count
@@ -474,29 +422,27 @@ Item {
                 }
               }
               Flow {
-                width: parent.width
-                spacing: Theme.spaceSm
+                x: -Theme.chipInset
+                width: parent.width + Theme.chipInset * 2
                 visible: root.decks.length > 1
                 Repeater {
                   model: root.decks.filter(function(d) { return d !== root.deckFilter })
-                  delegate: TextLink {
+                  delegate: Chip {
                     id: deckLink
                     required property var modelData
-                    gap: Theme.spaceSm
                     label: deckLink.modelData
                     onActivated: root.deckFilter = deckLink.modelData
                   }
                 }
               }
               Flow {
-                width: parent.width
-                spacing: Theme.spaceSm
+                x: -Theme.chipInset
+                width: parent.width + Theme.chipInset * 2
                 Repeater {
                   model: root.tagsShown
-                  delegate: TextLink {
+                  delegate: Chip {
                     id: tagLink
                     required property var modelData
-                    gap: Theme.spaceSm
                     objectName: "tagChip:" + tagLink.modelData.tag
                     label: "#" + tagLink.modelData.tag
                     count: tagLink.modelData.count
@@ -504,11 +450,11 @@ Item {
                   }
                 }
               }
-              TextLink {
+              PlainButton {
                 objectName: "moreTags"
+                x: -inset
                 visible: root.tagsHidden > 0 || root.tagsOpen
                 label: root.tagsOpen ? "fewer tags ▴" : root.tagsHidden + " more tags ▾"
-                selected: false
                 onActivated: root.tagsOpen = !root.tagsOpen
               }
             }
@@ -533,7 +479,7 @@ Item {
               ? "Next up · " + root.upNextCount + (root.current > 0 ? " · " + root.current + " passed" : "")
               : "That was the last card"
           }
-          TextLink {
+          PlainButton {
             objectName: "cardsRestart"
             visible: root.current > 0
             anchors.right: parent.right
@@ -573,7 +519,7 @@ Item {
           // A model sliced at the current card was the obvious way, and
           // rejected: a JS array model is rebuilt whole on every change, so
           // each → would have rebuilt some 350 tiles. Tiles are plain text
-          // (Cards.plainText) rather than the old rich-text CardTile, which
+          // (Format.stripHtml) rather than the old rich-text CardTile, which
           // is what makes building the whole deck at once cheap enough that
           // the list no longer pages 60 at a time.
           Repeater {
@@ -630,7 +576,7 @@ Item {
                 UiText {
                   width: parent.width
                   textFormat: Text.PlainText
-                  text: Cards.plainText(tile.modelData.front)
+                  text: root.tileTexts[tile.modelData.id] || ""
                   font.pixelSize: Theme.bodySmallSize
                   lineHeight: Theme.proseLineHeight
                   wrapMode: Text.Wrap

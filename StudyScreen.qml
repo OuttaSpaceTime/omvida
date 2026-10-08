@@ -15,13 +15,14 @@ Item {
   property var session: null
   property alias answerField: card.answerField
 
-  function focusAnswer() {
-    if (!root.visible) return
+  // The window's focusScreen() calls this when Study is shown or an overlay
+  // over it closes.
+  function takeFocus() {
+    if (!root.visible) return false
     if (root.session.inCard) card.focusAnswer()
     else keyCatcher.forceActiveFocus()
+    return true
   }
-
-  onVisibleChanged: if (visible) Qt.callLater(focusAnswer)
   Connections {
     target: root.session
     // A card takes the keyboard into its answer box; a leech, the summary
@@ -29,7 +30,7 @@ Item {
     // in those phases, and a hidden item's focus goes nowhere useful.
     function onPhaseChanged() {
       var p = root.session.phase
-      if (p === "answering" || p === "blocked" || p === "done" || p === "error") Qt.callLater(root.focusAnswer)
+      if (p === "answering" || p === "blocked" || p === "done" || p === "error") Qt.callLater(root.takeFocus)
     }
   }
 
@@ -49,6 +50,9 @@ Item {
   // not flicker through a third set on every card.
   readonly property bool answeringKeys: phase === "answering" || phase === "loading" || (phase === "submitting" && !revealedLayout)
 
+  // Study's keys and pressure are its session's, not the reading screens'
+  // ⌃K, ⌃N and back (StatusLine.qml).
+  readonly property bool statusShared: false
   readonly property string statusMode: {
     switch (phase) {
     case "syncing": return "SYNC"

@@ -10,8 +10,15 @@ Rectangle {
 
   property bool opened: false
   signal picked(string kind)
+  signal closed()
 
   function toggle() { root.opened = !root.opened }
+
+  // Open, it holds the keyboard, so Esc closes it on every screen instead
+  // of reaching what is under it (on Study, that ended the session);
+  // closed, it hands the keyboard back (omvida.qml's focusScreen()).
+  onOpenedChanged: if (opened) forceActiveFocus(); else closed()
+  Keys.onEscapePressed: root.opened = false
 
   visible: opened
   z: 10

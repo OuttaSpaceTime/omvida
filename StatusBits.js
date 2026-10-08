@@ -1,8 +1,7 @@
 .pragma library
 
-// What the screens outside Study hand the window's status line (StatusLine.qml
-// reads statusMode, statusSegments, statusHints and statusAlerts off the
-// screen on show). The keys these hints name are the window's own
+// The hints and the alert the window's status line (StatusLine.qml) adds
+// after every screen's own, Study's excepted. The keys these hints name are the window's own
 // (omvida.qml's contentRoot), and each hint's run() calls the same function
 // its key does, so a click on a hint and the key never drift apart.
 //
@@ -14,11 +13,7 @@ function search(app) {
   return { keys: "⌃K", label: "search", run: function() { app.openSearch("") } }
 }
 
-// Ctrl+N toggles the Add menu, which only the window can reach; the hint is
-// offered once the window exposes toggleAdd(), rather than opening something
-// other than what the key opens.
 function add(app) {
-  if (!app || typeof app.toggleAdd !== "function") return null
   return { keys: "⌃N", label: "add", run: function() { app.toggleAdd() } }
 }
 

@@ -16,7 +16,7 @@ The user chose two looks from a set of mockups, and the app follows them everywh
 - **Keyboard, no buttons in the way**: key hints live in the window's status line, not on
   buttons, in fields or in placeholders. A screen declares `statusMode`, `statusSegments`,
   `statusHints` (each `{ keys, label, run }`, run being what the key does) and
-  `statusAlerts`; Home, Wiki and Graph build theirs with `StatusBits.js`. Secondary actions are
+  `statusAlerts`, and the line adds the shared ones (`StatusBits.js`). Secondary actions are
   quiet text buttons (`ActionButton { quiet: true }`); an unselected chip is its words alone,
   the selected one outlined in the accent.
 
@@ -47,9 +47,14 @@ readonly property color statusModeColor  // optional; default Theme.accentColor
 readonly property var statusSegments     // [{ text, color? }] left, after the mode
 readonly property var statusHints        // [{ keys, label, run: function() {} }] clickable
 readonly property var statusAlerts       // [{ text, color?, tip?, run? }] right edge
+readonly property bool statusShared      // default true; Study sets false
 ```
 
-A screen that declares none gets its name only (HOME, WIKI, CARDS, GRAPH). Segments default
+After a screen's own hints and alerts the line adds what every screen shares: ⌃K search, ⌃N
+add, alt+← back (with history), and the pressure verdict while it is not ok, its clearance as
+the tip and a click into Study. Study's keys and pressure are its session's, so it opts out.
+
+A screen that declares no mode gets its name (HOME, WIKI, CARDS, GRAPH). Segments default
 to `Theme.dim`; a hint without `run` is a legend, not a button; an alert shows `tip` on hover
 and runs `run` on click. On a narrow window the mode and the alerts stay, the segments clip and
 the hints drop whole from the end, so list them most important first.
@@ -110,7 +115,7 @@ before the reading column narrows below ~60% of its measure.
 
 ## Cards
 
-Set in a wider column than the reading one (`Theme.cardsWidth`, up to 1600px), since it is a
+Set in a wider column than the reading one (`Theme.pageWidth` with `Theme.cardsMeasure`, up to 1600px), since it is a
 grid. At the top, the stage: the current card at a fixed height (`Theme.cardStageFaceHeight`),
 its front set large (`Theme.cardStageFrontSize`) and centred, its position (`Card 12 of 357`, a
 progress hairline) and quiet ‹ back / next › links. Beside it (above it when the stage would drop

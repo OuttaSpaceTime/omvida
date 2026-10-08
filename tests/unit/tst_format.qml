@@ -50,4 +50,13 @@ TestCase {
     compare(F.ago("2026-10-01", now), "5d ago")
     compare(F.ago("2026-09-01", now), "2026-09-01")
   }
+
+  function test_plain_text_for_a_tile() {
+    compare(F.stripHtml("What is <b>HSTS</b>?<br>Say <code>max-age</code>."), "What is HSTS? Say max-age.")
+    compare(F.stripHtml("<pre>a  &lt;b&gt;\n  c</pre><p>x &amp; y</p>"), "a <b> c x & y")
+    // Decoded once: an escaped entity stays the entity's text.
+    compare(F.stripHtml("&amp;lt; &quot;q&quot; &#39;s&#39; &#65;"), "&lt; \"q\" 's' A")
+    compare(F.stripHtml(""), "")
+    compare(F.stripHtml(null), "")
+  }
 }

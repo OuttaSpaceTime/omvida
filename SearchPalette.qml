@@ -94,7 +94,7 @@ Item {
   function close() {
     root.opened = false
     if (askProc.running) askProc.running = false
-    if (root.app) root.app.contentRootFocus()
+    if (root.app) root.app.focusScreen()
   }
 
   // Every word must appear in the title, an alias or the path; titles that
@@ -264,7 +264,7 @@ Item {
         anchors.top: rule.bottom
         anchors.topMargin: Theme.spaceMd
         anchors.left: parent.left
-        anchors.leftMargin: Theme.spaceMd - Theme.spaceSm
+        anchors.leftMargin: Theme.spaceMd - Theme.spaceSm  // a hint's inset
         spacing: Theme.spaceXs
         Chip { label: "Keyword"; selected: !root.deep; onActivated: { root.deep = false; root.runBackendSearch() } }
         Chip { objectName: "deepSearch"; label: "Deep (~6s)"; selected: root.deep; onActivated: { root.deep = true; root.runBackendSearch() } }
@@ -475,29 +475,16 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         Repeater {
           model: root.hints
-          delegate: Rectangle {
+          // The status line's hint, so a key reads the same in both places.
+          delegate: PlainButton {
             id: hintItem
             required property var modelData
-            readonly property bool clickable: typeof hintItem.modelData.run === "function"
             objectName: "paletteHint:" + hintItem.modelData.label
-            width: hintRow.implicitWidth + Theme.spaceLg
-            height: Theme.smallControlHeight
-            color: hintItem.clickable && hintArea.containsMouse ? Theme.hoverFill : "transparent"
-            Row {
-              id: hintRow
-              anchors.centerIn: parent
-              spacing: Theme.spaceXs
-              UiText { text: hintItem.modelData.keys; font.pixelSize: Theme.captionSize; font.weight: Font.DemiBold; color: Theme.secondaryInk }
-              UiText { text: hintItem.modelData.label; font.pixelSize: Theme.captionSize; color: Theme.dim }
-            }
-            MouseArea {
-              id: hintArea
-              anchors.fill: parent
-              enabled: hintItem.clickable
-              hoverEnabled: true
-              cursorShape: Qt.PointingHandCursor
-              onClicked: hintItem.modelData.run()
-            }
+            size: Theme.captionSize
+            keys: hintItem.modelData.keys
+            label: hintItem.modelData.label
+            interactive: typeof hintItem.modelData.run === "function"
+            onActivated: hintItem.modelData.run()
           }
         }
       }

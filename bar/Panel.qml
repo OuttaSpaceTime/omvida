@@ -27,7 +27,6 @@ Panel {
   readonly property color fg: bar ? bar.foreground : Color.foreground
   readonly property color dim: Qt.rgba(fg.r, fg.g, fg.b, 0.62)
   readonly property color faint: Qt.rgba(fg.r, fg.g, fg.b, 0.42)
-  readonly property color hairline: Qt.rgba(fg.r, fg.g, fg.b, 0.12)
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
 
   function open() {
@@ -135,14 +134,16 @@ Panel {
 
         // ---- the deck's maturity: one bar, its numbers under it ----
         Column {
+          id: maturity
           visible: root.o !== null
           width: parent.width
           spacing: Style.space(6)
+          readonly property var parts: Model.maturityParts(root.o)
           Row {
             id: maturityBar
             width: parent.width
             spacing: Style.space(2)
-            readonly property var parts: Model.maturityParts(root.o).filter(function(p) { return p.n > 0 })
+            readonly property var parts: maturity.parts.filter(function(p) { return p.n > 0 })
             Repeater {
               model: maturityBar.parts
               delegate: Rectangle {
@@ -156,7 +157,7 @@ Panel {
           Row {
             spacing: Style.space(12)
             Repeater {
-              model: Model.maturityParts(root.o)
+              model: maturity.parts
               delegate: Text {
                 required property var modelData
                 textFormat: Text.StyledText
@@ -180,7 +181,7 @@ Panel {
         }
 
         // ---- next up ----
-        Rectangle { visible: pending.count > 0; width: parent.width; height: 1; color: root.hairline }
+        PanelSeparator { visible: pending.count > 0; foreground: root.fg }
         Text {
           visible: pending.count > 0
           text: "NEXT UP"
@@ -216,7 +217,7 @@ Panel {
         }
 
         // ---- the way in: one primary action, two icon buttons ----
-        Rectangle { width: parent.width; height: 1; color: root.hairline }
+        PanelSeparator { foreground: root.fg }
         Row {
           id: actions
           width: parent.width

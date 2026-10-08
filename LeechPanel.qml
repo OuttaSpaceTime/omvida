@@ -26,30 +26,30 @@ Column {
 
   Rectangle { width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
   CardFace { width: parent.width; html: root.session.blocked ? root.session.blocked.card.front : ""; size: Theme.subtitleSize }
-  CardFace { width: parent.width; html: root.session.blocked ? root.session.blocked.card.back : ""; size: Theme.bodySmallSize; color: Theme.dim }
+  CardFace { width: parent.width; html: root.session.blocked ? root.session.blocked.card.back : ""; color: Theme.dim }
   Rectangle { width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
 
   // The decisions, pulled left so the first word sits on the page's edge.
   Row {
     x: -rewrite.inset
     spacing: Theme.spaceSm
-    PlainButton { id: rewrite; objectName: "leechRewrite"; label: "rewrite in claude"; size: Theme.bodySmallSize; tint: Theme.accentColor; onActivated: root.session.leechFix("rewrite") }
-    PlainButton { objectName: "leechSplit"; label: "split in claude"; size: Theme.bodySmallSize; onActivated: root.session.leechFix("split") }
-    PlainButton { objectName: "leechKeep"; label: "keep as is"; size: Theme.bodySmallSize; onActivated: root.session.leechResolve("resolveLeech", "kept as is") }
-    PlainButton { objectName: "leechDrop"; label: "delete"; size: Theme.bodySmallSize; tint: Theme.redText; onActivated: dropConfirm.visible = true }
+    PlainButton { id: rewrite; objectName: "leechRewrite"; label: "rewrite in claude"; tint: Theme.accentColor; onActivated: root.session.leechFix("rewrite") }
+    PlainButton { objectName: "leechSplit"; label: "split in claude"; onActivated: root.session.leechFix("split") }
+    PlainButton { objectName: "leechKeep"; label: "keep as is"; onActivated: root.session.leechResolve("resolveLeech", "kept as is") }
+    PlainButton { objectName: "leechDrop"; label: "delete"; tint: Theme.redText; onActivated: dropConfirm.visible = true }
   }
   Row {
     id: dropConfirm
     visible: false
     spacing: Theme.spaceSm
     UiText { text: "Delete this card and its history?"; font.pixelSize: Theme.bodySmallSize; color: Theme.redText; anchors.verticalCenter: parent.verticalCenter }
-    PlainButton { objectName: "leechDropConfirm"; label: "delete"; size: Theme.bodySmallSize; tint: Theme.redText; onActivated: { dropConfirm.visible = false; root.session.leechResolve("deleteCard", "deleted") } }
-    PlainButton { label: "cancel"; size: Theme.bodySmallSize; onActivated: dropConfirm.visible = false }
+    PlainButton { objectName: "leechDropConfirm"; label: "delete"; tint: Theme.redText; onActivated: { dropConfirm.visible = false; root.session.leechResolve("deleteCard", "deleted") } }
+    PlainButton { label: "cancel"; onActivated: dropConfirm.visible = false }
   }
   Row {
     x: -cont.inset
     spacing: Theme.spaceXs
-    PlainButton { id: cont; objectName: "leechContinue"; keys: "↵"; label: "continue"; size: Theme.bodySmallSize; anchors.verticalCenter: parent.verticalCenter; onActivated: root.session.loadNext() }
+    PlainButton { id: cont; objectName: "leechContinue"; keys: "↵"; label: "continue"; anchors.verticalCenter: parent.verticalCenter; onActivated: root.session.loadNext() }
     UiText {
       text: "after fixing it in Claude Code"
       font.pixelSize: Theme.captionSize

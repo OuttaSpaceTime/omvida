@@ -16,6 +16,7 @@ Item {
   property var wikiIndex: null          // {pages, mocs, tree, graph, stamp}
   property var pagesByPath: ({})
   property var allCards: []
+  property string cardsText: ""      // allCards as JSON, to tell a refresh that changed nothing
   property bool cardsLoaded: false
   property var overview: null
   property var recentPages: []
@@ -46,7 +47,14 @@ Item {
   function loadCards() {
     deckClient.call("cards", {}, function(err, cards) {
       if (err) { root.status = "deck: " + err; return }
-      root.allCards = cards
+      // A refresh that changed nothing keeps the same array: a new one
+      // rebuilds every tile of the Cards grid, and refreshes come on every
+      // visit to Cards and every return to the window.
+      var text = JSON.stringify(cards)
+      if (text !== root.cardsText) {
+        root.cardsText = text
+        root.allCards = cards
+      }
       root.cardsLoaded = true
     })
   }

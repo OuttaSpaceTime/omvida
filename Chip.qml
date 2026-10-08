@@ -17,7 +17,7 @@ Rectangle {
   signal activated()
 
   implicitHeight: Theme.smallControlHeight
-  implicitWidth: row.implicitWidth + Theme.spaceLg
+  implicitWidth: row.implicitWidth + Theme.chipInset * 2
   color: !selected && area.containsMouse ? Theme.hoverFill : "transparent"
   border.color: selected ? Theme.accentColor : "transparent"
   border.width: Theme.borderWidth

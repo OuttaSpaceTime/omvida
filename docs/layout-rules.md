@@ -26,7 +26,7 @@ the area beside the rail. Don't position a screen's content with `anchors.margin
 on the full area; the text would jump when you switch to or from the journal.
 
 (Omvida: Cards is the one exception. It is a grid of cards, not prose, and the user
-asked for several a row, so it is set in the wider `Theme.cardsX` / `Theme.cardsWidth`,
+asked for several a row, so it is set in the wider `Theme.cardsMeasure` (`Theme.pageX`/`pageWidth`),
 centred the same way.)
 
 ## 3. Fills bleed, text does not

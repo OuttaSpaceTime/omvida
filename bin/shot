@@ -38,7 +38,10 @@ export QT_QPA_PLATFORM=offscreen OMVIDA_SHOT_DIR="$out" OMVIDA_SHOT_SCREEN="$scr
 launcher=("$ROOT/bin/omvida")
 if [ "$real" = 1 ]; then
   case "$screen" in study) echo "bin/shot: -R refuses the Study screen (it starts a session)" >&2; exit 2 ;; esac
-  case "${action%%:*}" in study|answer|ask|add|done|leech|syncfail) echo "bin/shot: -R refuses -a $action (it could write)" >&2; exit 2 ;; esac
+  # Only actions known to read nothing back: a new action is refused under
+  # -R until it is added here, rather than allowed until someone remembers.
+  case "${action%%:*}" in ""|search|addmenu|pagecards|cardsnext|cardsflip) ;;
+    *) echo "bin/shot: -R refuses -a $action (it could write)" >&2; exit 2 ;; esac
   export PATH="$ROOT/tests/fixtures/bin:$PATH" OMVIDA_TEST_OUT="${TMPDIR:-/tmp}"
 else
   box="$(mktemp -d "${TMPDIR:-/tmp}/omvida-shot.XXXXXX")"

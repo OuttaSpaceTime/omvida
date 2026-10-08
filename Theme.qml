@@ -200,7 +200,6 @@ QtObject {
   readonly property int dialogWidth: 560
   readonly property int hairlineWidth: 1
   readonly property int borderWidth: 1
-  readonly property int dialogBorderWidth: 2
   readonly property int selectionBarWidth: 3
   readonly property int tooltipDelay: 400
   readonly property int windowWidth: 1440
@@ -219,8 +218,6 @@ QtObject {
   readonly property int listRowHeight: 32
   readonly property int answerMinHeight: 120
   readonly property int statBarHeight: 8
-  readonly property int sparkHeight: 48
-  readonly property int sparkBarWidth: 18
   readonly property int cardFaceMinHeight: 220
   readonly property int cardGridCellWidth: 320
   readonly property int paletteWidth: 720
@@ -229,6 +226,9 @@ QtObject {
   // ("/study-walkthrough --write") ran out of the menu's frame.
   readonly property int menuWidth: sidePanelWidth
   readonly property int chipHitSlop: spaceXs
+  // A chip's padding either side of its words; a row of chips is pulled
+  // out by it so the words line up with the column's edge (layout rule 2).
+  readonly property int chipInset: spaceSm
 
   // ---- study screen / status line ----
   // The window's bottom line, as an editor's (StatusLine.qml): tall enough
@@ -238,7 +238,7 @@ QtObject {
   // still has, so a little taller than a control, and the suggested one
   // outlined at twice the hairline in its rating's colour.
   readonly property int keycapHeight: 40
-  readonly property int keycapSuggestedBorder: 2
+  readonly property int keycapSuggestedBorder: borderWidth * 2
   // The front once revealed: a recap, cut to a few lines.
   readonly property int recapLines: 3
 
@@ -261,9 +261,9 @@ QtObject {
   // without needing a second, louder colour (layout rule 9 still holds: the
   // hero figure stays the loudest thing on the screen).
   readonly property int primaryControlHeight: controlHeight + spaceSm
-  // The week's reviews as a small sparkline beside the hero figure: half the
-  // old chart's height, with no day letters (today is the last, accent bar).
-  readonly property int glanceSparkHeight: sparkHeight / 2
+  // The week's reviews as a small sparkline beside the hero figure, with no
+  // day letters (today is the last, accent bar).
+  readonly property int glanceSparkHeight: 24
   readonly property int glanceSparkBarWidth: spaceSm
   // How many pending reviews Home lists before "+ N more".
   readonly property int nextUpRows: 4
@@ -277,11 +277,14 @@ QtObject {
   }
   readonly property int pageMeasure: Math.round(bodyMetrics.advanceWidth("0") * readingColumns)
 
-  function pageWidth(areaWidth) {
-    return Math.max(0, Math.min(pageMeasure, areaWidth - panelPadding * 2))
+  // The column a screen sets its content in, centred: the reading measure,
+  // or a wider one (Cards passes cardsMeasure).
+  function pageWidth(areaWidth, measure) {
+    var m = measure === undefined ? pageMeasure : measure
+    return Math.max(0, Math.min(m, areaWidth - panelPadding * 2))
   }
-  function pageX(areaWidth) {
-    return Math.max(panelPadding, Math.round((areaWidth - pageWidth(areaWidth)) / 2))
+  function pageX(areaWidth, measure) {
+    return Math.max(panelPadding, Math.round((areaWidth - pageWidth(areaWidth, measure)) / 2))
   }
 
   // ---- cards screen ----
@@ -311,13 +314,6 @@ QtObject {
   readonly property int cardsTagsShown: 6
   // How long a click on a tile takes to bring the stage into view.
   readonly property int cardsScrollDuration: 220
-
-  function cardsWidth(areaWidth) {
-    return Math.max(0, Math.min(cardsMeasure, areaWidth - panelPadding * 2))
-  }
-  function cardsX(areaWidth) {
-    return Math.max(panelPadding, Math.round((areaWidth - cardsWidth(areaWidth)) / 2))
-  }
 
   // ---- motion ----------------------------------------------------------------------
   readonly property int flipDuration: 260

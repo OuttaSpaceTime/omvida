@@ -270,7 +270,6 @@ Column {
         objectName: "fixCardButton"
         anchors.verticalCenter: parent.verticalCenter
         label: "fix in claude"
-        size: Theme.bodySmallSize
         tint: Theme.accentColor
         onActivated: root.session.fixCard()
       }

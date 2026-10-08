@@ -15,7 +15,7 @@ Rectangle {
   property string keys: ""
   property string label: ""
   property color tint: Theme.secondaryInk
-  property int size: Theme.captionSize
+  property int size: Theme.bodySmallSize
   // False makes it a legend: the same words, no hover and no click. The
   // status line uses it for a key the mouse has no use for (⇧1-4 once the
   // keycaps are on screen).

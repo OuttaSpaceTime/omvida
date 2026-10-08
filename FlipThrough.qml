@@ -8,38 +8,31 @@ import "Format.js" as Format
 // flip-through, for a page's cards (PageCardsDialog) and for the stage at
 // the top of the deck explorer (CardsScreen).
 //
-// The two uses differ in a few switches, whose defaults are the dialog's:
-// `wraps` (the dialog goes round; the explorer stops at the ends, because
-// past its last card there is nothing left in the grid below), `controls`
-// (the explorer draws its own quiet controls and puts the key hints in the
-// window's status line), `frontSize`, and `keepPlace` (below).
+// `stage` is the deck explorer's use, where the card is the one thing the
+// screen shows:
+//   - it stops at the ends instead of going round (past the last card there
+//     is nothing left in the grid below),
+//   - it draws no buttons of its own (the explorer's are quiet links, its
+//     keys are in the window's status line),
+//   - the card keeps one height (Theme.cardStageFaceHeight, so it ends with
+//     the column beside it) and its text is centred: the front both ways and
+//     large, the answer only up and down, since a list or a code block
+//     centred line by line reads badly,
+//   - it keeps its place: a new list that still holds the current card keeps
+//     it current (and flipped). The explorer's list is rebuilt on every
+//     refresh of the deck, behind the user's back whenever the window comes
+//     to the front, and should not throw them back to the first card. The
+//     place is an id set only by the moves below, not bound to `card`: a
+//     binding would follow the index to whatever card a new list put there
+//     and then "keep" that one.
+// Without it (the page's cards dialog), a new list starts at its first card.
 FocusScope {
   id: root
 
   property var cards: []
   property int index: 0
   property bool flipped: false
-  property bool wraps: true
-  property bool controls: true
-  property int frontSize: Theme.titleSize
-  // A floor for the card's height, so a short card keeps the stage's size
-  // (the deck explorer matches it to the column beside it); 0 = the card's
-  // own height, as in the page's cards dialog.
-  property real faceHeight: 0
-  // Each side's text centred in the card rather than set from its top
-  // left: the deck explorer's stage, where a card is the one thing shown.
-  // The front is centred both ways; the answer only up and down, since a
-  // list or a code block centred line by line reads badly.
-  property bool centred: false
-  // With keepPlace, a new list that still holds the current card keeps it
-  // current (and keeps it flipped): the deck explorer's list is rebuilt on
-  // every refresh of the deck, which happens behind the user's back whenever
-  // the window comes to the front, and should not throw them back to the
-  // first card. Without it (the dialog), a new list starts at its first card.
-  // The place is remembered as an id set only by the moves below, not bound
-  // to `card`: a binding would follow the index to whatever card a new list
-  // put there and then "keep" that one.
-  property bool keepPlace: false
+  property bool stage: false
   property string placeId: ""
   readonly property real progress: cards.length ? (index + 1) / cards.length : 0
   readonly property var card: cards.length > 0 ? cards[Math.min(index, cards.length - 1)] : null
@@ -49,8 +42,8 @@ FocusScope {
   implicitHeight: col.implicitHeight
 
   onCardsChanged: {
-    var i = keepPlace ? Cards.indexOfId(cards, placeId) : -1
-    if (i === -1) { index = 0; flipped = false; placeId = "" }
+    var i = stage ? Cards.indexOfId(cards, placeId) : -1
+    if (i === -1) forget()
     else index = i
   }
 
@@ -65,7 +58,7 @@ FocusScope {
   function move(d) {
     if (cards.length === 0) return
     var i = index + d
-    if (wraps) i = (i + cards.length) % cards.length
+    if (!stage) i = (i + cards.length) % cards.length
     else if (i < 0 || i >= cards.length) return
     show(i)
   }
@@ -108,14 +101,14 @@ FocusScope {
       id: flipable
       objectName: "flipCard"
       width: parent.width
-      height: Math.max(Theme.cardFaceMinHeight, root.faceHeight, Math.max(frontCol.implicitHeight, backCol.implicitHeight) + Theme.spaceXl * 2)
+      height: Math.max(Theme.cardFaceMinHeight, root.stage ? Theme.cardStageFaceHeight : 0, Math.max(frontCol.implicitHeight, backCol.implicitHeight) + Theme.spaceXl * 2)
 
       front: Rectangle {
         anchors.fill: parent
         color: Theme.fill
         border.color: Theme.hairline
         border.width: Theme.borderWidth
-        // The label stays at the top; centred, the front sits in the middle
+        // The label stays at the top; on the stage the front sits in the middle
         // of what is left, never over the label. frontCol is only measured.
         Column {
           id: frontCol
@@ -131,10 +124,10 @@ FocusScope {
           x: Theme.spaceXl
           width: parent.width - Theme.spaceXl * 2
           readonly property real belowLabel: frontCol.y + frontLabel.height + frontCol.spacing
-          y: root.centred ? Math.max(belowLabel, (parent.height - implicitHeight) / 2) : belowLabel
-          horizontalAlignment: root.centred ? Text.AlignHCenter : Text.AlignLeft
+          y: root.stage ? Math.max(belowLabel, (parent.height - implicitHeight) / 2) : belowLabel
+          horizontalAlignment: root.stage ? Text.AlignHCenter : Text.AlignLeft
           html: root.card ? root.card.front : ""
-          size: root.frontSize
+          size: root.stage ? Theme.cardStageFrontSize : Theme.titleSize
         }
       }
       back: Rectangle {
@@ -145,7 +138,7 @@ FocusScope {
         Column {
           id: backCol
           x: Theme.spaceXl
-          y: root.centred ? Math.max(Theme.spaceXl, (parent.height - implicitHeight) / 2) : Theme.spaceXl
+          y: root.stage ? Math.max(Theme.spaceXl, (parent.height - implicitHeight) / 2) : Theme.spaceXl
           width: parent.width - Theme.spaceXl * 2
           spacing: Theme.spaceMd
           SectionLabel { text: "Answer" }
@@ -168,7 +161,7 @@ FocusScope {
     }
 
     Row {
-      visible: root.controls
+      visible: !root.stage
       spacing: Theme.spaceMd
       ActionButton { small: true; label: "←"; onActivated: root.move(-1) }
       UiText {

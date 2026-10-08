@@ -65,23 +65,6 @@ function cardsForPage(page, allCards) {
   }).slice(0, 12)
 }
 
-// A card's text with its markup gone, on one line: the grid's tiles show a
-// few lines of the front, and Qt only elides plain text (rich text runs on
-// past maximumLineCount), so a tile draws this rather than the HTML. Code
-// loses its shading here; the app's face is monospace, so it still reads as
-// code, and the stage above the grid shows the card as authored. &amp; is
-// decoded last, so "&amp;lt;" stays the literal text "&lt;".
-function plainText(html) {
-  return String(html || "")
-    .replace(/<br\s*\/?>|<\/(p|div|li|pre|tr|h[1-6])>/gi, " ")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&quot;/g, "\"").replace(/&#39;|&apos;/g, "'")
-    .replace(/&#(\d+);/g, function(m, n) { return String.fromCharCode(parseInt(n, 10)) })
-    .replace(/&amp;/g, "&")
-    .replace(/\s+/g, " ").trim()
-}
-
 // The active filters in a few words ("review · #http · “etag”"), "" for
 // none: the status line's segment for the deck explorer.
 function filterSummary(filters) {

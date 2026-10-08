@@ -52,7 +52,7 @@ Modal {
     root.app.launch(argv, "Opened Claude Code in kitty")
   }
 
-  onClosed: if (app) app.contentRootFocus()
+  onClosed: if (app) app.focusScreen()
 
   UiText {
     width: parent.width

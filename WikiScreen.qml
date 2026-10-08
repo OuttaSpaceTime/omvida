@@ -5,8 +5,6 @@ import QtQuick.Controls
 import "Cards.js" as Cards
 import "Format.js" as Format
 import "Launch.js" as Launch
-import "StatusBits.js" as StatusBits
-import "bar/Model.js" as Overview
 
 // The wiki reader, the Next.js viewer's article view: the side panel (context
 // or tree) on the left, the page in the reading column, its connections under
@@ -33,13 +31,10 @@ Item {
 
   // ---- the window's status line ---------------------------------------------
   // Where you are: the open page's file path, or the folder's.
-  readonly property string statusMode: "WIKI"
   readonly property var statusSegments: {
     var f = root.app ? root.app.wikiFolder : ""
     return [{ text: root.path !== "" ? root.path : (f === "" ? "wiki" : f + "/") }]
   }
-  readonly property var statusHints: StatusBits.common(root.app, [])
-  readonly property var statusAlerts: StatusBits.pressure(root.app, root.app ? Overview.clearance(root.app.store.overview) : "", Theme.verdictColor)
 
   function openPageCards() { if (root.meta && root.pageCards.length) root.app.openPageCards(root.meta.title, root.pageCards) }
 

@@ -66,7 +66,9 @@ OmvidaTest {
   // shrink it, and it is as tall as the column of filters beside it.
   function test_stage_keeps_its_height_and_centres_the_card() {
     var face = item("flipCard")
-    verify(stage().faceHeight > 0 && face.height >= stage().faceHeight, "the stage's floor holds: " + face.height)
+    var aside = item("cardsAside")
+    var faceEnd = face.mapToItem(null, 0, face.height).y, asideEnd = aside.mapToItem(null, 0, aside.height).y
+    verify(Math.abs(faceEnd - asideEnd) <= 1, "the card and the filter column end together: " + faceEnd + " vs " + asideEnd)
     var front = item("flipFront")
     compare(front.horizontalAlignment, Text.AlignHCenter)
     var mid = front.y + front.height / 2
@@ -151,6 +153,9 @@ OmvidaTest {
     key(Qt.Key_Right)
     var here = stage().card.id
     var before = cardsScreen.all
+    // A refresh that changed nothing keeps the same list (and the grid's
+    // tiles); one that did hands over a new list, which must keep the place.
+    sqlWrite("UPDATE Card SET reps = reps + 1 WHERE id = 'fixturecard0004'")
     app.store.refreshDeck()
     tryVerify(function() { return cardsScreen.all !== before }, 5000, "the deck was read again")
     compare(cardsScreen.current, 2)
@@ -159,6 +164,15 @@ OmvidaTest {
     click("tagChip:security")
     tryVerify(function() { return cardsScreen.filtered.length === 3 })
     compare(cardsScreen.current, 0)
+  }
+
+  function test_a_refresh_that_changed_nothing_keeps_the_list() {
+    var before = cardsScreen.all
+    var reads = app.store.refreshedAt
+    app.store.refreshDeck()
+    tryVerify(function() { return app.store.refreshedAt !== reads }, 5000)
+    wait(500)
+    verify(cardsScreen.all === before, "the same list, so no tile is rebuilt")
   }
 
   // The stage's keys are unmodified ones only: Alt+← is still the app's
@@ -173,7 +187,9 @@ OmvidaTest {
 
   // What the window's status line shows and runs for this screen.
   function test_status_line_contract() {
-    compare(cardsScreen.statusMode, "CARDS")
+    compare(item("statusMode").text, "CARDS")
+    // Cards gets the shared hints after its own, like every reading screen.
+    verify(item("statusLine").hints.some(function(h) { return h.keys === "⌃K" }), "shared hints")
     compare(cardsScreen.statusSegments[0].text, "1/5")
     var next = cardsScreen.statusHints.filter(function(h) { return h.label === "next" })[0]
     next.run()

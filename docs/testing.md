@@ -41,7 +41,7 @@ and stops.
   output parser, the session log format and numbering, the protocol.
 - `tests/unit`: `StudyKeys.js` (every binding in every phase, US and German Shift+digit),
   `Format.js`, `Cards.js`, `Graph.js`, `Launch.js` (the prompts and the Ask tool allowlist),
-  `Session.js`, `StatusBits.js` (the reading screens' status-line hints and alert), and the
+  `Session.js`, `StatusBits.js` (the status line's shared hints and pressure alert), and the
   bar's `Model.js`.
 - `tests/app`: `OmvidaTest.qml` is Omvision's harness adapted: the app loads the test file
   through `OMVIDA_TEST`, and tests click and type into the real screens against the real

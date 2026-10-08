@@ -153,10 +153,7 @@ Column {
     })
     // Text can't take the familiar segment's half-strength green and stay
     // readable, so its number is set in the full green, as internalized's is.
-    readonly property var numberColors: ({
-      new: Theme.stateColor("new"), learning: Theme.stateColor("learning"),
-      familiar: Theme.greenText, internalized: Theme.greenText
-    })
+    function numberColor(key) { return key === "familiar" ? Theme.greenText : colors[key] }
     Row {
       id: segments
       width: parent.width
@@ -186,7 +183,7 @@ Column {
             text: legendItem.modelData.n
             font.pixelSize: Theme.captionSize
             font.weight: Font.Medium
-            color: legendItem.modelData.n > 0 ? maturity.numberColors[legendItem.modelData.key] : Theme.secondaryInk
+            color: legendItem.modelData.n > 0 ? maturity.numberColor(legendItem.modelData.key) : Theme.secondaryInk
           }
           UiText {
             text: legendItem.modelData.key

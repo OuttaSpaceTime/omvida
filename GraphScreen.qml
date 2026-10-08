@@ -2,8 +2,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 
 import "Format.js" as Format
-import "StatusBits.js" as StatusBits
-import "bar/Model.js" as Overview
 
 // The whole wiki as a graph, or the neighbourhood of the last page read.
 Item {
@@ -19,7 +17,6 @@ Item {
   // be a line of faint text beside the chips; it is the status line's kind of
   // thing (how to use what is on screen), and the top of the canvas is left to
   // the chips and the legend.
-  readonly property string statusMode: "GRAPH"
   readonly property var statusSegments: {
     var g = view.shown
     var out = []
@@ -27,8 +24,6 @@ Item {
     out.push({ text: "click opens · drag moves · wheel zooms · rings are topic maps", color: Theme.faint })
     return out
   }
-  readonly property var statusHints: StatusBits.common(root.app, [])
-  readonly property var statusAlerts: StatusBits.pressure(root.app, root.app ? Overview.clearance(root.app.store.overview) : "", Theme.verdictColor)
 
   // Pulled left by a chip's inset, so the first chip's words start on the
   // screen's edge rather than its (now invisible) box.
