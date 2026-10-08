@@ -70,7 +70,7 @@ and stops.
 | `folderTitle`, `folder:<path>`, `folderPage:<path>` | a folder |
 | `pageCardsFlip`, `flipCard` | a page's cards |
 | `searchField`, `result:<kind>:<i>`, `deepSearch`, `askView`, `askAnswer`, `askAnswerBlocks`, `askContinue`, `paletteHint:<label>` | search and Ask |
-| `stateChip:<state>`, `stateBar:<state>`, `tagChip:<tag>`, `cardFilter`, `filteredCount`, `clearFilters`, `retentionPanel` | the deck explorer's filters |
+| `stateChip:<state>`, `stateBar:<state>`, `tagChip:<tag>`, `cardFilter`, `filteredCount`, `clearFilters`, `retentionPanel`, `filtersToggle`, `selectedFilters`, `selected:<state|deck|tag>:<value>`, `moreTags` | the deck explorer's filters |
 | `cardsStage` (its card is `flipCard`, the front `flipFront`), `stagePosition`, `cardsPrev`, `cardsNext`, `upNext`, `cardsRestart`, `cardTile:<card id>` | the deck explorer's stage and grid |
 | `graphScreen`, `graphAll`, `graphLocal`, `graphView` | the graph |
 | `homeScreen`, `homeStudyButton`, `homeCardsButton`, `homeWikiButton`, `recent:<path>`, `topic:<path>`, `dueFigure`, `pressureVerdict`, `calibrationVerdict` | home |

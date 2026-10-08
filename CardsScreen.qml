@@ -39,7 +39,22 @@ Item {
   readonly property bool filtering: query !== "" || stateFilter !== "" || tagFilter !== "" || deckFilter !== ""
   readonly property var stateList: Cards.stateCounts(all)
   readonly property int deckSize: Math.max(1, all.length)
-  readonly property var tags: Cards.tagCounts(all).slice(0, 14)
+  readonly property var tags: Cards.tagCounts(all)
+  // The filter section: open, or folded down to what is selected; and the
+  // tags, the most common few or every one.
+  property bool filtersOpen: true
+  property bool tagsOpen: false
+  readonly property var unpickedTags: tags.filter(function(t) { return t.tag !== tagFilter })
+  readonly property var tagsShown: tagsOpen ? unpickedTags : unpickedTags.slice(0, Theme.cardsTagsShown)
+  readonly property int tagsHidden: unpickedTags.length - tagsShown.length
+  // What narrows the grid, in the order the section lists it.
+  readonly property var selectedFilters: {
+    var out = []
+    if (stateFilter !== "") out.push({ kind: "state", value: stateFilter, label: stateFilter })
+    if (deckFilter !== "") out.push({ kind: "deck", value: deckFilter, label: deckFilter })
+    if (tagFilter !== "") out.push({ kind: "tag", value: tagFilter, label: "#" + tagFilter })
+    return out
+  }
   readonly property var decks: Cards.deckNames(all)
 
   // Where the walk is: the stage's card is filtered[current], the grid
@@ -68,6 +83,12 @@ Item {
 
   function flipStage() { flip.flipped = !flip.flipped }
   function page(d) { flip.move(d) }
+
+  function dropFilter(kind) {
+    if (kind === "state") stateFilter = ""
+    else if (kind === "deck") deckFilter = ""
+    else if (kind === "tag") tagFilter = ""
+  }
 
   function clearFilters() {
     search.text = ""
@@ -212,7 +233,7 @@ Item {
         width: parent.width
         readonly property bool sideBySide: width >= Theme.cardStageMinWidth + Theme.space3xl + Theme.cardsAsideWidth
         readonly property real stageWidth: sideBySide ? width - Theme.cardsAsideWidth - Theme.space3xl : width
-        height: sideBySide ? Math.max(stageColumn.implicitHeight, aside.implicitHeight)
+        height: sideBySide ? stageColumn.implicitHeight
                            : aside.implicitHeight + Theme.space2xl + stageColumn.implicitHeight
 
         Column {
@@ -248,7 +269,9 @@ Item {
             wraps: false
             controls: false
             keepPlace: true
-            frontSize: Theme.cardFrontSize
+            centred: true
+            frontSize: Theme.cardStageFrontSize
+            faceHeight: Theme.cardStageFaceHeight
           }
 
           Row {
@@ -267,10 +290,22 @@ Item {
           color: Theme.hairline
         }
 
-        Column {
-          id: aside
+        // Retention and the filters, exactly as tall as the stage beside it:
+        // longer content (every tag shown) scrolls inside the column rather
+        // than growing it, so the stage never stretches and no gap opens
+        // under either side.
+        GlideFlickable {
+          id: asideView
           x: top.sideBySide ? top.stageWidth + Theme.space3xl : 0
           width: top.sideBySide ? Theme.cardsAsideWidth : top.width
+          height: top.sideBySide ? stageColumn.implicitHeight : aside.implicitHeight
+          contentHeight: aside.implicitHeight
+          interactive: contentHeight > height
+          ScrollBar.vertical: ScrollBar { policy: asideView.interactive ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff }
+
+        Column {
+          id: aside
+          width: asideView.width
           spacing: Theme.spaceXl
 
           // ---- retention ----------------------------------------------------------
@@ -278,35 +313,22 @@ Item {
             objectName: "retentionPanel"
             width: parent.width
             spacing: Theme.spaceSm
-            SectionLabel { text: "Retention" }
+            SectionLabel { text: "Retention · " + (root.calibration ? root.calibration.window_days : 30) + " days" }
             Row {
               spacing: Theme.spaceMd
               UiText {
+                id: retentionFigure
                 text: root.calibration && root.calibration.true_retention !== null ? Format.pct(root.calibration.true_retention) : "–"
                 font.pixelSize: Theme.headingSize
                 font.bold: true
                 color: root.calibration ? Theme.verdictColor(root.calibration.verdict) : Theme.faint
-                anchors.verticalCenter: parent.verticalCenter
               }
-              Column {
-                anchors.verticalCenter: parent.verticalCenter
-                UiText {
-                  text: "true retention, last " + (root.calibration ? root.calibration.window_days : 30) + " days"
-                  font.pixelSize: Theme.captionSize; color: Theme.dim
-                }
-                UiText {
-                  text: root.calibration ? root.calibration.verdict + (root.calibration.marginal ? " (marginal)" : "") + " · " + Format.plural(root.calibration.reviews, "review") : "loading…"
-                  font.pixelSize: Theme.captionSize
-                  color: root.calibration ? Theme.verdictColor(root.calibration.verdict) : Theme.faint
-                }
+              UiText {
+                anchors.baseline: retentionFigure.baseline
+                text: root.calibration ? root.calibration.verdict + (root.calibration.marginal ? " (marginal)" : "") + " · " + Format.plural(root.calibration.reviews, "review") : "loading…"
+                font.pixelSize: Theme.bodySmallSize
+                color: root.calibration ? Theme.verdictColor(root.calibration.verdict) : Theme.faint
               }
-            }
-            UiText {
-              visible: root.calibration !== null && root.calibration.reasons.length > 0
-              width: parent.width
-              wrapMode: Text.Wrap
-              text: root.calibration ? root.calibration.reasons.join(" ") : ""
-              font.pixelSize: Theme.captionSize; color: Theme.faint
             }
             Flow {
               visible: root.calibration !== null
@@ -323,7 +345,7 @@ Item {
                   id: mixItem
                   required property var modelData
                   text: mixItem.modelData.v + " " + mixItem.modelData.label
-                  font.pixelSize: Theme.captionSize
+                  font.pixelSize: Theme.bodySmallSize
                   color: Theme.ratingColor(mixItem.modelData.n)
                 }
               }
@@ -331,6 +353,11 @@ Item {
           }
 
           // ---- filters -------------------------------------------------------------
+          // The header folds the whole section away, leaving only what is
+          // selected. The selected filters always sit on top, each with ✕,
+          // so what narrows the grid is never lost among the choices; under
+          // them the field and what is left to choose: states, decks, and
+          // the most common tags, the rest one click away ("N more tags").
           Column {
             width: parent.width
             spacing: Theme.spaceSm
@@ -338,7 +365,12 @@ Item {
             Item {
               width: parent.width
               height: Theme.smallControlHeight
-              SectionLabel { text: "Filter"; anchors.verticalCenter: parent.verticalCenter }
+              TextLink {
+                objectName: "filtersToggle"
+                anchors.verticalCenter: parent.verticalCenter
+                label: (root.filtersOpen ? "▾ " : "▸ ") + "FILTER"
+                onActivated: root.filtersOpen = !root.filtersOpen
+              }
               Row {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
@@ -353,8 +385,31 @@ Item {
               }
             }
 
+            // What is selected, on top: a click drops it.
+            Flow {
+              objectName: "selectedFilters"
+              visible: root.selectedFilters.length > 0
+              width: parent.width
+              spacing: Theme.spaceSm
+              Repeater {
+                model: root.selectedFilters
+                delegate: TextLink {
+                  id: picked
+                  required property var modelData
+                  gap: Theme.spaceSm
+                  objectName: "selected:" + picked.modelData.kind + ":" + picked.modelData.value
+                  label: picked.modelData.label + " ✕"
+                  dot: picked.modelData.kind === "state" ? Theme.stateColor(picked.modelData.value) : "transparent"
+                  selected: true
+                  onActivated: root.dropFilter(picked.modelData.kind)
+                }
+              }
+            }
+
             // An underline, not a box: the field is one more quiet line.
             // No side padding, so its text starts on the column's edge.
+            // It stays when the section is folded: typing is the quickest
+            // filter there is.
             TextField {
               id: search
               objectName: "cardFilter"
@@ -378,76 +433,87 @@ Item {
               Keys.onEscapePressed: { text = ""; root.app.contentRootFocus() }
             }
 
-            // The state bar: click a state to filter.
-            Row {
-              width: parent.width
-              topPadding: Theme.spaceSm
-              Repeater {
-                model: root.stateList
-                delegate: Rectangle {
-                  id: stateSegment
-                  required property var modelData
-                  objectName: "stateBar:" + stateSegment.modelData.state
-                  width: aside.width * stateSegment.modelData.count / root.deckSize
-                  height: Theme.statBarHeight
-                  color: Theme.stateColor(stateSegment.modelData.state)
-                  opacity: root.stateFilter === "" || root.stateFilter === stateSegment.modelData.state ? 1 : 0.3
-                  MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.stateFilter = root.stateFilter === stateSegment.modelData.state ? "" : stateSegment.modelData.state }
-                }
-              }
-            }
-            Flow {
+            Column {
+              visible: root.filtersOpen
               width: parent.width
               spacing: Theme.spaceSm
-              Repeater {
-                model: root.stateList
-                delegate: TextLink {
-                  id: stateLink
-                  required property var modelData
-                  gap: Theme.spaceSm
-                  objectName: "stateChip:" + stateLink.modelData.state
-                  label: stateLink.modelData.state
-                  count: stateLink.modelData.count
-                  dot: Theme.stateColor(stateLink.modelData.state)
-                  selected: root.stateFilter === stateLink.modelData.state
-                  onActivated: root.stateFilter = selected ? "" : stateLink.modelData.state
+
+              // The state bar: click a state to filter.
+              Row {
+                width: parent.width
+                topPadding: Theme.spaceSm
+                Repeater {
+                  model: root.stateList
+                  delegate: Rectangle {
+                    id: stateSegment
+                    required property var modelData
+                    objectName: "stateBar:" + stateSegment.modelData.state
+                    width: aside.width * stateSegment.modelData.count / root.deckSize
+                    height: Theme.statBarHeight
+                    color: Theme.stateColor(stateSegment.modelData.state)
+                    opacity: root.stateFilter === "" || root.stateFilter === stateSegment.modelData.state ? 1 : 0.3
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.stateFilter = root.stateFilter === stateSegment.modelData.state ? "" : stateSegment.modelData.state }
+                  }
                 }
               }
-            }
-            Flow {
-              width: parent.width
-              spacing: Theme.spaceSm
-              visible: root.decks.length > 1
-              Repeater {
-                model: root.decks
-                delegate: TextLink {
-                  id: deckLink
-                  required property var modelData
-                  gap: Theme.spaceSm
-                  label: deckLink.modelData
-                  selected: root.deckFilter === deckLink.modelData
-                  onActivated: root.deckFilter = selected ? "" : deckLink.modelData
+              Flow {
+                width: parent.width
+                spacing: Theme.spaceSm
+                Repeater {
+                  model: root.stateList.filter(function(s) { return s.state !== root.stateFilter })
+                  delegate: TextLink {
+                    id: stateLink
+                    required property var modelData
+                    gap: Theme.spaceSm
+                    objectName: "stateChip:" + stateLink.modelData.state
+                    label: stateLink.modelData.state
+                    count: stateLink.modelData.count
+                    dot: Theme.stateColor(stateLink.modelData.state)
+                    onActivated: root.stateFilter = stateLink.modelData.state
+                  }
                 }
               }
-            }
-            Flow {
-              width: parent.width
-              spacing: Theme.spaceSm
-              Repeater {
-                model: root.tags
-                delegate: TextLink {
-                  id: tagLink
-                  required property var modelData
-                  gap: Theme.spaceSm
-                  objectName: "tagChip:" + tagLink.modelData.tag
-                  label: "#" + tagLink.modelData.tag
-                  count: tagLink.modelData.count
-                  selected: root.tagFilter === tagLink.modelData.tag
-                  onActivated: root.tagFilter = selected ? "" : tagLink.modelData.tag
+              Flow {
+                width: parent.width
+                spacing: Theme.spaceSm
+                visible: root.decks.length > 1
+                Repeater {
+                  model: root.decks.filter(function(d) { return d !== root.deckFilter })
+                  delegate: TextLink {
+                    id: deckLink
+                    required property var modelData
+                    gap: Theme.spaceSm
+                    label: deckLink.modelData
+                    onActivated: root.deckFilter = deckLink.modelData
+                  }
                 }
+              }
+              Flow {
+                width: parent.width
+                spacing: Theme.spaceSm
+                Repeater {
+                  model: root.tagsShown
+                  delegate: TextLink {
+                    id: tagLink
+                    required property var modelData
+                    gap: Theme.spaceSm
+                    objectName: "tagChip:" + tagLink.modelData.tag
+                    label: "#" + tagLink.modelData.tag
+                    count: tagLink.modelData.count
+                    onActivated: root.tagFilter = tagLink.modelData.tag
+                  }
+                }
+              }
+              TextLink {
+                objectName: "moreTags"
+                visible: root.tagsHidden > 0 || root.tagsOpen
+                label: root.tagsOpen ? "fewer tags ▴" : root.tagsHidden + " more tags ▾"
+                selected: false
+                onActivated: root.tagsOpen = !root.tagsOpen
               }
             }
           }
+        }
         }
       }
 

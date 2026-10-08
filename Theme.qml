@@ -301,6 +301,14 @@ QtObject {
   // least cardStageMinWidth; below that they go above it.
   readonly property int cardsAsideWidth: 320
   readonly property int cardStageMinWidth: 480
+  // The stage's card: a fixed height, about what retention and the folded
+  // filters beside it take, so the two columns end together; and a front
+  // set larger than a card elsewhere, centred, since it is the one thing
+  // the screen shows.
+  readonly property int cardStageFaceHeight: 300
+  readonly property int cardStageFrontSize: 26
+  // How many tags the filter shows before "N more tags".
+  readonly property int cardsTagsShown: 6
   // How long a click on a tile takes to bring the stage into view.
   readonly property int cardsScrollDuration: 220
 

@@ -111,10 +111,15 @@ before the reading column narrows below ~60% of its measure.
 ## Cards
 
 Set in a wider column than the reading one (`Theme.cardsWidth`, up to 1600px), since it is a
-grid. At the top, the stage: the current card large, front first, its position (`Card 12 of
-357`, a progress hairline) and quiet ‹ back / next › links; beside it (above it when the stage
-would drop under 480px), retention (true retention, verdict, reasons, rating mix) and the
-filters (text, state bar and states, decks, tags, a count, clear), all text links, no boxes.
+grid. At the top, the stage: the current card at a fixed height (`Theme.cardStageFaceHeight`),
+its front set large (`Theme.cardStageFrontSize`) and centred, its position (`Card 12 of 357`, a
+progress hairline) and quiet ‹ back / next › links. Beside it (above it when the stage would drop
+under 480px), a column exactly as tall as the stage, its overflow scrolling inside it:
+retention (`Retention · 30 days`, the figure with verdict and review count, the rating mix),
+then the filters. The `▾ FILTER` header folds the section to what is selected; the selected
+filters always sit on top, each with ✕ to drop it; then the text field (kept when folded), the
+state bar and the remaining states, decks, and the six most common tags with `N more tags ▾`
+for the rest. All text links, no boxes.
 Below, `NEXT UP · n · m passed` and the grid: 2–5 tiles a row, each a hairline rule, the card's
 tags and lapses, its position, and five lines of its front as plain text, so every tile is the
 same height.

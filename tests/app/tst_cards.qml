@@ -13,6 +13,8 @@ OmvidaTest {
   // the rail.
   function init() {
     cardsScreen.clearFilters()
+    cardsScreen.filtersOpen = true
+    cardsScreen.tagsOpen = false
     app.setScreen("home")
     app.setScreen("cards")
     tryVerify(function() { return cardsScreen.filtered.length === 5 }, 5000)
@@ -23,7 +25,8 @@ OmvidaTest {
   function test_state_and_text_filters() {
     click("stateChip:suspended")
     tryVerify(function() { return cardsScreen.filtered.length === 1 })
-    click("stateChip:suspended")
+    // Selected, it moves up to the selected row; a click there drops it.
+    click("selected:state:suspended")
     tryVerify(function() { return cardsScreen.filtered.length === 5 })
     item("cardFilter").text = "etag"
     tryVerify(function() { return cardsScreen.filtered.length === 1 })
@@ -31,6 +34,43 @@ OmvidaTest {
     click("tagChip:http")
     tryVerify(function() { return cardsScreen.filtered.length === 2 })
     compare(item("filteredCount").text, "2 cards")
+  }
+
+  // The selected filters sit on top and leave the list of choices; folding
+  // the section keeps only them (and the text field) in view.
+  function test_selected_filters_stay_on_top_and_survive_folding() {
+    click("tagChip:http")
+    tryVerify(function() { return cardsScreen.filtered.length === 2 })
+    click("stateChip:review")
+    tryVerify(function() { return cardsScreen.filtered.length === 2 })
+    item("selected:tag:http")
+    item("selected:state:review")
+    verify(findNamed(target, "tagChip:http") === null, "a selected tag leaves the choices")
+    var picked = item("selectedFilters"), field = item("cardFilter")
+    verify(picked.mapToItem(null, 0, 0).y < field.mapToItem(null, 0, 0).y, "selected filters sit above the field")
+
+    click("filtersToggle")
+    tryVerify(function() { return findNamed(target, "tagChip:security") === null }, 2000, "folded: the choices are hidden")
+    item("selected:tag:http")
+    item("cardFilter")
+    compare(cardsScreen.filtered.length, 2, "folding changes nothing that is selected")
+
+    click("filtersToggle")
+    item("tagChip:security")
+    click("selected:tag:http")
+    // "review" is still selected: the three review cards.
+    tryVerify(function() { return cardsScreen.filtered.length === 3 })
+  }
+
+  // The stage keeps one height and centres its card: a short card does not
+  // shrink it, and it is as tall as the column of filters beside it.
+  function test_stage_keeps_its_height_and_centres_the_card() {
+    var face = item("flipCard")
+    verify(stage().faceHeight > 0 && face.height >= stage().faceHeight, "the stage's floor holds: " + face.height)
+    var front = item("flipFront")
+    compare(front.horizontalAlignment, Text.AlignHCenter)
+    var mid = front.y + front.height / 2
+    verify(Math.abs(mid - face.height / 2) < face.height / 10, "the front sits mid-card: " + mid + " of " + face.height)
   }
 
   function test_retention_comes_from_the_deck() {

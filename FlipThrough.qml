@@ -22,6 +22,15 @@ FocusScope {
   property bool wraps: true
   property bool controls: true
   property int frontSize: Theme.titleSize
+  // A floor for the card's height, so a short card keeps the stage's size
+  // (the deck explorer matches it to the column beside it); 0 = the card's
+  // own height, as in the page's cards dialog.
+  property real faceHeight: 0
+  // Each side's text centred in the card rather than set from its top
+  // left: the deck explorer's stage, where a card is the one thing shown.
+  // The front is centred both ways; the answer only up and down, since a
+  // list or a code block centred line by line reads badly.
+  property bool centred: false
   // With keepPlace, a new list that still holds the current card keeps it
   // current (and keeps it flipped): the deck explorer's list is rebuilt on
   // every refresh of the deck, which happens behind the user's back whenever
@@ -99,20 +108,33 @@ FocusScope {
       id: flipable
       objectName: "flipCard"
       width: parent.width
-      height: Math.max(Theme.cardFaceMinHeight, Math.max(frontCol.implicitHeight, backCol.implicitHeight) + Theme.spaceXl * 2)
+      height: Math.max(Theme.cardFaceMinHeight, root.faceHeight, Math.max(frontCol.implicitHeight, backCol.implicitHeight) + Theme.spaceXl * 2)
 
       front: Rectangle {
         anchors.fill: parent
         color: Theme.fill
         border.color: Theme.hairline
         border.width: Theme.borderWidth
+        // The label stays at the top; centred, the front sits in the middle
+        // of what is left, never over the label. frontCol is only measured.
         Column {
           id: frontCol
           x: Theme.spaceXl; y: Theme.spaceXl
           width: parent.width - Theme.spaceXl * 2
           spacing: Theme.spaceMd
-          SectionLabel { text: root.card ? root.card.deck + " · " + Cards.stateOf(root.card) : "" }
-          CardFace { objectName: "flipFront"; width: parent.width; html: root.card ? root.card.front : ""; size: root.frontSize }
+          SectionLabel { id: frontLabel; text: root.card ? root.card.deck + " · " + Cards.stateOf(root.card) : "" }
+          Item { width: parent.width; height: frontFace.implicitHeight }
+        }
+        CardFace {
+          id: frontFace
+          objectName: "flipFront"
+          x: Theme.spaceXl
+          width: parent.width - Theme.spaceXl * 2
+          readonly property real belowLabel: frontCol.y + frontLabel.height + frontCol.spacing
+          y: root.centred ? Math.max(belowLabel, (parent.height - implicitHeight) / 2) : belowLabel
+          horizontalAlignment: root.centred ? Text.AlignHCenter : Text.AlignLeft
+          html: root.card ? root.card.front : ""
+          size: root.frontSize
         }
       }
       back: Rectangle {
@@ -122,7 +144,8 @@ FocusScope {
         border.width: Theme.borderWidth
         Column {
           id: backCol
-          x: Theme.spaceXl; y: Theme.spaceXl
+          x: Theme.spaceXl
+          y: root.centred ? Math.max(Theme.spaceXl, (parent.height - implicitHeight) / 2) : Theme.spaceXl
           width: parent.width - Theme.spaceXl * 2
           spacing: Theme.spaceMd
           SectionLabel { text: "Answer" }
