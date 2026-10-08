@@ -7,10 +7,11 @@ the same rules so the two surfaces never disagree about what links where:
   to the one page with that slug, the way Obsidian does. A path-qualified
   target that doesn't match exactly is broken, and is never folder-corrected.
 - Links inside fenced or inline code, and `![[embeds]]`, are not links.
-- MOC pages (`*-index.md`) are not content. They become graph hubs, a link to
-  one opens its folder, and they are dropped from every page's inbound and
-  outbound lists.
-- `wiki/indexes/` and dot-entries are skipped.
+- `wiki/indexes/` (old search-index files, not pages) and dot-entries are skipped.
+
+Every page is content: the wiki has no map-of-content pages. A topic is a
+folder plus a tag, so graph nodes carry their tags and the app's layout pulls
+pages that share one together (Graph.js).
 
 The wiki is read straight off disk on every index call: 68 pages parse in a
 few milliseconds, so a cache would only add a way to show stale pages after
@@ -47,7 +48,6 @@ class PageMeta:
     created: str
     updated: str
     flashcardIds: list[str]  # noqa: N815 - the QML side reads camelCase
-    isIndex: bool  # noqa: N815
     sections: list[str]
     outbound: list[str] = field(default_factory=list)
     inbound: list[str] = field(default_factory=list)
@@ -94,46 +94,35 @@ def load_page_meta(root: Path, file: str) -> tuple[PageMeta, list[str], str]:
         created=str(data.get("created") or ""),
         updated=str(data.get("updated") or ""),
         flashcardIds=_as_list(data.get("flashcard_ids")),
-        isIndex=slug.endswith("-index"),
         sections=extract_h2s(body),
     )
     return meta, link_targets(body), body
 
 
 class Resolver:
-    """Resolves a wikilink target to a page path or, for a MOC, its folder ('' is the root)."""
+    """Resolves a wikilink target to a page path."""
 
     def __init__(self, index: dict[str, Any]):
-        """From build_index's result: its `pages` and `mocs`."""
+        """From build_index's result: its `pages`."""
         self.by_path = {p["path"] for p in index["pages"]}
         self.by_slug: dict[str, list[str]] = {}
         for p in index["pages"]:
             self.by_slug.setdefault(p["path"].split("/")[-1], []).append(p["path"])
-        self.moc_by_path = {m["path"]: m["folder"] for m in index["mocs"]}
-        self.moc_by_slug: dict[str, list[str]] = {}
-        for m in index["mocs"]:
-            self.moc_by_slug.setdefault(m["path"].split("/")[-1], []).append(m["folder"])
 
     def resolve(self, target: str) -> dict[str, str] | None:
-        """{"page": path} or {"folder": path}, or None when broken."""
+        """{"page": path}, or None when broken."""
         if target in self.by_path:
             return {"page": target}
-        if target in self.moc_by_path:
-            return {"folder": self.moc_by_path[target]}
         if "/" in target:
             return None
         candidates = self.by_slug.get(target, [])
         if len(candidates) == 1:
             return {"page": candidates[0]}
-        if not candidates:
-            folders = self.moc_by_slug.get(target, [])
-            if len(folders) == 1:
-                return {"folder": folders[0]}
         return None
 
 
 def _resolve_raw(all_pages: list[tuple[PageMeta, list[str]]]) -> None:
-    """Fill outbound/inbound over every page, MOCs included (the graph needs them)."""
+    """Fill outbound/inbound over every page."""
     by_path = {m.path: m for m, _ in all_pages}
     by_slug: dict[str, list[str]] = {}
     for m, _ in all_pages:
@@ -185,7 +174,7 @@ def build_graph(pages: list[PageMeta]) -> dict[str, Any]:
             "id": p.path,
             "title": p.title,
             "folder": p.folder,
-            "isIndex": p.isIndex,
+            "tags": p.tags,
             "linkCount": len(p.inbound) + len(p.outbound),
         }
         for p in pages
@@ -217,19 +206,11 @@ def build_index(root: Path) -> dict[str, Any]:
     raw = [load_page_meta(root, f)[:2] for f in markdown_files(root)]
     raw.sort(key=lambda r: r[0].path)
     _resolve_raw(raw)
-    everything = [m for m, _ in raw]
-    graph = build_graph(everything)
-    mocs = [m for m in everything if m.isIndex]
-    moc_paths = {m.path for m in mocs}
-    pages = [m for m in everything if not m.isIndex]
-    for p in pages:
-        p.outbound = [t for t in p.outbound if t not in moc_paths]
-        p.inbound = [t for t in p.inbound if t not in moc_paths]
+    pages = [m for m, _ in raw]
     return {
         "pages": [asdict(p) for p in pages],
-        "mocs": [{"path": m.path, "folder": m.folder, "title": m.title} for m in mocs],
         "tree": build_tree(pages),
-        "graph": graph,
+        "graph": build_graph(pages),
         "stamp": stamp(root),
     }
 

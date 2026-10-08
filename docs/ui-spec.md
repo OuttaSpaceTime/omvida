@@ -155,9 +155,12 @@ the window's status line (`statusMode`, `statusSegments`, `statusHints`, `status
 
 ## Graph
 
-All pages or two hops around the open page; topic legend; hubs and the hovered node's
-neighbours labelled; click opens, drag pins, wheel zooms. Status line: GRAPH, the pages and
-links drawn, and that mouse help (it used to be a line beside the chips).
+All pages, or around the open page: two hops of links plus every page sharing one of its tags,
+the tag-only ones on dashed lines. Pages that share a tag are pulled together, so a topic is a
+region of the graph (there are no index pages to hold it together). Topic legend; well-linked
+pages and the hovered node's neighbours labelled; click opens, drag pins, wheel zooms. Status
+line: GRAPH, the pages and links drawn, and that mouse help (it used to be a line beside the
+chips), with "dashed: shares a tag" around a page.
 
 ## Overlays
 

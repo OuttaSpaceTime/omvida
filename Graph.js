@@ -8,10 +8,23 @@
 // Rejected: a QtQuick item per node with Behaviors. Every tick would move
 // every item through the scene graph, and the links still need a Canvas.
 
-// The neighbourhood of `focus` within `hops` links, undirected: the viewer's
-// "local" mode (GraphPanel.tsx localSubgraph). An unknown focus keeps it all.
+// Whether two nodes share a tag. A topic is a folder plus a tag, and every page
+// carries its folder's tag, so this is "same topic" as well as "same subject".
+function sharesTag(a, b) {
+  var tags = a.tags || []
+  return (b.tags || []).some(function(t) { return tags.indexOf(t) >= 0 })
+}
+
+// The neighbourhood of `focus`: what lies within `hops` links, undirected (the
+// viewer's "local" mode, GraphPanel.tsx localSubgraph), and every page that
+// shares a tag with it, linked or not. Pages on one topic often don't link
+// each other, and once a topic's index page linked them all; the tag is what
+// still says they belong together. Only the focus's own tags count: a tag hop
+// from each neighbour too would pull in most of the wiki. An unknown focus
+// keeps it all.
 function localSubgraph(graph, focus, hops) {
-  if (!graph || !focus || !graph.nodes.some(function(n) { return n.id === focus })) return graph
+  var centre = graph ? graph.nodes.filter(function(n) { return n.id === focus })[0] : null
+  if (!centre) return graph
   var adj = {}
   graph.links.forEach(function(l) {
     (adj[l.source] = adj[l.source] || []).push(l.target);
@@ -27,6 +40,7 @@ function localSubgraph(graph, focus, hops) {
     })
     frontier = next
   }
+  graph.nodes.forEach(function(n) { if (sharesTag(centre, n)) keep[n.id] = true })
   return {
     nodes: graph.nodes.filter(function(n) { return keep[n.id] }),
     links: graph.links.filter(function(l) { return keep[l.source] && keep[l.target] })
@@ -49,7 +63,7 @@ function initLayout(graph, previous) {
     var a = (i / Math.max(1, n)) * Math.PI * 2
     var r = 120 + rand() * 80
     return {
-      id: src.id, title: src.title, folder: src.folder, isIndex: src.isIndex, linkCount: src.linkCount,
+      id: src.id, title: src.title, folder: src.folder, tags: src.tags || [], linkCount: src.linkCount,
       x: p ? p.x : Math.cos(a) * r, y: p ? p.y : Math.sin(a) * r, vx: 0, vy: 0
     }
   })
@@ -57,7 +71,32 @@ function initLayout(graph, previous) {
   nodes.forEach(function(nd, i) { index[nd.id] = i })
   var links = graph.links.filter(function(l) { return index[l.source] !== undefined && index[l.target] !== undefined })
     .map(function(l) { return { s: index[l.source], t: index[l.target] } })
-  return { nodes: nodes, links: links, index: index, alpha: 1 }
+  return { nodes: nodes, links: links, kin: tagPairs(nodes), index: index, alpha: 1 }
+}
+
+// Every pair of nodes that shares a tag, by index: the layout's topic springs.
+// Weaker and longer than a link's, so a topic gathers into one region without
+// collapsing into a ball, and links still decide who sits next to whom. They
+// do what the index pages' hub-and-spoke links used to. ~200 pairs for this
+// wiki, the same order as its links.
+function tagPairs(nodes) {
+  var byTag = {}
+  nodes.forEach(function(n, i) {
+    n.tags.forEach(function(t) { (byTag[t] = byTag[t] || []).push(i) })
+  })
+  var seen = {}, out = []
+  Object.keys(byTag).forEach(function(t) {
+    var ids = byTag[t]
+    for (var a = 0; a < ids.length; a++) {
+      for (var b = a + 1; b < ids.length; b++) {
+        var key = ids[a] + ":" + ids[b]
+        if (ids[a] === ids[b] || seen[key]) continue
+        seen[key] = true
+        out.push({ s: ids[a], t: ids[b] })
+      }
+    }
+  })
+  return out
 }
 
 // Below this alpha the layout is at rest: nothing moves visibly any more.
@@ -65,7 +104,7 @@ var REST_ALPHA = 0.02
 
 // One tick. Returns the new alpha; the caller stops ticking below REST_ALPHA.
 function step(layout) {
-  var repulsion = 2400, springLen = 70, springK = 0.05, gravity = 0.02, damping = 0.82
+  var repulsion = 2400, springLen = 70, springK = 0.05, kinLen = 90, kinK = 0.02, gravity = 0.02, damping = 0.82
   var nodes = layout.nodes, alpha = layout.alpha
   var i, j
   for (i = 0; i < nodes.length; i++) {
@@ -80,15 +119,17 @@ function step(layout) {
       nodes[j].vx += fx; nodes[j].vy += fy
     }
   }
-  layout.links.forEach(function(l) {
+  function spring(l, len, k) {
     var a = nodes[l.s], b = nodes[l.t]
     var dx = b.x - a.x, dy = b.y - a.y
     var d = Math.sqrt(dx * dx + dy * dy) || 0.1
-    var f = (d - springLen) * springK * alpha
+    var f = (d - len) * k * alpha
     var fx = f * dx / d, fy = f * dy / d
     a.vx += fx; a.vy += fy
     b.vx -= fx; b.vy -= fy
-  })
+  }
+  layout.links.forEach(function(l) { spring(l, springLen, springK) })
+  layout.kin.forEach(function(l) { spring(l, kinLen, kinK) })
   for (i = 0; i < nodes.length; i++) {
     var nd = nodes[i]
     if (nd.pinned) { nd.vx = 0; nd.vy = 0; continue }
@@ -103,7 +144,7 @@ function step(layout) {
 
 // Node radius from its degree, the way the viewer sizes them.
 function radius(node) {
-  return 4 + Math.sqrt(node.linkCount || 0) * 2 + (node.isIndex ? 2 : 0)
+  return 4 + Math.sqrt(node.linkCount || 0) * 2
 }
 
 // The node under (x, y) in layout space, or null.
@@ -124,6 +165,19 @@ function neighbours(layout, id) {
   layout.links.forEach(function(l) {
     if (l.s === i) out[layout.nodes[l.t].id] = true
     if (l.t === i) out[layout.nodes[l.s].id] = true
+  })
+  return out
+}
+
+// Ids that share a tag with `id` but are not linked to it: the local view
+// draws these as dashed lines, so a page that is there only for its tag says why.
+function tagOnly(layout, id) {
+  var i = layout.index[id], out = {}
+  if (i === undefined) return out
+  var linked = neighbours(layout, id)
+  layout.kin.forEach(function(l) {
+    var other = l.s === i ? l.t : (l.t === i ? l.s : -1)
+    if (other >= 0 && !linked[layout.nodes[other].id]) out[layout.nodes[other].id] = true
   })
   return out
 }

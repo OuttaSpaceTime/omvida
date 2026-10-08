@@ -24,8 +24,9 @@ and stops.
 
 - `home/`: a HOME with no omarchy theme (the Flexoki fallback is drawn) and the
   `.omvida-test-home` marker the test harness checks before it runs anything.
-- `study/`: a copy of `tests/fixtures/study`: four wiki pages (one a MOC), with a broken link,
-  links in code, an embed, a callout, a table, a task list and highlighted code.
+- `study/`: a copy of `tests/fixtures/study`: four wiki pages (Cookies links nothing and
+  nothing links it, but it shares a tag), with a broken link, links in code, an embed, a
+  callout, a table, a task list and highlighted code.
 - `master.db`: the fixture deck, built by `tests/fixtures/make-deck.sh` with flashcard-mcp's
   own `prisma db push` (so its schema can never drift) and seeded by `seed_deck.py`: three
   review cards due, one new, one suspended, a few days of history. The card ids are the
@@ -36,7 +37,7 @@ and stops.
 
 ## Layers
 
-- `tests/py`: the wiki service against the fixture study repo: links both ways, MOCs,
+- `tests/py`: the wiki service against the fixture study repo: links both ways, graph tags,
   sections, rendering (anchors, wikilinks, code classes, callouts, tables), ranking, the qmd
   output parser, the session log format and numbering, the protocol.
 - `tests/unit`: `StudyKeys.js` (every binding in every phase, US and German Shift+digit),

@@ -32,7 +32,7 @@ OmvidaTest {
   function test_home_hands_the_status_line_its_counts_and_keys() {
     var home = item("homeScreen"), line = item("statusLine")
     compare(item("statusMode").text, "HOME")
-    verify(home.statusSegments[0].text.indexOf("3 pages") === 0, home.statusSegments[0].text)
+    verify(home.statusSegments[0].text.indexOf("4 pages") === 0, home.statusSegments[0].text)
     var keys = line.hints.map(function(h) { return h.keys })
     compare(keys.slice(0, 3), ["⌃2", "⌃K", "⌃N"])
     // The search hint is Ctrl+K: it opens the palette.

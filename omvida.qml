@@ -102,12 +102,11 @@ ShellRoot {
     root.currentScreen = "wiki"
   }
 
-  // What a link in any rich text means: wiki:path#anchor, folder:path,
-  // anchor:slug (same page), or an outside URL for the browser.
+  // What a link in any rich text means: wiki:path#anchor, anchor:slug (same
+  // page), or an outside URL for the browser.
   function followLink(href) {
     var m
     if ((m = /^wiki:([^#]+)(?:#(.*))?$/.exec(href))) openPage(m[1], m[2] || "")
-    else if ((m = /^folder:(.*)$/.exec(href))) openFolder(m[1])
     else if ((m = /^anchor:(.*)$/.exec(href))) wikiScreen.scrollTo(m[1])
     else if (/^https?:/.test(href)) Qt.openUrlExternally(href)
   }

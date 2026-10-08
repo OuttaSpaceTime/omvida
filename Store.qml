@@ -13,7 +13,7 @@ Item {
   // Whether the window is in front: the wiki poll runs only then.
   property bool active: true
 
-  property var wikiIndex: null          // {pages, mocs, tree, graph, stamp}
+  property var wikiIndex: null          // {pages, tree, graph, stamp}
   property var pagesByPath: ({})
   property var allCards: []
   property bool cardsLoaded: false

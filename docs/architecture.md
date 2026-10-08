@@ -34,7 +34,7 @@ three seconds, and only suggests: `review` writes whatever rating the developer 
 
 **The wiki service** is `backend/omvida_backend` (Python, uv venv in this repo), started by
 `bin/omvida-wiki`. It ports the Next.js viewer's `lib/wiki.ts` (links both ways, the tree, the
-graph, MOCs as hubs) and renders a page as **blocks** for Qt: QML's rich text cannot scroll to
+graph, its nodes carrying their tags) and renders a page as **blocks** for Qt: QML's rich text cannot scroll to
 an anchor, so a page is a column of items, and a heading link scrolls to one. Syntax
 highlighting is Pygments, collapsed to a dozen class names that `Theme.richTextStyle` colours,
 so a theme switch recolours without re-rendering. It also ranks pages (after a session, and

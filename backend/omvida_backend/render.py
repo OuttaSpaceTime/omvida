@@ -17,7 +17,7 @@ Same rules as the Next.js viewer (lib/markdown.ts):
 - the page's own leading `# Title` is dropped, since the header shows the title;
 - `> [Label] text` is a callout titled Label;
 - `[[path]]`, `[[path|text]]`, `[[path#Heading]]` and `[[#Heading]]` become
-  links (`wiki:path#anchor`, `folder:path` for a MOC), and an unresolved target
+  links (`wiki:path#anchor`), and an unresolved target
   becomes `<span class="broken">`; `![[embeds]]` stay literal text, and nothing
   inside code is touched;
 - heading anchors use slugify_heading on both sides, so links and headings agree.
@@ -129,8 +129,6 @@ def wikilink_rule(resolver: Resolver):
                 hit = resolver.resolve(target)
                 if hit and "page" in hit:
                     href = f"wiki:{hit['page']}" + (f"#{slugify_heading(heading)}" if heading else "")
-                elif hit and "folder" in hit:
-                    href = f"folder:{hit['folder']}"
             tok = state.push("html_inline", "", 0)
             if href is None:
                 tok.content = f'<span class="broken">{htmlmod.escape(label)}</span>'

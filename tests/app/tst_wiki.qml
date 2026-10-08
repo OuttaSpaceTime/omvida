@@ -5,15 +5,16 @@ OmvidaTest {
   name: "wiki"
 
   // Every topic tile on Home is as tall as a full one (name and three
-  // pages), whatever it holds. The fixture's topics have two pages each, so a
-  // tile sized to its own text has only its padding around the text.
+  // pages), whatever it holds. Security has two pages (web fills up to three
+  // once test_a_new_page_appears has run), so a tile sized to its own text
+  // would have only its padding around the text.
   function test_topic_tiles_share_a_full_tile_height() {
     app.setScreen("home")
     var web = item("topic:web"), security = item("topic:security")
     compare(web.height, security.height)
-    var text = web.children[0]
-    verify(web.height - text.implicitHeight > text.y * 2,
-           "the tile leaves room for a third page: " + web.height + " vs text " + text.implicitHeight)
+    var text = security.children[0]
+    verify(security.height - text.implicitHeight > text.y * 2,
+           "the tile leaves room for a third page: " + security.height + " vs text " + text.implicitHeight)
   }
 
   // The graph is laid out before it is first shown, not on screen: settling
@@ -63,12 +64,29 @@ OmvidaTest {
     tryVerify(function() { return flick.contentY > 0 }, 3000, "scrolled down to Validation")
   }
 
-  function test_a_moc_link_opens_its_folder() {
-    app.followLink("folder:web")
+  function test_a_folder_lists_its_pages() {
+    app.openFolder("web")
     tryCompare(app, "wikiFolder", "web")
     compare(item("folderTitle").text, "web")
     click("folderPage:web/http-caching")
     tryCompare(app, "wikiPath", "web/http-caching")
+  }
+
+  // No page links Cookies, but it shares the web tag with HTTP Caching, so
+  // the graph around HTTP Caching shows it, hung off on a dashed line.
+  // Same-Origin Policy shares no tag with Cookies and leaves it out.
+  function test_the_local_graph_shows_pages_that_share_a_tag() {
+    app.openPage("web/http-caching", "")
+    app.openGraph(true)
+    var view = item("graphView")
+    function ids() { return view.shown.nodes.map(function(n) { return n.id }) }
+    tryVerify(function() { return ids().indexOf("web/cookies") >= 0 }, 3000, ids().join())
+    compare(view.related("web/http-caching")["web/cookies"], true)
+    compare(view.related("web/cookies")["web/http-caching"], true)
+    app.openPage("security/same-origin-policy", "")
+    app.openGraph(true)
+    tryVerify(function() { return ids().indexOf("security/same-origin-policy") >= 0 }, 3000)
+    verify(ids().indexOf("web/cookies") < 0, ids().join())
   }
 
   function test_context_panel_lists_sections_and_links() {

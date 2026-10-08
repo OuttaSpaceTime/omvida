@@ -1,7 +1,7 @@
 import QtQuick
 
 // One block of page HTML (a paragraph, list, table or quote), selectable, its
-// links routed through the app (wiki:, folder:, anchor:, http). Read-only
+// links routed through the app (wiki:, anchor:, http). Read-only
 // TextEdit rather than Text, so a passage can be selected and copied.
 TextEdit {
   id: root

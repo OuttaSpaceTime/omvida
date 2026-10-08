@@ -3,11 +3,12 @@ import QtQuick
 import "Graph.js" as Graph
 
 // The wiki's link graph on a Canvas, laid out by Graph.js's force simulation.
-// Nodes are coloured by topic and sized by degree; MOC pages are ringed hubs.
-// Hover lights a node and its neighbours; click opens the page (a MOC opens
-// its folder); drag pins a node; the wheel zooms.
+// Nodes are coloured by topic and sized by degree, and pages that share a tag
+// are drawn towards each other. Hover lights a node and its neighbours; click
+// opens the page; drag pins a node; the wheel zooms.
 //
-// `local` shows the focus page and two hops out, the viewer's default.
+// `local` shows the focus page, two hops out, and every page sharing a tag
+// with it; those that are there only for a tag hang off it on dashed lines.
 Item {
   id: root
   clip: true
@@ -75,6 +76,16 @@ Item {
     var s = Math.min((width - pad * 2) / b.w, (height - pad * 2) / b.h, compact ? 1.2 : 1.6) * zoom
     return { s: s, ox: width / 2 - (b.x + b.w / 2) * s + panX, oy: height / 2 - (b.y + b.h / 2) * s + panY }
   }
+  // What hovering `id` lights: its links, and in the local view the dashed
+  // tag lines too, from either end.
+  function related(id) {
+    var out = Graph.neighbours(layout, id)
+    if (!local || layout.index[focusPath] === undefined) return out
+    var kin = Graph.tagOnly(layout, focusPath)
+    if (id === focusPath) Object.keys(kin).forEach(function(k) { out[k] = true })
+    else if (kin[id]) out[focusPath] = true
+    return out
+  }
   function toLayout(x, y) { var f = fit(); return { x: (x - f.ox) / f.s, y: (y - f.oy) / f.s } }
 
   Timer {
@@ -115,6 +126,22 @@ Item {
         ctx.lineTo(f.ox + b.x * f.s, f.oy + b.y * f.s)
         ctx.stroke()
       })
+      // Only the local view: across the whole wiki a line per shared tag is
+      // a few hundred more, and the clustering already shows the topics.
+      var centre = root.local ? L.nodes[L.index[root.focusPath]] : null
+      if (centre) {
+        var kin = Graph.tagOnly(L, centre.id)
+        ctx.setLineDash([Theme.spaceXs, Theme.spaceXs])
+        L.nodes.forEach(function(n) {
+          if (!kin[n.id]) return
+          ctx.strokeStyle = hv !== "" && (n.id === hv || centre.id === hv) ? litLink : plainLink
+          ctx.beginPath()
+          ctx.moveTo(f.ox + centre.x * f.s, f.oy + centre.y * f.s)
+          ctx.lineTo(f.ox + n.x * f.s, f.oy + n.y * f.s)
+          ctx.stroke()
+        })
+        ctx.setLineDash([])
+      }
       L.nodes.forEach(function(n) {
         var r = Graph.radius(n) * Math.max(0.7, Math.min(1.4, f.s))
         var x = f.ox + n.x * f.s, y = f.oy + n.y * f.s
@@ -123,16 +150,8 @@ Item {
         ctx.globalAlpha = dim ? 0.25 : 1
         ctx.beginPath()
         ctx.arc(x, y, r, 0, Math.PI * 2)
-        if (n.isIndex) {
-          ctx.lineWidth = 2
-          ctx.strokeStyle = c
-          ctx.fillStyle = Theme.paper
-          ctx.fill()
-          ctx.stroke()
-        } else {
-          ctx.fillStyle = c
-          ctx.fill()
-        }
+        ctx.fillStyle = c
+        ctx.fill()
         if (n.id === root.focusPath) {
           ctx.lineWidth = 2
           ctx.strokeStyle = Theme.ink
@@ -140,10 +159,10 @@ Item {
           ctx.arc(x, y, r + 3, 0, Math.PI * 2)
           ctx.stroke()
         }
-        // Labels for the hubs and for what the pointer is on: every label at
-        // once overprints itself in the middle of a wiki this size.
+        // Labels for the well-linked pages and for what the pointer is on:
+        // every label at once overprints itself in the middle of a wiki this size.
         var label = n.id === hv || nb[n.id] || n.id === root.focusPath
-                    || (!root.compact && hv === "" && (n.isIndex || n.linkCount >= 4 || L.nodes.length <= 20))
+                    || (!root.compact && hv === "" && (n.linkCount >= 4 || L.nodes.length <= 20))
         if (label) {
           ctx.fillStyle = dim ? Theme.faint : (n.id === hv ? Theme.ink : Theme.dim)
           ctx.font = (n.id === hv ? "bold " : "") + Theme.captionSize + "px monospace"
@@ -188,7 +207,7 @@ Item {
       var id = n ? n.id : ""
       if (id !== root.hovered) {
         root.hovered = id
-        root.hoverNeighbours = id ? Graph.neighbours(root.layout, id) : ({})
+        root.hoverNeighbours = id ? root.related(id) : ({})
         canvas.requestPaint()
       }
     }
@@ -205,10 +224,7 @@ Item {
       var n = root.dragNode
       root.dragNode = null
       if (n) n.pinned = false
-      if (!moved && n && root.app) {
-        if (n.isIndex) root.app.openFolder(n.folder)
-        else root.app.openPage(n.id, "")
-      }
+      if (!moved && n && root.app) root.app.openPage(n.id, "")
     }
     onExited: { root.hovered = ""; root.hoverNeighbours = ({}); canvas.requestPaint() }
     onWheel: function(wheel) {

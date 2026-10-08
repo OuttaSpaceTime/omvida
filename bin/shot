@@ -15,6 +15,7 @@
 #       cardsdelete | studydelete (Del's dialog, left open) |
 #       done (rate all Good: the summary) | leech (a blocked session) |
 #       syncfail (a card up, the sync's failure note) | keys (the key list)
+#       graphlocal (the graph screen around the page -s opened)
 #   -w/-h size, -f frames (ms, comma-separated), -t settle ms, -o out dir
 #   -R  your real wiki and deck instead of the fixtures, to see the layout at
 #       full size. Read-only by construction: it refuses the Study screen and
@@ -30,7 +31,7 @@ while getopts "s:w:h:a:f:t:o:R" opt; do
     R) real=1 ;;
     s) screen=$OPTARG ;; w) width=$OPTARG ;; h) height=$OPTARG ;; a) action=$OPTARG ;;
     f) frames=$OPTARG ;; t) settle=$OPTARG ;; o) out=$OPTARG ;;
-    *) sed -n '2,20p' "$0"; exit 2 ;;
+    *) sed -n '2,23p' "$0"; exit 2 ;;
   esac
 done
 mkdir -p "$out"
@@ -42,7 +43,7 @@ if [ "$real" = 1 ]; then
   case "$screen" in study) echo "bin/shot: -R refuses the Study screen (it starts a session)" >&2; exit 2 ;; esac
   # Only actions known to read nothing back: a new action is refused under
   # -R until it is added here, rather than allowed until someone remembers.
-  case "${action%%:*}" in ""|search|addmenu|pagecards|cardsnext|cardsflip|cardstags|cardspanel) ;;
+  case "${action%%:*}" in ""|search|addmenu|pagecards|cardsnext|cardsflip|cardstags|cardspanel|graphlocal) ;;
     *) echo "bin/shot: -R refuses -a $action (it could write)" >&2; exit 2 ;; esac
   export PATH="$ROOT/tests/fixtures/bin:$PATH" OMVIDA_TEST_OUT="${TMPDIR:-/tmp}"
 else

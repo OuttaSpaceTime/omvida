@@ -26,15 +26,18 @@ def page(idx, path):
 
 
 # ---- index ------------------------------------------------------------------------
-def test_mocs_are_hubs_not_pages(idx):
-    assert [p["path"] for p in idx["pages"]] == ["security/csrf", "security/same-origin-policy", "web/http-caching"]
-    assert idx["mocs"] == [{"path": "web/web-index", "folder": "web", "title": "Web Index"}]
-    assert "web/web-index" in {n["id"] for n in idx["graph"]["nodes"]}
+def test_every_page_is_a_page_and_a_graph_node_with_its_tags(idx):
+    assert [p["path"] for p in idx["pages"]] == [
+        "security/csrf", "security/same-origin-policy", "web/cookies", "web/http-caching"]
+    nodes = {n["id"]: n for n in idx["graph"]["nodes"]}
+    assert list(nodes) == [p["path"] for p in idx["pages"]]
+    # The tags are what the graph clusters on, now that no index page links a topic together.
+    assert nodes["security/csrf"]["tags"] == ["security", "web"]
 
 
 def test_links_resolve_both_ways_without_code_or_embeds(idx):
     caching = page(idx, "web/http-caching")
-    # [[missing/page]] is broken, [[not-a-link]] sits in inline code, the MOC link is dropped.
+    # [[missing/page]] is broken, [[not-a-link]] sits in inline code.
     assert caching["outbound"] == ["security/csrf"]
     csrf = page(idx, "security/csrf")
     # [[csrf]] from same-origin-policy resolves by unique slug.
@@ -57,7 +60,7 @@ def test_tree_puts_folders_and_pages_in_order(idx):
     tree = idx["tree"]
     assert [f["name"] for f in tree["folders"]] == ["security", "web"]
     assert [p["title"] for p in tree["folders"][0]["pages"]] == ["CSRF", "Same-Origin Policy"]
-    assert (tree["count"], tree["folders"][0]["count"], tree["folders"][1]["count"]) == (3, 2, 1)
+    assert (tree["count"], tree["folders"][0]["count"], tree["folders"][1]["count"]) == (4, 2, 2)
 
 
 def test_stamp_changes_when_a_page_changes(tmp_path):
@@ -94,7 +97,6 @@ def test_wikilinks_render_as_links_broken_spans_and_literal_embeds(svc):
     assert "<code>[[not-a-link]]</code>" in first
     last = blocks(svc, "web/http-caching")[-1]["html"]
     assert '<a href="anchor:freshness">#Freshness</a>' in last
-    assert '<a href="folder:web">web-index</a>' in last
     assert "![[diagram.png]]" in last
 
 

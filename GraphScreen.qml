@@ -20,7 +20,7 @@ Item {
     var g = view.shown
     var out = []
     if (g) out.push({ text: Format.plural(g.nodes.length, "page") + " · " + Format.plural(g.links.length, "link") })
-    out.push({ text: "click opens · drag moves · wheel zooms · rings are topic maps", color: Theme.faint })
+    out.push({ text: "click opens · drag moves · wheel zooms" + (view.local ? " · dashed: shares a tag" : ""), color: Theme.faint })
     return out
   }
 

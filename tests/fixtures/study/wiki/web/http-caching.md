@@ -35,4 +35,4 @@ Cache-Control: max-age=60, must-revalidate
 - [x] read RFC 9111
 - [ ] write a card
 
-Jump to [[#Freshness]] or the [[web-index]] map. ![[diagram.png]]
+Jump to [[#Freshness]]. ![[diagram.png]]
