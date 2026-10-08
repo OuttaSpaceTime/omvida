@@ -15,6 +15,15 @@ function plural(n, one) { return n + " " + (n === 1 ? one : one + "s") }
 
 function pct(x) { return x === null || x === undefined ? "–" : Math.round(x * 100) + "%" }
 
+// The count beside the bar icon: reviews due, never the new-card pool
+// (pressure's own rule), and nothing when none are due, so the count only
+// appears when there is work.
+function badge(o) {
+  if (!o) return ""
+  var n = o.pressure.flashcardsDue
+  return n <= 0 ? "" : (n > 99 ? "99+" : String(n))
+}
+
 // The words beside the hero's count.
 function headline(o) {
   if (!o) return "Loading…"

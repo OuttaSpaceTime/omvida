@@ -6,10 +6,14 @@ import qs.Commons
 import qs.Ui
 import "Model.js" as Model
 
-// Omvida's bar icon: the alpha of the Omvida mark, alone. No count beside
-// it: the bar stays quiet, and the panel says how many are due. Left click
-// opens the progress panel, right click starts a study session in Omvida,
-// middle click refreshes.
+// Omvida's bar icon: the alpha of the Omvida mark, and beside it the number
+// of reviews due, coloured by the deck's pressure verdict the way the panel's
+// chip is: the bar's text colour when it is ok, the accent at warn, urgent at
+// pause. The number is gone when nothing is due, so the bar is quiet until
+// there is work. A notification pill on the alpha's corner was tried first;
+// at bar size it crowded the glyph and read as an alert even when the deck
+// was fine. Left click opens the progress panel, right click starts a study
+// session in Omvida, middle click refreshes.
 //
 // The figures come from `bin/omvida-overview` in the Omvida checkout, which
 // prints flashcard-mcp's overview: the same numbers, from the same code, as
@@ -31,6 +35,15 @@ BarWidget {
   readonly property string omvidaRoot: Model.expandHome(setting("omvidaRoot", "~/Code/omvida"), home)
   readonly property int refreshMs: Math.max(60, Number(setting("refreshIntervalSec", 600))) * 1000
   readonly property color foreground: bar ? bar.foreground : Color.foreground
+  readonly property string badge: Model.badge(overview)
+  // The verdict's colour, as bar/Panel.qml's verdictColor: shown, never
+  // recomputed from the count.
+  readonly property color verdictColor: {
+    var v = overview ? overview.pressure.verdict : "ok"
+    if (v === "pause") return Color.urgent
+    if (v === "warn") return Color.accent
+    return foreground
+  }
 
   function refresh() {
     if (!overviewProc.running) overviewProc.running = true
@@ -147,6 +160,16 @@ BarWidget {
           colorizationColor: root.foreground
           brightness: 1.0
         }
+      }
+
+      Text {
+        visible: root.badge !== ""
+        anchors.verticalCenter: parent.verticalCenter
+        text: root.badge
+        color: root.verdictColor
+        font.family: root.bar ? root.bar.fontFamily : Style.font.family
+        font.pixelSize: Style.font.body
+        font.weight: Font.DemiBold
       }
     }
 
