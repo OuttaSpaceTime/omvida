@@ -33,6 +33,14 @@ FocusScope {
   property int index: 0
   property bool flipped: false
   property bool stage: false
+  // On the stage, the height the whole flip-through should take (the deck
+  // explorer gives the filter column's), so the card ends with the column
+  // beside it; the card is never shorter than Theme.cardStageFaceHeight.
+  property real stageHeight: 0
+  readonly property real faceHeight: stage ? Math.max(Theme.cardStageFaceHeight, stageHeight - Theme.hairlineWidth * 2 - col.spacing) : 0
+  // While the card turns over it is drawn as one picture (layer.enabled
+  // below): re-rendering its rich text on every frame made it judder.
+  readonly property bool moving: flipAnim.running
   property string placeId: ""
   readonly property real progress: cards.length ? (index + 1) / cards.length : 0
   readonly property var card: cards.length > 0 ? cards[Math.min(index, cards.length - 1)] : null
@@ -45,23 +53,33 @@ FocusScope {
     else index = i
   }
 
-  // Make card i the current one, front up. A new card turns in from the
-  // side it comes from (`d`: +1 forward, -1 back), so paging reads as
-  // turning through the deck; it shows its front at once, rather than
-  // turning back over from the old card's answer, which also showed the
-  // new card's answer on the way.
+  // The stage's front in the largest size, from cardStageFrontSize down to
+  // titleSize, that fits the face under its label: a long question shrinks
+  // rather than growing the card or crowding the label.
+  property int frontFit: Theme.cardStageFrontSize
+  function fitFront() {
+    if (!stage) return
+    var room = faceHeight - frontFace.belowLabel - Theme.spaceXl
+    var size = Theme.cardStageFrontSize
+    for (; size > Theme.titleSize; size -= Theme.spaceXxs) {
+      frontProbe.size = size
+      if (frontProbe.implicitHeight <= room) break
+    }
+    frontFit = size
+  }
+  onCardChanged: Qt.callLater(fitFront)
+  onFaceHeightChanged: Qt.callLater(fitFront)
+  onWidthChanged: Qt.callLater(fitFront)
+
+  // Make card i the current one, front up at once: turning back over from
+  // the old card's answer would show the new card's answer on the way.
   property bool turning: false
-  function show(i, d) {
-    var changed = i !== index
+  function show(i) {
     turning = true
     index = i
     flipped = false
     turning = false
     placeId = cards[i].id
-    if (changed) {
-      turnIn.from = (d < 0 ? -1 : 1) * 90
-      turnIn.restart()
-    }
   }
 
   function move(d) {
@@ -69,7 +87,7 @@ FocusScope {
     var i = index + d
     if (!stage) i = (i + cards.length) % cards.length
     else if (i < 0 || i >= cards.length) return
-    show(i, d)
+    show(i)
   }
 
   // Back to the first card and forget the place: the explorer calls it when
@@ -83,9 +101,9 @@ FocusScope {
 
   // The current card is about to leave the list (the explorer deleted it):
   // move the place to the card after it, or before it at the end, so the
-  // list without it keeps the walk there instead of starting over. Front up
-  // without the turn, as in show(): the deleted card should not turn over
-  // on its way out.
+  // list without it keeps the walk there instead of starting over. Front up at
+  // once, as in show(): the deleted card should not turn over on its way
+  // out.
   function leaveCurrent() {
     var next = cards[index + 1] || cards[index - 1]
     placeId = next ? next.id : ""
@@ -123,10 +141,15 @@ FocusScope {
       id: flipable
       objectName: "flipCard"
       width: parent.width
-      height: Math.max(Theme.cardFaceMinHeight, root.stage ? Theme.cardStageFaceHeight : 0, Math.max(frontCol.implicitHeight, backCol.implicitHeight) + Theme.spaceXl * 2)
+      // On the stage the front fits the face (fitFront), so only a long
+      // answer can make the card taller.
+      height: root.stage ? Math.max(root.faceHeight, backCol.implicitHeight + Theme.spaceXl * 2)
+                         : Math.max(Theme.cardFaceMinHeight, Math.max(frontCol.implicitHeight, backCol.implicitHeight) + Theme.spaceXl * 2)
 
       front: Rectangle {
         anchors.fill: parent
+        layer.enabled: root.moving
+        layer.smooth: true
         color: Theme.fill
         border.color: Theme.hairline
         border.width: Theme.borderWidth
@@ -140,28 +163,40 @@ FocusScope {
           SectionLabel { id: frontLabel; text: root.card ? root.card.deck + " · " + Cards.stateOf(root.card) : "" }
           Item { width: parent.width; height: frontFace.implicitHeight }
         }
+        // On the stage the text is set left, ragged right, as a block with
+        // the same wide margin either side: centred line by line, a long
+        // question read as a shape rather than a sentence.
         CardFace {
           id: frontFace
           objectName: "flipFront"
-          x: Theme.spaceXl
-          width: parent.width - Theme.spaceXl * 2
+          readonly property real inset: root.stage ? Theme.cardStageInset : Theme.spaceXl
+          x: inset
+          width: parent.width - inset * 2
           readonly property real belowLabel: frontCol.y + frontLabel.height + frontCol.spacing
           y: root.stage ? Math.max(belowLabel, (parent.height - implicitHeight) / 2) : belowLabel
-          horizontalAlignment: root.stage ? Text.AlignHCenter : Text.AlignLeft
           html: root.card ? root.card.front : ""
-          size: root.stage ? Theme.cardStageFrontSize : Theme.titleSize
+          size: root.stage ? root.frontFit : Theme.titleSize
+        }
+        // Unseen, the same front at a trial size: fitFront() measures with it.
+        CardFace {
+          id: frontProbe
+          visible: false
+          width: frontFace.width
+          html: frontFace.html
         }
       }
       back: Rectangle {
         anchors.fill: parent
+        layer.enabled: root.moving
+        layer.smooth: true
         color: Theme.paper
         border.color: Theme.accentColor
         border.width: Theme.borderWidth
         Column {
           id: backCol
-          x: Theme.spaceXl
+          x: root.stage ? Theme.cardStageInset : Theme.spaceXl
           y: root.stage ? Math.max(Theme.spaceXl, (parent.height - implicitHeight) / 2) : Theme.spaceXl
-          width: parent.width - Theme.spaceXl * 2
+          width: parent.width - x * 2
           spacing: Theme.spaceMd
           SectionLabel { text: "Answer" }
           CardFace { width: parent.width; html: root.card ? root.card.back : "" }
@@ -172,31 +207,16 @@ FocusScope {
           }
         }
       }
-      transform: [
-        Rotation {
-          origin.x: flipable.width / 2
-          origin.y: flipable.height / 2
-          axis { x: 0; y: 1; z: 0 }  // check: allow-px the rotation axis, a unit vector
-          angle: root.flipped ? 180 : 0
-          Behavior on angle {
-            enabled: !root.turning
-            NumberAnimation { duration: Theme.flipDuration; easing.type: Easing.InOutQuad }
-          }
-        },
-        Rotation {
-          id: turn
-          origin.x: flipable.width / 2
-          origin.y: flipable.height / 2
-          axis { x: 0; y: 1; z: 0 }  // check: allow-px the rotation axis, a unit vector
-          NumberAnimation on angle {
-            id: turnIn
-            running: false
-            to: 0
-            duration: Theme.flipDuration
-            easing.type: Easing.OutCubic
-          }
+      transform: Rotation {
+        origin.x: flipable.width / 2
+        origin.y: flipable.height / 2
+        axis { x: 0; y: 1; z: 0 }  // check: allow-px the rotation axis, a unit vector
+        angle: root.flipped ? 180 : 0
+        Behavior on angle {
+          enabled: !root.turning
+          NumberAnimation { id: flipAnim; duration: Theme.flipDuration; easing.type: Easing.InOutCubic }
         }
-      ]
+      }
       MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { root.forceActiveFocus(); root.flipped = !root.flipped } }
     }
 

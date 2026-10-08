@@ -41,6 +41,7 @@ Item {
   // tags, the most common few or every one.
   property bool filtersOpen: true
   property bool tagsOpen: false
+  property real asideHeight: 0
   readonly property var unpickedTags: tags.filter(function(t) { return t.tag !== filters.tag })
   readonly property var tagsShown: tagsOpen ? unpickedTags : unpickedTags.slice(0, Theme.cardsTagsShown)
   readonly property int tagsHidden: unpickedTags.length - tagsShown.length
@@ -211,6 +212,9 @@ Item {
             width: parent.width
             cards: root.filtered
             stage: true
+            // As tall as the column beside it, so neither leaves a gap or
+            // cuts the other off.
+            stageHeight: top.sideBySide ? root.asideHeight : 0
           }
 
           // Clearing is the filter header's "clear" (and the status line's
@@ -248,6 +252,16 @@ Item {
           id: aside
           width: asideView.width
           spacing: Theme.spaceXl
+          // The stage follows the column's height, but not while every tag
+          // is listed: that list scrolls inside the column instead, so the
+          // card doesn't stretch to the length of a tag list.
+          Binding {
+            target: root
+            property: "asideHeight"
+            value: aside.implicitHeight
+            when: !root.tagsOpen
+            restoreMode: Binding.RestoreNone
+          }
 
           // ---- retention ----------------------------------------------------------
           Column {

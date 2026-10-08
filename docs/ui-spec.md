@@ -123,8 +123,7 @@ before the reading column narrows below ~60% of its measure.
 Set in a wider column than the reading one (`Theme.pageWidth` with `Theme.cardsMeasure`, up to 1600px), since it is a
 grid. At the top, the stage: the current card at a fixed height (`Theme.cardStageFaceHeight`),
 its front set large (`Theme.cardStageFrontSize`) and centred, under a progress hairline; the
-position ("12/357") and the ←/→ keys are in the status line. Paging turns the next card in from
-the side it comes from, front up. Beside it (above it when the stage would drop
+position ("12/357") and the ←/→ keys are in the status line. Paging shows the next card front up. Beside it (above it when the stage would drop
 under 480px), a column exactly as tall as the stage, its overflow scrolling inside it:
 retention (`Retention · 30 days`, the figure with verdict and review count, the rating mix),
 then the filters. The `▾ FILTER` header folds the section to what is selected; the selected

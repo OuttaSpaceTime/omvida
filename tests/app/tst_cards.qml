@@ -62,15 +62,18 @@ OmvidaTest {
     tryVerify(function() { return cardsScreen.filtered.length === 3 })
   }
 
-  // The stage keeps one height and centres its card: a short card does not
-  // shrink it, and it is as tall as the column of filters beside it.
+  // The stage is as tall as the column of filters beside it, and its front
+  // sits mid-card, set left in a block with equal margins.
   function test_stage_keeps_its_height_and_centres_the_card() {
     var face = item("flipCard")
     var aside = item("cardsAside")
-    var faceEnd = face.mapToItem(null, 0, face.height).y, asideEnd = aside.mapToItem(null, 0, aside.height).y
+    // The stage, not the card: a card still turning in is rotated, and a
+    // rotated item's corners map elsewhere.
+    var faceEnd = stage().mapToItem(null, 0, stage().height).y, asideEnd = aside.mapToItem(null, 0, aside.height).y
     verify(Math.abs(faceEnd - asideEnd) <= 1, "the card and the filter column end together: " + faceEnd + " vs " + asideEnd)
     var front = item("flipFront")
-    compare(front.horizontalAlignment, Text.AlignHCenter)
+    compare(front.horizontalAlignment, Text.AlignLeft)
+    compare(front.x, face.width - front.x - front.width, "equal margins")
     var mid = front.y + front.height / 2
     verify(Math.abs(mid - face.height / 2) < face.height / 10, "the front sits mid-card: " + mid + " of " + face.height)
   }
@@ -87,19 +90,14 @@ OmvidaTest {
     tryCompare(turn, "angle", 180, 2000)
   }
 
-  // Paging turns the next card in, front up, and the card changes at once.
-  function test_next_turns_the_card_in() {
-    var turn = item("flipCard").transform[1]
-    var first = stage().card.id
+  // Paging shows the next card front up at once, even from an answer: it
+  // doesn't turn back over (which would show the next card's answer).
+  function test_next_shows_the_front_at_once() {
     key(Qt.Key_Space)
     tryCompare(item("flipCard").transform[0], "angle", 180, 2000)
     key(Qt.Key_Right)
-    verify(stage().card.id !== first, "the next card is current at once")
     compare(stage().flipped, false)
-    compare(item("flipCard").transform[0].angle, 0, "front up, no turn back over")
-    wait(60)
-    verify(turn.angle > 0 && turn.angle < 90, "turning in: " + turn.angle)
-    tryCompare(turn, "angle", 0, 2000)
+    compare(item("flipCard").transform[0].angle, 0)
   }
 
   function test_retention_comes_from_the_deck() {

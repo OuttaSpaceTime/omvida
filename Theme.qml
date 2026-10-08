@@ -309,11 +309,16 @@ QtObject {
   // the screen shows.
   readonly property int cardStageFaceHeight: 300
   readonly property int cardStageFrontSize: 26
+  // The stage's text margin either side: wide, so the left-set lines sit as
+  // a balanced block in the card.
+  readonly property int cardStageInset: space4xl
   // How many tags the filter shows before "N more tags".
   readonly property int cardsTagsShown: 6
 
   // ---- motion ----------------------------------------------------------------------
-  readonly property int flipDuration: 260
+  // A card turning over, or turning in as you page: slow enough to read as
+  // a card turning, not a cut.
+  readonly property int flipDuration: 560
   readonly property int fadeDuration: 120
   readonly property int toastDuration: 4000
   readonly property int graphTickInterval: 16
