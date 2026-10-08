@@ -98,7 +98,7 @@ Modal {
       color: Theme.faint
       anchors.verticalCenter: parent.verticalCenter
     }
-    ActionButton { id: clear; small: true; quiet: true; icon: "close"; tip: "Leave the context out"; onActivated: root.context = "" }
+    PlainButton { id: clear; icon: "close"; tip: "Leave the context out"; onActivated: root.context = "" }
   }
 
   Row {
@@ -110,6 +110,6 @@ Modal {
       label: "Open in Claude Code"
       onActivated: root.submit()
     }
-    ActionButton { quiet: true; label: "Cancel"; onActivated: root.close() }
+    PlainButton { size: Theme.bodySize; label: "Cancel"; onActivated: root.close() }
   }
 }

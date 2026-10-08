@@ -101,7 +101,7 @@ Column {
   }
 
   // Offers: a walkthrough for what lapsed, cards for the gaps. Each is the
-  // skill's command as plain words, pulled left onto the page's edge.
+  // skill's command as plain words.
   Column {
     visible: root.session.summaryData !== null && root.session.summaryData.lapses.length > 0
     width: parent.width
@@ -112,7 +112,6 @@ Column {
       delegate: PlainButton {
         id: walkthroughButton
         required property var modelData
-        x: -walkthroughButton.inset
         tint: Theme.accentColor
         label: "/study-walkthrough " + (walkthroughButton.modelData.length > 48 ? walkthroughButton.modelData.slice(0, 47) + "…" : walkthroughButton.modelData)
         onActivated: root.session.app.launch(Launch.skillArgv(Paths.studyDir, "Omvida · Walkthrough", "/study-walkthrough", walkthroughButton.modelData, ""), "Opened Claude Code")
@@ -123,7 +122,6 @@ Column {
   Rectangle { width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
 
   Row {
-    x: -studyAgain.inset
     spacing: Theme.spaceSm
     PlainButton {
       id: studyAgain

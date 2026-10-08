@@ -53,9 +53,7 @@ Rectangle {
       color: Theme.faint
       anchors.verticalCenter: parent.verticalCenter
     }
-    ActionButton {
-      small: true
-      quiet: true
+    PlainButton {
       tip: "Copy"
       icon: root.copied ? "check" : "copy"
       onActivated: {

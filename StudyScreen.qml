@@ -198,11 +198,9 @@ Item {
           text: root.session.errorText
           color: Theme.redText
         }
-        // Plain words, pulled left so they sit on the page's edge.
         PlainButton {
           id: startButton
           objectName: "startSessionButton"
-          x: -startButton.inset
           visible: root.phase === "idle" || root.phase === "error"
           keys: "↵"
           label: root.phase === "error" ? "try again" : "start a session"

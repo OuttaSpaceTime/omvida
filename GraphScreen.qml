@@ -24,11 +24,9 @@ Item {
     return out
   }
 
-  // Pulled left by a chip's inset, so the first chip's words start on the
-  // screen's edge rather than its (now invisible) box.
   Row {
     id: bar
-    x: Theme.spaceXl - Theme.spaceSm
+    x: Theme.spaceXl
     y: Theme.spaceLg
     spacing: Theme.spaceXs
     Chip { objectName: "graphAll"; label: "All pages"; selected: !root.local; onActivated: root.local = false }

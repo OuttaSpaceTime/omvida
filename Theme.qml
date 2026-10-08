@@ -225,9 +225,7 @@ QtObject {
   // As wide as a side panel: at 220 the Add menu's longest skill name
   // ("/study-walkthrough --write") ran out of the menu's frame.
   readonly property int menuWidth: sidePanelWidth
-  readonly property int chipHitSlop: spaceXs
-  // A chip's padding either side of its words; a row of chips is pulled
-  // out by it so the words line up with the column's edge (layout rule 2).
+  // How far a chip's fill and outline reach past its words, either side.
   readonly property int chipInset: spaceSm
 
   // ---- study screen / status line ----

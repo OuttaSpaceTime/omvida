@@ -17,7 +17,7 @@ The user chose two looks from a set of mockups, and the app follows them everywh
   buttons, in fields or in placeholders. A screen declares `statusMode`, `statusSegments`,
   `statusHints` (each `{ keys, label, run }`, run being what the key does) and
   `statusAlerts`, and the line adds the shared ones (`StatusBits.js`). Secondary actions are
-  quiet text buttons (`ActionButton { quiet: true }`); an unselected chip is its words alone,
+  quiet text buttons (`PlainButton`, which can carry an icon); an unselected chip is its words alone,
   the selected one outlined in the accent.
 
 New tokens for both are in `Theme.qml`'s "app-wide style" block.

@@ -38,7 +38,6 @@ Modal {
       id: row
       required property var modelData
       objectName: "keyHelp:" + row.modelData.label
-      x: -row.inset
       keys: row.modelData.keys
       label: row.modelData.label
       interactive: typeof row.modelData.run === "function"

@@ -26,13 +26,14 @@ Rectangle {
     color: Theme.hairline
   }
 
-  ActionButton {
+  PlainButton {
+    size: Theme.bodySize
+    height: Theme.controlHeight
     id: back
     objectName: "backButton"
     anchors.left: parent.left
     anchors.leftMargin: Theme.spaceLg
     anchors.verticalCenter: parent.verticalCenter
-    quiet: true
     icon: "back"
     tip: "Back  Alt+←"
     enabled: root.canGoBack
@@ -89,13 +90,14 @@ Rectangle {
     horizontalAlignment: Text.AlignRight
   }
 
-  ActionButton {
+  PlainButton {
+    size: Theme.bodySize
+    height: Theme.controlHeight
     id: add
     objectName: "addButton"
     anchors.right: parent.right
     anchors.rightMargin: Theme.spaceLg
     anchors.verticalCenter: parent.verticalCenter
-    quiet: true
     icon: "plus"
     label: "Add"
     onActivated: root.addRequested()

@@ -254,14 +254,12 @@ Item {
       }
       Rectangle { id: rule; anchors.top: field.bottom; anchors.topMargin: Theme.spaceXs; width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
 
-      // Pulled left by a chip's inset, so "Keyword" starts on the field's
-      // text edge.
       Row {
         id: modeRow
         anchors.top: rule.bottom
         anchors.topMargin: Theme.spaceMd
         anchors.left: parent.left
-        anchors.leftMargin: Theme.spaceMd - Theme.spaceSm  // a hint's inset
+        anchors.leftMargin: Theme.spaceMd
         spacing: Theme.spaceXs
         Chip { label: "Keyword"; selected: !root.deep; onActivated: { root.deep = false; root.runBackendSearch() } }
         Chip { objectName: "deepSearch"; label: "Deep (~6s)"; selected: root.deep; onActivated: { root.deep = true; root.runBackendSearch() } }
@@ -441,16 +439,18 @@ Item {
           label: "Continue in Claude"
           onActivated: { root.app.launch(Launch.resumeArgv(Paths.studyDir, root.askSession), "Opened Claude Code"); root.close() }
         }
-        ActionButton {
-          quiet: true
+        PlainButton {
+          size: Theme.bodySize
+          height: Theme.controlHeight
           label: "Copy"
           icon: "copy"
           enabled: root.askText !== ""
           onActivated: Quickshell.clipboardText = root.askText
         }
-        ActionButton {
+        PlainButton {
+          size: Theme.bodySize
+          height: Theme.controlHeight
           visible: !root.askDone
-          quiet: true
           label: "Stop"
           onActivated: askProc.running = false
         }
@@ -468,7 +468,7 @@ Item {
       Rectangle { width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
       Row {
         anchors.left: parent.left
-        anchors.leftMargin: Theme.spaceMd - Theme.spaceSm
+        anchors.leftMargin: Theme.spaceMd
         anchors.verticalCenter: parent.verticalCenter
         Repeater {
           model: root.hints

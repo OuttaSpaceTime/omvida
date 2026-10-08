@@ -7,7 +7,12 @@ import QtQuick
 // the overlay's verdict chip. A row of boxed chips, each with its own border,
 // had read as a toolbar louder than what it filters; one outline among plain
 // words says which is chosen with a single line.
-Rectangle {
+//
+// As PlainButton: the words start at the chip's own left edge, so a row of
+// chips lines up with the text around it; the fill and outline reach
+// chipInset past the words on both sides, and the width keeps that much
+// after them as the gap to the next chip.
+Item {
   id: root
 
   property string label: ""
@@ -18,14 +23,20 @@ Rectangle {
 
   implicitHeight: Theme.smallControlHeight
   implicitWidth: row.implicitWidth + Theme.chipInset * 2
-  color: !selected && area.containsMouse ? Theme.hoverFill : "transparent"
-  border.color: selected ? Theme.accentColor : "transparent"
-  border.width: Theme.borderWidth
   opacity: enabled ? 1 : 0.45
+
+  Rectangle {
+    x: -Theme.chipInset
+    width: row.implicitWidth + Theme.chipInset * 2
+    height: parent.height
+    color: !root.selected && area.containsMouse ? Theme.hoverFill : "transparent"
+    border.color: root.selected ? Theme.accentColor : "transparent"
+    border.width: Theme.borderWidth
+  }
 
   Row {
     id: row
-    anchors.centerIn: parent
+    anchors.verticalCenter: parent.verticalCenter
     spacing: Theme.spaceXs
     Rectangle {
       visible: root.dot.a > 0
@@ -51,8 +62,9 @@ Rectangle {
 
   MouseArea {
     id: area
-    anchors.fill: parent
-    anchors.margins: -Theme.chipHitSlop
+    x: -Theme.chipInset
+    width: row.implicitWidth + Theme.chipInset * 2
+    height: parent.height
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
     onClicked: root.activated()

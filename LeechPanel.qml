@@ -29,9 +29,8 @@ Column {
   CardFace { width: parent.width; html: root.session.blocked ? root.session.blocked.card.back : ""; color: Theme.dim }
   Rectangle { width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
 
-  // The decisions, pulled left so the first word sits on the page's edge.
+  // The decisions, as plain words.
   Row {
-    x: -rewrite.inset
     spacing: Theme.spaceSm
     PlainButton { id: rewrite; objectName: "leechRewrite"; label: "rewrite in claude"; tint: Theme.accentColor; onActivated: root.session.leechFix("rewrite") }
     PlainButton { objectName: "leechSplit"; label: "split in claude"; onActivated: root.session.leechFix("split") }
@@ -47,7 +46,6 @@ Column {
     PlainButton { label: "cancel"; onActivated: dropConfirm.visible = false }
   }
   Row {
-    x: -cont.inset
     spacing: Theme.spaceXs
     PlainButton { id: cont; objectName: "leechContinue"; keys: "↵"; label: "continue"; anchors.verticalCenter: parent.verticalCenter; onActivated: root.session.loadNext() }
     UiText {

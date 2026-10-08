@@ -19,6 +19,8 @@ The screen title, any filter chips and every list row's first character share on
 left edge. Do not indent row content to make room for a selection marker — that is
 what broke it before. A control whose label is inset in its own box (`← Goals`) is
 pulled left so the *label* sits on the edge and its hover fill hangs in the margin.
+(Omvida: its quiet buttons and chips, `PlainButton` and `Chip`, start their words at their
+own left edge and draw the fill past it, so they need no pulling.)
 
 That edge is the same on every screen: each one sets its text in the journal's
 column with `Theme.pageX` / `Theme.pageWidth`, centred on the window rather than on

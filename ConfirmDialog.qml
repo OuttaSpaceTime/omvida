@@ -71,7 +71,7 @@ Modal {
       label: root.action
       onActivated: root.accept()
     }
-    ActionButton { objectName: "confirmCancel"; quiet: true; label: "Cancel"; onActivated: root.close() }
+    PlainButton { size: Theme.bodySize; objectName: "confirmCancel"; label: "Cancel"; onActivated: root.close() }
   }
 
   Item {

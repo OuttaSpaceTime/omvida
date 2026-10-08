@@ -55,11 +55,9 @@ Rectangle {
 
   Rectangle { anchors.right: parent.right; width: Theme.hairlineWidth; height: parent.height; color: Theme.hairline }
 
-  // Pulled left by a chip's inset, so "Context" starts on the panel's text
-  // edge: an unselected chip has no box to align instead.
   Row {
     id: modes
-    x: Theme.spaceLg - Theme.spaceSm
+    x: Theme.spaceLg
     y: Theme.spaceLg
     spacing: Theme.spaceXs
     Chip { objectName: "panelMode:context"; label: "Context"; selected: root.mode === "context"; onActivated: root.mode = "context" }

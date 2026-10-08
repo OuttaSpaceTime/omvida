@@ -169,17 +169,12 @@ Item {
           }
           // The page's actions as quiet text buttons: a row of three boxes
           // over the first paragraph read as a toolbar, louder than the page.
-          // Pulled left by a button's inset so the first label sits on the
-          // title's edge (layout rule 2), its hover fill in the margin.
           Flow {
-            x: -Theme.spaceSm
-            width: parent.width + Theme.spaceSm
+            width: parent.width
             spacing: Theme.spaceXs
             topPadding: Theme.spaceXs
-            ActionButton {
+            PlainButton {
               objectName: "pageCardsButton"
-              small: true
-              quiet: true
               tint: enabled ? Theme.accentColor : Theme.secondaryInk
               icon: "cards"
               label: root.pageCards.length > 0
@@ -188,18 +183,14 @@ Item {
               enabled: root.pageCards.length > 0
               onActivated: root.openPageCards()
             }
-            ActionButton {
+            PlainButton {
               objectName: "pageAddCards"
-              small: true
-              quiet: true
               icon: "plus"
               label: "Cards on this page"
               onActivated: root.app.openAdd("flashcard", root.meta.title, "wiki page [[" + root.meta.path + "]]")
             }
-            ActionButton {
+            PlainButton {
               objectName: "pageDeeper"
-              small: true
-              quiet: true
               icon: "brain"
               label: "Go deeper"
               onActivated: root.app.launch(Launch.skillArgv(Paths.studyDir, "Omvida · Walkthrough", "/study-walkthrough",
@@ -271,13 +262,11 @@ Item {
     Rectangle { width: Theme.hairlineWidth; height: parent.height; color: Theme.hairline }
     SectionLabel { x: Theme.spaceLg; y: Theme.spaceLg; text: "Neighbourhood" }
     // The whole graph screen, around this page.
-    ActionButton {
+    PlainButton {
       objectName: "graphFullScreen"
       anchors.right: parent.right
       anchors.rightMargin: Theme.spaceSm
       y: Theme.spaceSm
-      small: true
-      quiet: true
       icon: "fullscreen"
       tip: "Open in the graph screen"
       onActivated: root.app.openGraph(true)

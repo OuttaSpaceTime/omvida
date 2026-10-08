@@ -1,19 +1,23 @@
 import QtQuick
+import QtQuick.Controls
 
-// A button that is only its words: the key that does the same thing in bold,
-// then what it does ("⇧↵ reveal"), with a hover fill and no border. The
-// status line's hints are these, and so are the few actions the study
-// screen's leech and summary still show, so a click target reads exactly
-// like the key hint it stands for. ActionButton's box was the alternative;
-// a row of those is what this screen set out to lose.
+// The app's quiet button: only its words (and an optional icon), with a
+// hover fill and no border. The key that does the same thing, if given, comes
+// first in bold ("⇧↵ reveal"), so a status-line hint and the click target it
+// stands for read alike. Bordered and filled buttons are ActionButton's.
 //
-// The label is inset by `inset` on both sides; a caller that wants the words
-// on the page's left edge pulls the button left by `inset` (layout rule 2).
-Rectangle {
+// The words start at the button's own left edge, so a quiet button lines up
+// with the text around it (layout rule 2) wherever it is placed; the hover
+// fill reaches `inset` past the words on both sides, the left beyond the
+// button's bounds. The button's width keeps that much after the words too,
+// which is the gap to the next button in a row, so rows need no spacing.
+Item {
   id: root
 
   property string keys: ""
   property string label: ""
+  property string icon: ""
+  property string tip: ""
   property color tint: Theme.secondaryInk
   property int size: Theme.bodySmallSize
   // False makes it a legend: the same words, no hover and no click. The
@@ -27,13 +31,27 @@ Rectangle {
 
   implicitHeight: Theme.smallControlHeight
   implicitWidth: row.implicitWidth + root.inset * 2
-  color: hovered && enabled && interactive ? Theme.hoverFill : "transparent"
   opacity: enabled ? 1 : 0.45
+
+  Rectangle {
+    x: -root.inset
+    width: row.implicitWidth + root.inset * 2
+    height: parent.height
+    color: root.hovered && root.enabled && root.interactive ? Theme.hoverFill : "transparent"
+  }
 
   Row {
     id: row
-    anchors.centerIn: parent
-    spacing: Theme.spaceXs
+    anchors.verticalCenter: parent.verticalCenter
+    // A key sits close to its label ("⇧↵ reveal"); an icon needs more air.
+    spacing: root.icon !== "" ? Theme.spaceSm : Theme.spaceXs
+    Glyph {
+      visible: root.icon !== ""
+      icon: root.icon
+      anchors.verticalCenter: parent.verticalCenter
+      font.pixelSize: root.size
+      color: root.tint
+    }
     UiText {
       visible: root.keys !== ""
       text: root.keys
@@ -51,10 +69,16 @@ Rectangle {
 
   MouseArea {
     id: area
-    anchors.fill: parent
+    x: -root.inset
+    width: row.implicitWidth + root.inset * 2
+    height: parent.height
     hoverEnabled: true
     enabled: root.enabled && root.interactive
     cursorShape: Qt.PointingHandCursor
     onClicked: root.activated()
   }
+
+  ToolTip.visible: root.tip !== "" && area.containsMouse
+  ToolTip.delay: Theme.tooltipDelay
+  ToolTip.text: root.tip
 }
