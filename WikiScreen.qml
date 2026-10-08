@@ -27,6 +27,10 @@ Item {
   readonly property string path: app ? app.wikiPath : ""
   readonly property var meta: page ? page.meta : null
   readonly property var pageCards: meta && app ? Cards.cardsForPage(meta, app.store.allCards) : []
+  // The graph rail's width: dragged by its left edge, kept while the app
+  // runs, never so wide that the page loses its reading column.
+  property real graphRailWidth: Theme.sidePanelWidth
+  readonly property real graphRailMax: Math.max(Theme.sidePanelWidth, width - Theme.sidePanelWidth - Theme.pageMeasure * 0.85)
   readonly property bool showGraph: width >= Theme.sidePanelWidth * 2 + Theme.pageMeasure * 0.85
 
   // ---- the window's status line ---------------------------------------------
@@ -262,10 +266,22 @@ Item {
     anchors.right: parent.right
     anchors.top: parent.top
     anchors.bottom: parent.bottom
-    width: Theme.sidePanelWidth
+    width: Math.min(root.graphRailWidth, root.graphRailMax)
     color: Theme.paper
     Rectangle { width: Theme.hairlineWidth; height: parent.height; color: Theme.hairline }
     SectionLabel { x: Theme.spaceLg; y: Theme.spaceLg; text: "Neighbourhood" }
+    // The whole graph screen, around this page.
+    ActionButton {
+      objectName: "graphFullScreen"
+      anchors.right: parent.right
+      anchors.rightMargin: Theme.spaceSm
+      y: Theme.spaceSm
+      small: true
+      quiet: true
+      icon: "fullscreen"
+      tip: "Open in the graph screen"
+      onActivated: root.app.openGraph(true)
+    }
     GraphView {
       anchors.fill: parent
       anchors.topMargin: Theme.space2xl + Theme.spaceSm
@@ -273,6 +289,21 @@ Item {
       focusPath: root.path
       local: true
       compact: true
+    }
+    // The left edge drags the rail wider or narrower.
+    MouseArea {
+      objectName: "graphRailHandle"
+      x: -width / 2
+      width: Theme.spaceSm
+      height: parent.height
+      cursorShape: Qt.SplitHCursor
+      property real startX: 0
+      property real startWidth: 0
+      onPressed: function(m) { startX = mapToItem(root, m.x, 0).x; startWidth = graphRail.width }
+      onPositionChanged: function(m) {
+        var w = startWidth - (mapToItem(root, m.x, 0).x - startX)
+        root.graphRailWidth = Math.max(Theme.sidePanelWidth * 0.75, Math.min(root.graphRailMax, w))
+      }
     }
   }
 }

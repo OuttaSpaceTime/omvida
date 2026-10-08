@@ -26,6 +26,22 @@ OmvidaTest {
     compare(view.settling, false)
   }
 
+  // The graph rail opens the graph screen around the page, and its left
+  // edge drags it wider.
+  function test_the_graph_rail_goes_full_screen_and_resizes() {
+    app.openPage("web/http-caching", "")
+    tryVerify(function() { return wiki.loadedPath === "web/http-caching" }, 8000)
+    var handle = item("graphRailHandle")
+    var rail = handle.parent
+    var before = rail.width
+    mouseDrag(handle, handle.width / 2, handle.height / 2, -60, 0)
+    tryVerify(function() { return rail.width > before }, 2000, "wider: " + rail.width + " from " + before)
+
+    click("graphFullScreen")
+    tryCompare(app, "currentScreen", "graph")
+    verify(item("graphScreen").local, "around the open page")
+  }
+
   function test_open_a_page_and_follow_a_wikilink() {
     app.openPage("web/http-caching", "")
     tryVerify(function() { return wiki.page !== null && wiki.loadedPath === "web/http-caching" }, 8000)

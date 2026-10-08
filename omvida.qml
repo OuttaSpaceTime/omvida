@@ -119,6 +119,11 @@ ShellRoot {
   }
 
   function openSearch(text) { palette.open(text || "") }
+  // The graph screen, all pages or around the open page.
+  function openGraph(local) {
+    graphScreen.local = local
+    setScreen("graph")
+  }
   function openPageCards(title, cards) { pageCardsDialog.open(title, cards) }
   function openAdd(kind, topic, context) { topicDialog.open(kind, topic, context) }
 

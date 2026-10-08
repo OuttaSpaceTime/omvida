@@ -66,7 +66,12 @@ Item {
   function fit() {
     if (!layout) return { s: 1, ox: width / 2, oy: height / 2 }
     var b = Graph.bounds(layout)
-    var pad = compact ? Theme.spaceLg : Theme.space2xl
+    // A node is drawn at least 0.7 of its size however far the graph is
+    // scaled down (onPaint), more than the bounds allow for when the scale is
+    // small, so the edge keeps room for the largest one and its focus ring.
+    var rMax = 0
+    layout.nodes.forEach(function(n) { rMax = Math.max(rMax, Graph.radius(n)) })
+    var pad = (compact ? Theme.spaceLg : Theme.space2xl) + rMax * 0.7 + Theme.spaceXs
     var s = Math.min((width - pad * 2) / b.w, (height - pad * 2) / b.h, compact ? 1.2 : 1.6) * zoom
     return { s: s, ox: width / 2 - (b.x + b.w / 2) * s + panX, oy: height / 2 - (b.y + b.h / 2) * s + panY }
   }
@@ -142,7 +147,10 @@ Item {
         if (label) {
           ctx.fillStyle = dim ? Theme.faint : (n.id === hv ? Theme.ink : Theme.dim)
           ctx.font = (n.id === hv ? "bold " : "") + Theme.captionSize + "px monospace"
-          ctx.fillText(n.title, x + r + 3, y + 4)
+          // To the right of the node, slid left as far as it must to stay on
+          // the canvas (a node at the rail's right edge).
+          var w = ctx.measureText(n.title).width
+          ctx.fillText(n.title, Math.max(0, Math.min(x + r + 3, width - w)), y + 4)
         }
         ctx.globalAlpha = 1
       })
