@@ -5,12 +5,18 @@ import "../../Format.js" as F
 TestCase {
   name: "Format"
 
-  function test_schedule_line() {
-    compare(F.scheduleLine(1, { intraDay: true, interval: 0, due: "2026-10-06T20:00:00Z" }), "Again (1) · repeats this session")
-    var due = new Date(2026, 9, 9, 12).toISOString()
-    compare(F.scheduleLine(3, { intraDay: false, interval: 3, due: due }), "Good (3) · next review in 3 days (2026-10-09)")
-    compare(F.scheduleLine(4, { intraDay: false, interval: 1, due: due }), "Easy (4) · next review in 1 day (2026-10-09)")
-    compare(F.scheduleLine(2, null), "Hard (2)")
+  function test_interval_label() {
+    var served = new Date(2026, 9, 8, 9, 0).getTime()
+    var at = function(mins) { return new Date(served + mins * 60000).toISOString() }
+    compare(F.intervalLabel({ intraDay: true, interval: 0, due: at(0.2) }, served), "<1m")
+    compare(F.intervalLabel({ intraDay: true, interval: 0, due: at(10) }, served), "10m", "counted from when it was served")
+    compare(F.intervalLabel({ intraDay: true, interval: 0, due: at(300) }, served), "5h")
+    compare(F.intervalLabel({ intraDay: false, interval: 1, due: at(1440) }, served), "1d")
+    compare(F.intervalLabel({ intraDay: false, interval: 12, due: at(0) }, served), "12d")
+    compare(F.intervalLabel({ intraDay: false, interval: 45, due: at(0) }, served), "1.5mo")
+    compare(F.intervalLabel({ intraDay: false, interval: 60, due: at(0) }, served), "2mo")
+    compare(F.intervalLabel({ intraDay: false, interval: 400, due: at(0) }, served), "1.1y")
+    compare(F.intervalLabel(undefined, served), "", "an older deck server sends none")
   }
 
   function test_position_uses_the_servers_numbers() {

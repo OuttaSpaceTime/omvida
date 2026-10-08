@@ -126,6 +126,10 @@ ShellRoot {
   }
   function openPageCards(title, cards) { pageCardsDialog.open(title, cards) }
   function openAdd(kind, topic, context) { topicDialog.open(kind, topic, context) }
+  // Ask before something that cannot be undone (ConfirmDialog.qml);
+  // confirmOpen for the tests.
+  readonly property bool confirmOpen: confirmDialog.opened
+  function confirm(title, quote, note, action, accept) { confirmDialog.open(title, quote, note, action, accept) }
 
   Store {
     id: dataStore
@@ -375,6 +379,12 @@ ShellRoot {
         id: topicDialog
         anchors.fill: parent
         app: root
+      }
+
+      ConfirmDialog {
+        id: confirmDialog
+        anchors.fill: parent
+        onClosed: root.focusScreen()
       }
 
       Toast {

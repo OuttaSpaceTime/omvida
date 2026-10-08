@@ -75,6 +75,33 @@ OmvidaTest {
     verify(Math.abs(mid - face.height / 2) < face.height / 10, "the front sits mid-card: " + mid + " of " + face.height)
   }
 
+  // A flip turns the card over, not a cut: partway through, it is still
+  // turning.
+  function test_the_stage_card_turns_over() {
+    var face = item("flipCard")
+    var turn = face.transform[0]
+    compare(turn.angle, 0)
+    key(Qt.Key_Space)
+    wait(80)   // a third of the turn
+    verify(turn.angle > 0 && turn.angle < 180, "mid-turn: " + turn.angle)
+    tryCompare(turn, "angle", 180, 2000)
+  }
+
+  // Paging turns the next card in, front up, and the card changes at once.
+  function test_next_turns_the_card_in() {
+    var turn = item("flipCard").transform[1]
+    var first = stage().card.id
+    key(Qt.Key_Space)
+    tryCompare(item("flipCard").transform[0], "angle", 180, 2000)
+    key(Qt.Key_Right)
+    verify(stage().card.id !== first, "the next card is current at once")
+    compare(stage().flipped, false)
+    compare(item("flipCard").transform[0].angle, 0, "front up, no turn back over")
+    wait(60)
+    verify(turn.angle > 0 && turn.angle < 90, "turning in: " + turn.angle)
+    tryCompare(turn, "angle", 0, 2000)
+  }
+
   function test_retention_comes_from_the_deck() {
     tryVerify(function() { return cardsScreen.calibration !== null }, 5000)
     compare(cardsScreen.calibration.verdict, "low-signal")

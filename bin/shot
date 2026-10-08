@@ -11,6 +11,7 @@
 #   -s  home | study | wiki | cards | graph | wiki:<path> | folder:<path>
 #   -a  search[:text] | ask[:question] | add[:flashcard|wiki] | addmenu |
 #       study | answer[:text] | pagecards | cardsnext[:n] | cardsflip |
+#       cardsdelete | studydelete (Del's dialog, left open) |
 #       done (rate all Good: the summary) | leech (a blocked session) |
 #       syncfail (a card up, the sync's failure note)
 #   -w/-h size, -f frames (ms, comma-separated), -t settle ms, -o out dir

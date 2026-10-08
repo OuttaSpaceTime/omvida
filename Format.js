@@ -19,14 +19,26 @@ function dayKey(d) {
 var RATING_NAMES = ["", "Again", "Hard", "Good", "Easy"]
 function ratingName(n) { return RATING_NAMES[n] || "" }
 
-// /study's rating line, from submitReview's schedule. An intra-day step gets
-// no minute count: the server only says it repeats this session.
-function scheduleLine(rating, schedule) {
-  var head = ratingName(rating) + " (" + rating + ")"
-  if (!schedule) return head
-  if (schedule.intraDay || schedule.interval < 1) return head + " · repeats this session"
-  var days = Math.round(schedule.interval)
-  return head + " · next review in " + plural(days, "day") + " (" + dayKey(new Date(schedule.due)) + ")"
+// A rating key's interval, Anki's short form ("10m", "3d", "1.5mo", "2y"),
+// from one of nextCard's schedules. An intra-day step is counted from
+// `servedAt`, when the server worked it out, not from now: the minutes would
+// otherwise shrink while the card sits revealed. Days come from the server's
+// interval as given; a month is 30 days and a year 365, for display only.
+function intervalLabel(schedule, servedAt) {
+  if (!schedule) return ""
+  if (schedule.intraDay) {
+    var mins = Math.round((new Date(schedule.due).getTime() - servedAt) / 60000)
+    if (mins < 1) return "<1m"
+    return mins < 60 ? mins + "m" : Math.round(mins / 60) + "h"
+  }
+  var days = Math.max(1, Math.round(schedule.interval))
+  if (days < 30) return days + "d"
+  if (days < 365) return oneDecimal(days / 30) + "mo"
+  return oneDecimal(days / 365) + "y"
+}
+
+function oneDecimal(x) {
+  return String(Math.round(x * 10) / 10)
 }
 
 // "3/12": where the session is, for the status line, which shows the deck

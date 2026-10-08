@@ -11,7 +11,8 @@ import QtQuick.Controls
 // boxes read as a toolbar louder than the page under it. `prominent` is the
 // Glance footer's size, for the filled action and the square icon buttons
 // beside it. A button with an icon and no label is square, and says what it
-// does in `tip`, a tooltip.
+// does in `tip`, a tooltip. `fill` colours a filled button: the accent, or
+// Theme.redText for an action that destroys something (ConfirmDialog).
 Rectangle {
   id: root
 
@@ -19,6 +20,7 @@ Rectangle {
   property string icon: ""
   property string tip: ""
   property bool filled: false
+  property color fill: Theme.accentColor
   property bool small: false
   property bool quiet: false
   property bool prominent: false
@@ -34,9 +36,9 @@ Rectangle {
 
   implicitHeight: small ? Theme.smallControlHeight : (prominent ? Theme.primaryControlHeight : Theme.controlHeight)
   implicitWidth: iconOnly ? implicitHeight : row.implicitWidth + inset * 2
-  color: filled ? (hovered ? Qt.darker(Theme.accentColor, 1.1) : Theme.accentColor)
+  color: filled ? (hovered ? Qt.darker(fill, 1.1) : fill)
                 : (hovered && enabled ? Theme.hoverFill : "transparent")
-  border.color: filled ? Theme.accentColor : (quiet ? "transparent" : Theme.border)
+  border.color: filled ? fill : (quiet ? "transparent" : Theme.border)
   border.width: quiet && !filled ? 0 : Theme.borderWidth
   radius: Theme.radius
   opacity: enabled ? 1 : 0.45

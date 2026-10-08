@@ -1,9 +1,9 @@
 import QtQuick
 
 import "StudyKeys.js" as StudyKeys
-import "Format.js" as Format
 import "Launch.js" as Launch
 import "Session.js" as Session
+import "Format.js" as Format
 
 // A study session: the /study skill's loop, as state and actions with no view.
 // StudyScreen draws it; omvida.qml owns it, beside the deck and wiki clients,
@@ -44,7 +44,6 @@ QtObject {
   property bool acceptPending: false
   property int gradeSeq: 0
   property var rec: Session.empty()
-  property var lastResult: null  // { front, rating, line, overridden }
   property double shownAt: 0
   property double revealedAt: 0
   property var blocked: null     // { card, lapses }
@@ -73,7 +72,6 @@ QtObject {
   function start() {
     root.phase = "syncing"   // first: leaving the summary writes its log entry
     root.rec = Session.empty()
-    root.lastResult = null
     root.related = []
     root.syncNote = ""
     sync.run(function(r) {
@@ -162,11 +160,9 @@ QtObject {
     var responseMs = (root.revealedAt || Date.now()) - root.shownAt
     root.gradeSeq++   // a grade still running for this card is no longer wanted
     root.phase = "submitting"
-    deck.call("review", { sessionId: root.sessionId, cardId: c.id, rating: rating, responseMs: responseMs }, function(err, sched) {
+    deck.call("review", { sessionId: root.sessionId, cardId: c.id, rating: rating, responseMs: responseMs }, function(err) {
       if (err) { root.fail(err); return }
       root.rec = Session.rated(root.rec, c, rating, suggested, repeat, Date.now())
-      root.lastResult = { front: Format.stripHtml(c.front), rating: rating, line: Format.scheduleLine(rating, sched),
-                          overridden: suggested !== 0 && suggested !== rating }
       root.loadNext()
     })
   }
@@ -187,6 +183,31 @@ QtObject {
     root.app.launch(Launch.fixCardArgv(Paths.studyDir, root.card, root.suggestion.quality), "Opened Claude Code to fix the card")
   }
 
+  // Delete the card on screen, once the window's confirm dialog says so.
+  // The deck server deletes it and its history (deleteCard, as for a leech)
+  // and its session passes over a deleted card's place in the queue
+  // (flashcard-mcp's getNextCard), so the next card follows as after a
+  // rating. The session record notes nothing: the card was not rated, and
+  // the log's lines are flashcard-mcp's format.
+  function askDelete() {
+    if (!root.card || !(root.phase === "answering" || root.phase === "grading" || root.phase === "revealed")) return
+    var c = root.card
+    root.app.confirm("Delete this card?", Format.stripHtml(c.front),
+                     "Its review history goes with it. This cannot be undone.",
+                     "Delete", function() { root.deleteCard(c) })
+  }
+
+  function deleteCard(c) {
+    if (!root.card || root.card.id !== c.id || root.phase === "submitting") return
+    root.gradeSeq++   // a grade still running for this card is no longer wanted
+    root.phase = "submitting"
+    deck.call("deleteCard", { cardId: c.id }, function(err) {
+      if (err) { root.fail(err); return }
+      root.app.store.refreshDeck()
+      root.loadNext()
+    })
+  }
+
   // A key from the answer box (or, with no card up, the screen): true when
   // it was a study key, which the box then doesn't type.
   function handleKey(event) {
@@ -201,6 +222,7 @@ QtObject {
     case "submit": root.submit(a.rating); break
     case "discuss": root.discuss(); break
     case "skip": root.skip(); break
+    case "delete": root.askDelete(); break
     case "end": root.endNow(); break
     case "start": root.start(); break
     case "continue": root.loadNext(); break

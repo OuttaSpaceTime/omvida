@@ -15,6 +15,10 @@
 //                 "I knew it" or "no idea" needs no typing.
 //   Ctrl+D        discuss the card in Claude Code.
 //   Ctrl+S        skip the card. It stays due.
+//   Del           delete the card, after the window's confirm dialog asks.
+//                 Not while an answer is typed and not yet revealed, for
+//                 Esc's reason below: there Del edits the answer, as in any
+//                 text box.
 //   Esc           end the session: what was rated still counts, and the
 //                 summary follows. The status line shows it as the way out
 //                 (StatusLine.qml), so it is a key too. Not while an answer
@@ -34,7 +38,7 @@
 // scan code, so the shifted characters of the common layouts are a fallback.
 
 var KEY = {
-  Return: 0x01000004, Enter: 0x01000005, Escape: 0x01000000,
+  Return: 0x01000004, Enter: 0x01000005, Escape: 0x01000000, Delete: 0x01000007,
   K1: 0x31, K2: 0x32, K3: 0x33, K4: 0x34,
   Exclam: 0x21, At: 0x40, QuoteDbl: 0x22, NumberSign: 0x23, Section: 0xa7, Dollar: 0x24,
   D: 0x44, S: 0x53
@@ -70,7 +74,7 @@ function isEnter(key) { return key === KEY.Return || key === KEY.Enter }
 //   accept         submit the suggestion now
 //   acceptLater    the grader is still running: submit its rating on arrival
 //   submit         submit `rating`
-//   discuss, skip, end
+//   discuss, skip, end, delete
 //   start          a new session (Enter with no card up: idle, done, error)
 //   continue       go on past a leech (Enter on one)
 function action(state, key, modifiers, scanCode) {
@@ -92,6 +96,10 @@ function action(state, key, modifiers, scanCode) {
   if (key === KEY.Escape && !ctrl && !alt && !shift && !(modifiers & MOD.Meta)) {
     if (phase === "answering" && !state.answerEmpty) return { action: "none" }
     return { action: "end" }
+  }
+  if (key === KEY.Delete && !ctrl && !alt && !shift && !(modifiers & MOD.Meta)) {
+    if (phase === "answering" && !state.answerEmpty) return null
+    return { action: "delete" }
   }
 
   if (!isEnter(key)) return null

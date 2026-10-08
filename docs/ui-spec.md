@@ -78,20 +78,23 @@ Drawn for the keyboard: no button rows, no session line, no hint footer; the sta
 the mode, the place and the keys. The card sits in the reading column, centred vertically
 while it fits.
 
-- Answering: the previous card's result as one faint line, the front large (20px), its tags
+- Answering: the front large (20px), its tags
   faint, then a borderless prompt: an accent `›` and the answer box ("answer, or leave
   empty").
 - Revealed: the front cut to a dim three-line recap; a box split by a hairline, "› you" with
   the typed answer (or "(nothing typed)") beside "back" on a faint fill; Claude's verdict as
   one line ("claude: good — reason", the verdict in its rating's colour; "claude: grading…"
   while it runs; the grader's error if it failed); a card issue as a quiet orange line with
-  "fix in claude"; then four keycaps, `1 again` `2 hard` `3 good ◂` `4 easy`, the suggested
-  one outlined at 2px in its colour.
+  "fix in claude"; then four keycaps, `1 again 1m` `2 hard 2d` `3 good ◂ 4d` `4 easy 12d`,
+  the interval dim and taken from the deck server's preview, the suggested one outlined at
+  2px in its colour.
 - Status line: STUDY (accent) while answering, RATE after the reveal in the suggested rating's
   colour, SYNC, LEECH (orange), DONE, ERROR (red). Segments: the position from the server
   (`3/12`), the deck, `repeat`. Hints: answering `⇧↵ reveal`, `⌥↵ reveal+accept`, `⇧1-4 rate`,
-  `⌃D discuss`, `⌃S skip`, `esc end`; revealed `⌥↵ take <rating>` (or `⇧↵ good` with no
-  suggestion), `⇧1-4 rate` as a legend, discuss, skip, end. Alerts: the pressure verdict when
+  `⌃D discuss`, `⌃S skip`, `esc end`, `del delete`; revealed `⌥↵ take <rating>` (or `⇧↵ good`
+  with no suggestion), `⇧1-4 rate` as a legend, discuss, skip, end, delete. Del asks in the
+  confirm dialog, then deletes the card and the session goes on; with an answer typed and not
+  yet revealed, Del edits the answer instead. Alerts: the pressure verdict when
   not ok (`● warn` in its colour), new cards held back, and the Anki sync (`sync ✕` in red on
   failure, `synced` otherwise; the message on hover and as a toast on click).
 
@@ -110,15 +113,18 @@ it, subfolders, Outgoing, Linked from, each section under a hairline) or Tree. C
 breadcrumb, title, tags, updated and aliases (wrapped to the column), the cards button and
 Claude actions as quiet text buttons, the page's blocks (code on a fill with no border), then
 Linked from / Links to under hairlines. Status line: WIKI and the page's or folder's path.
-Right (280px, wide windows only): the page's neighbourhood graph. The side panels drop out
+Right (280px, wide windows only): the page's neighbourhood graph. Its left edge drags it wider
+(kept while the app runs, never past the page's reading column), and a full-screen icon in its
+corner opens the Graph screen around the page. The side panels drop out
 before the reading column narrows below ~60% of its measure.
 
 ## Cards
 
 Set in a wider column than the reading one (`Theme.pageWidth` with `Theme.cardsMeasure`, up to 1600px), since it is a
 grid. At the top, the stage: the current card at a fixed height (`Theme.cardStageFaceHeight`),
-its front set large (`Theme.cardStageFrontSize`) and centred, its position (`Card 12 of 357`, a
-progress hairline) and quiet ‹ back / next › links. Beside it (above it when the stage would drop
+its front set large (`Theme.cardStageFrontSize`) and centred, under a progress hairline; the
+position ("12/357") and the ←/→ keys are in the status line. Paging turns the next card in from
+the side it comes from, front up. Beside it (above it when the stage would drop
 under 480px), a column exactly as tall as the stage, its overflow scrolling inside it:
 retention (`Retention · 30 days`, the figure with verdict and review count, the rating mix),
 then the filters. The `▾ FILTER` header folds the section to what is selected; the selected
@@ -133,7 +139,9 @@ The stage and the grid are one walk through the filtered cards: the grid holds o
 after the stage's. Space or Enter flips; → or l moves on, taking that card off the grid; ← or
 h moves back, putting it back. The walk stops at both ends (`from the start` goes back).
 Clicking a tile makes it current, front up, and the cards before it count as passed. A change
-of filter starts over; a refresh of the deck keeps the current card. The keys are listed in
+of filter starts over; a refresh of the deck keeps the current card. Del (or the status line's
+`del delete`) asks in the confirm dialog before deleting the stage's card; deleted, the walk goes
+on at the next card, or the one before at the end. The keys are listed in
 the window's status line (`statusMode`, `statusSegments`, `statusHints`, `statusAlerts`).
 
 ## Graph
@@ -147,5 +155,7 @@ links drawn, and that mouse help (it used to be a line beside the chips).
 Search palette (as tall as its results; Keyword or Deep; Ask streams, then renders like a page,
 with Continue in Claude filled and Copy/Stop quiet; a foot line of clickable key hints: ↑↓
 choose, ↵ open, ⌃↵ ask Claude, esc close, and ⌫ back to search once an answer is in), Add menu,
-the topic dialog (the topic typed on a line; Open in Claude Code filled, Cancel quiet), a
+the topic dialog (the topic typed on a line; Open in Claude Code filled, Cancel quiet), the
+confirm dialog (what goes quoted, what else goes in dim text, the action filled in red, Cancel
+quiet; ↵ or y takes it, esc, n or the scrim cancels), a
 page's cards (overview grid or flip-through), toasts. Dialogs and the palette have a 1px frame.

@@ -24,6 +24,7 @@ A card's front, and the answer box already focused. Type an answer, or don't.
 | **Ctrl+D** | discuss the card in Claude Code (kitty), Socratic mode, with your answer and the suggestion |
 | **Ctrl+S** | skip; the card stays due |
 | **Esc** | end the session; what was rated counts, and the summary follows |
+| **Del** | delete the card, after a confirm dialog; the session goes on. With an answer typed, Del edits it. Also on Cards, for the card on the stage |
 | Enter | a newline: answers are often code |
 
 Shift+digit is matched on the physical key, so it works on US and German layouts alike

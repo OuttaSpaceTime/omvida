@@ -36,8 +36,6 @@ FocusScope {
   property string placeId: ""
   readonly property real progress: cards.length ? (index + 1) / cards.length : 0
   readonly property var card: cards.length > 0 ? cards[Math.min(index, cards.length - 1)] : null
-  readonly property bool atStart: index <= 0
-  readonly property bool atEnd: index >= cards.length - 1
 
   implicitHeight: col.implicitHeight
 
@@ -47,11 +45,23 @@ FocusScope {
     else index = i
   }
 
-  // Make card i the current one, front up.
-  function show(i) {
+  // Make card i the current one, front up. A new card turns in from the
+  // side it comes from (`d`: +1 forward, -1 back), so paging reads as
+  // turning through the deck; it shows its front at once, rather than
+  // turning back over from the old card's answer, which also showed the
+  // new card's answer on the way.
+  property bool turning: false
+  function show(i, d) {
+    var changed = i !== index
+    turning = true
     index = i
     flipped = false
+    turning = false
     placeId = cards[i].id
+    if (changed) {
+      turnIn.from = (d < 0 ? -1 : 1) * 90
+      turnIn.restart()
+    }
   }
 
   function move(d) {
@@ -59,7 +69,7 @@ FocusScope {
     var i = index + d
     if (!stage) i = (i + cards.length) % cards.length
     else if (i < 0 || i >= cards.length) return
-    show(i)
+    show(i, d)
   }
 
   // Back to the first card and forget the place: the explorer calls it when
@@ -69,6 +79,19 @@ FocusScope {
     placeId = ""
     index = 0
     flipped = false
+  }
+
+  // The current card is about to leave the list (the explorer deleted it):
+  // move the place to the card after it, or before it at the end, so the
+  // list without it keeps the walk there instead of starting over. Front up
+  // without the turn, as in show(): the deleted card should not turn over
+  // on its way out.
+  function leaveCurrent() {
+    var next = cards[index + 1] || cards[index - 1]
+    placeId = next ? next.id : ""
+    turning = true
+    flipped = false
+    turning = false
   }
 
   // Unmodified keys only: Alt+←/→ is the app's history and Ctrl+L is not
@@ -149,13 +172,31 @@ FocusScope {
           }
         }
       }
-      transform: Rotation {
-        origin.x: flipable.width / 2
-        origin.y: flipable.height / 2
-        axis { x: 0; y: 1; z: 0 }  // check: allow-px the rotation axis, a unit vector
-        angle: root.flipped ? 180 : 0
-        Behavior on angle { NumberAnimation { duration: Theme.flipDuration; easing.type: Easing.InOutQuad } }
-      }
+      transform: [
+        Rotation {
+          origin.x: flipable.width / 2
+          origin.y: flipable.height / 2
+          axis { x: 0; y: 1; z: 0 }  // check: allow-px the rotation axis, a unit vector
+          angle: root.flipped ? 180 : 0
+          Behavior on angle {
+            enabled: !root.turning
+            NumberAnimation { duration: Theme.flipDuration; easing.type: Easing.InOutQuad }
+          }
+        },
+        Rotation {
+          id: turn
+          origin.x: flipable.width / 2
+          origin.y: flipable.height / 2
+          axis { x: 0; y: 1; z: 0 }  // check: allow-px the rotation axis, a unit vector
+          NumberAnimation on angle {
+            id: turnIn
+            running: false
+            to: 0
+            duration: Theme.flipDuration
+            easing.type: Easing.OutCubic
+          }
+        }
+      ]
       MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { root.forceActiveFocus(); root.flipped = !root.flipped } }
     }
 

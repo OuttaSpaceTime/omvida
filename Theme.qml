@@ -311,8 +311,6 @@ QtObject {
   readonly property int cardStageFrontSize: 26
   // How many tags the filter shows before "N more tags".
   readonly property int cardsTagsShown: 6
-  // How long a click on a tile takes to bring the stage into view.
-  readonly property int cardsScrollDuration: 220
 
   // ---- motion ----------------------------------------------------------------------
   readonly property int flipDuration: 260

@@ -65,6 +65,18 @@ TestCase {
     compare(K.action(st("answering"), Qt.Key_Escape, Qt.ShiftModifier, 0), null)
   }
 
+  // Del deletes the card (after the dialog), except while a typed answer
+  // waits: there it edits the answer.
+  function test_delete_deletes_the_card() {
+    compare(K.action(st("answering", { answerEmpty: true }), Qt.Key_Delete, Qt.NoModifier, 0), { action: "delete" })
+    compare(K.action(st("answering"), Qt.Key_Delete, Qt.NoModifier, 0), null)
+    compare(K.action(st("grading"), Qt.Key_Delete, Qt.NoModifier, 0), { action: "delete" })
+    compare(K.action(st("revealed"), Qt.Key_Delete, Qt.NoModifier, 0), { action: "delete" })
+    compare(K.action(st("revealed"), Qt.Key_Delete, Qt.ControlModifier, 0), null)
+    compare(K.action(st("submitting", { answerEmpty: true }), Qt.Key_Delete, Qt.NoModifier, 0), null)
+    compare(K.action(st("done"), Qt.Key_Delete, Qt.NoModifier, 0), null)
+  }
+
   function test_nothing_fires_outside_a_card() {
     compare(K.action(st("submitting"), Qt.Key_Return, Qt.ShiftModifier, 0), null)
     compare(K.action(st("blocked"), Qt.Key_Exclam, Qt.ShiftModifier, 10), null)

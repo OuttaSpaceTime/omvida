@@ -64,6 +64,10 @@ Rectangle {
     // flip its card as Space would.
     else if (a === "cardsnext") { for (var n = parseInt(arg || "3"); n > 0; n--) driver.cardsScreen.page(1) }
     else if (a === "cardsflip") driver.cardsScreen.flipStage()
+    // Del's dialog on Cards or on a study card, open; the shot never answers
+    // it, so nothing is deleted.
+    else if (a === "cardsdelete") driver.cardsScreen.askDelete()
+    else if (a === "studydelete") { study.start(); whenCardUp.run(function() { driver.study.askDelete() }) }
     else if (a === "done") { study.start(); rateAll.start() }
     else if (a === "syncfail") { study.start(); whenCardUp.run(function() { driver.study.syncNote = "Anki sync failed: offline (fixture)" }) }
     else if (a === "leech") leechDeck.running = (Quickshell.env("OMVIDA_SANDBOX") || "") !== ""

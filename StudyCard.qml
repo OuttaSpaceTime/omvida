@@ -11,7 +11,8 @@ import "Format.js" as Format
 //               answer box
 //   revealed    the front cut to a dim recap; a two-column box, what you
 //               typed beside the back; Claude's verdict as one line; and the
-//               four rating keycaps, the suggested one outlined
+//               four rating keycaps, each with its interval, the suggested
+//               one outlined
 //
 // All state is the session's (StudySession.qml).
 Column {
@@ -31,23 +32,6 @@ Column {
   Connections {
     target: root.session
     function onAnswerReset() { answer.text = "" }
-  }
-
-  // The previous card's result: one faint line, so a rating is seen to land.
-  Row {
-    objectName: "lastResult"
-    visible: root.session.lastResult !== null && root.session.inCard
-    width: parent.width
-    spacing: Theme.spaceSm
-    Rectangle { width: Theme.selectionBarWidth; height: lastText.implicitHeight; color: root.session.lastResult ? Theme.ratingColor(root.session.lastResult.rating) : "transparent" }
-    UiText {
-      id: lastText
-      width: parent.width - Theme.selectionBarWidth - Theme.spaceSm
-      elide: Text.ElideRight
-      text: root.session.lastResult ? root.session.lastResult.line + (root.session.lastResult.overridden ? " (your call)" : "") + "  ·  " + root.session.lastResult.front : ""
-      font.pixelSize: Theme.captionSize
-      color: Theme.faint
-    }
   }
 
   UiText {
@@ -272,9 +256,13 @@ Column {
   }
 
   // ---- the rating keycaps -----------------------------------------------------------
-  // The digit is the key (with Shift), the word is the rating in its colour.
-  // The suggestion is outlined in that colour and marked ◂, not filled:
-  // filled, it would be louder than the card.
+  // The digit is the key (with Shift), the word is the rating in its colour,
+  // and after it, dim, where the rating sends the card ("10m", "4d"): the
+  // deck server's own preview (nextCard's `schedules`), never worked out
+  // here. That replaced a line over the next card saying where the last one
+  // went: told before the choice, it can inform it. The suggestion is
+  // outlined in its colour and marked ◂, not filled: filled, it would be
+  // louder than the card.
   Row {
     visible: root.session.backShown
     spacing: Theme.spaceSm
@@ -303,6 +291,14 @@ Column {
             font.pixelSize: Theme.bodySmallSize
             font.bold: keycap.suggested
             color: keycap.tint
+          }
+          UiText {
+            objectName: "interval"
+            readonly property var schedules: root.session.next ? root.session.next.schedules : null
+            visible: text !== ""
+            text: schedules ? Format.intervalLabel(schedules[keycap.modelData], root.session.shownAt) : ""
+            font.pixelSize: Theme.bodySmallSize
+            color: Theme.dim
           }
         }
         MouseArea {

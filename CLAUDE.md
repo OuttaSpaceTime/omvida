@@ -34,8 +34,8 @@ and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
   (`backend/omvida_backend/wiki.py` says which rules). Show verdicts verbatim; never recompute.
 - The app never edits cards or wiki pages. Those go through Claude Code skills in kitty
   (`Launch.js`), which own the content rules. The only writes the app makes are reviews,
-  leech decisions (keep, delete) through the deck server, and the study log entry through
-  the wiki service.
+  leech decisions (keep, delete) and deleting a card (Del on Cards or in Study) through the deck
+  server, and the study log entry through the wiki service.
 - Don't name a QML file after a QtQuick.Controls type (`Button`, `Dialog`...): in a file that
   imports Controls, the Controls type wins. That is why ours are `ActionButton` and `Modal`.
 - Don't import a JS module as `Keys` (or any attached-property name): it shadows

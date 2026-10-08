@@ -25,16 +25,15 @@ Item {
   id: root
 
   property var app: null
-  property string query: ""
-  property string stateFilter: ""
-  property string deckFilter: ""
-  property string tagFilter: ""
+  // What narrows the grid: the text, and one state, deck and tag at most
+  // ("" for any). Changed only through setFilter(), as a new object, so
+  // every binding on it updates.
+  property var filters: ({ query: "", state: "", deck: "", tag: "" })
   readonly property var calibration: app && app.store.overview ? app.store.overview.calibration : null
 
   readonly property var all: app ? app.store.allCards : []
-  readonly property var filters: ({ query: query, state: stateFilter, tag: tagFilter, deck: deckFilter })
   readonly property var filtered: Cards.filterCards(all, filters)
-  readonly property bool filtering: query !== "" || selectedFilters.length > 0
+  readonly property bool filtering: filters.query !== "" || selectedFilters.length > 0
   readonly property var stateList: Cards.stateCounts(all)
   readonly property int deckSize: Math.max(1, all.length)
   readonly property var tags: Cards.tagCounts(all)
@@ -42,7 +41,7 @@ Item {
   // tags, the most common few or every one.
   property bool filtersOpen: true
   property bool tagsOpen: false
-  readonly property var unpickedTags: tags.filter(function(t) { return t.tag !== tagFilter })
+  readonly property var unpickedTags: tags.filter(function(t) { return t.tag !== filters.tag })
   readonly property var tagsShown: tagsOpen ? unpickedTags : unpickedTags.slice(0, Theme.cardsTagsShown)
   readonly property int tagsHidden: unpickedTags.length - tagsShown.length
   // What narrows the grid, in the order the section lists it.
@@ -62,11 +61,13 @@ Item {
     return segs
   }
   // The stage's keys (FlipThrough's): Space or Enter flips, ← or h and → or
-  // l page. They live here, not on the stage, so the screen stays quiet.
+  // l page; and Del, this screen's. They live here, not on the stage, so the
+  // screen stays quiet.
   readonly property var statusHints: [
     { keys: "space", label: "flip", run: function() { root.flipStage() } },
     { keys: "←", label: "back", run: function() { root.page(-1) } },
-    { keys: "→", label: "next", run: function() { root.page(1) } }
+    { keys: "→", label: "next", run: function() { root.page(1) } },
+    { keys: "del", label: "delete", run: function() { root.askDelete() } }
   ]
   readonly property var statusAlerts: filtered.length === 0 && all.length > 0
     ? [{ text: "no card matches", color: Theme.orangeText, tip: "Clear the filters", run: function() { root.clearFilters() } }]
@@ -75,18 +76,42 @@ Item {
   function flipStage() { flip.flipped = !flip.flipped }
   function page(d) { flip.move(d) }
 
-  function dropFilter(kind) {
-    if (kind === "state") stateFilter = ""
-    else if (kind === "deck") deckFilter = ""
-    else if (kind === "tag") tagFilter = ""
+  // ---- deleting the stage's card ----------------------------------------------
+  // Del (or its hint) asks first, in the window's ConfirmDialog, which quotes
+  // the card's front; Enter or the red Delete deletes it. The deck server
+  // deletes the card and its history (flashcard-mcp's deleteCard, the call
+  // the leech panel makes), and the walk goes on at the next card. The card
+  // is the one on the stage when Del was pressed, held here, so nothing that
+  // happens while the dialog is open can change which card goes.
+  function askDelete() {
+    var card = flip.card
+    if (!card) return
+    app.confirm("Delete this card?", tileTexts[card.id] || "",
+                "Its review history goes with it. This cannot be undone.",
+                "Delete", function() { root.deleteCard(card) })
+  }
+
+  function deleteCard(card) {
+    app.store.deck.call("deleteCard", { cardId: card.id }, function(err) {
+      if (err) { app.toast("deck: " + err); return }
+      if (flip.card && flip.card.id === card.id) flip.leaveCurrent()
+      app.store.refreshDeck()
+    })
+  }
+
+  // A "change" to the same value is none: the field's pause timer sets the
+  // text it already has after clearFilters(), and a new object would start
+  // the walk over.
+  function setFilter(kind, value) {
+    if (filters[kind] === value) return
+    var f = Object.assign({}, filters)
+    f[kind] = value
+    filters = f
   }
 
   function clearFilters() {
     search.text = ""
-    query = ""
-    stateFilter = ""
-    tagFilter = ""
-    deckFilter = ""
+    filters = { query: "", state: "", deck: "", tag: "" }
   }
 
   // Each card's front as plain text, worked out once per load of the deck
@@ -114,10 +139,7 @@ Item {
     flip.show(i)
     flip.forceActiveFocus()
     var y = Math.max(0, stageColumn.mapToItem(flick.contentItem, 0, 0).y - Theme.spaceXl)
-    if (y < flick.contentY) {
-      scroll.to = y
-      scroll.restart()
-    }
+    if (y < flick.contentY) flick.contentY = y
   }
 
   // The stage takes the keyboard when the screen is shown (the window's
@@ -132,19 +154,19 @@ Item {
   onVisibleChanged: if (visible && app) app.store.refreshDeck()
   onFiltersChanged: flip.forget()
 
+  // Del reaches here from the stage, which passes on the keys it doesn't
+  // use; from the filter field it deletes text, as it should.
+  Keys.onPressed: function(event) {
+    if (event.key !== Qt.Key_Delete || event.modifiers !== Qt.NoModifier || !flip.activeFocus) return
+    root.askDelete()
+    event.accepted = true
+  }
+
   GlideFlickable {
     id: flick
     anchors.fill: parent
     contentHeight: col.implicitHeight + Theme.space3xl * 2
     ScrollBar.vertical: ScrollBar {}
-
-    NumberAnimation {
-      id: scroll
-      target: flick
-      property: "contentY"
-      duration: Theme.cardsScrollDuration
-      easing.type: Easing.OutCubic
-    }
 
     Column {
       id: col
@@ -182,24 +204,6 @@ Item {
           width: top.stageWidth
           spacing: Theme.spaceSm
 
-          Item {
-            width: parent.width
-            height: Theme.smallControlHeight
-            SectionLabel {
-              objectName: "stagePosition"
-              anchors.verticalCenter: parent.verticalCenter
-              text: root.filtered.length ? "Card " + (root.current + 1) + " of " + root.filtered.length : "No cards"
-            }
-            Row {
-              anchors.right: parent.right
-              anchors.verticalCenter: parent.verticalCenter
-              spacing: Theme.spaceLg
-              visible: root.filtered.length > 0
-              PlainButton { objectName: "cardsPrev"; label: "‹ back"; enabled: !flip.atStart; onActivated: root.page(-1) }
-              PlainButton { objectName: "cardsNext"; label: "next ›"; enabled: !flip.atEnd; onActivated: root.page(1) }
-            }
-          }
-
           FlipThrough {
             id: flip
             objectName: "cardsStage"
@@ -209,11 +213,12 @@ Item {
             stage: true
           }
 
-          Row {
+          // Clearing is the filter header's "clear" (and the status line's
+          // alert), so this only says why the stage is empty.
+          UiText {
             visible: root.filtered.length === 0 && root.all.length > 0
-            spacing: Theme.spaceMd
-            UiText { text: "No card matches these filters."; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
-            PlainButton { label: "clear filters"; onActivated: root.clearFilters() }
+            text: "No card matches these filters."
+            color: Theme.dim
           }
         }
 
@@ -335,7 +340,7 @@ Item {
                   label: picked.modelData.label + " ✕"
                   dot: picked.modelData.kind === "state" ? Theme.stateColor(picked.modelData.value) : "transparent"
                   selected: true
-                  onActivated: root.dropFilter(picked.modelData.kind)
+                  onActivated: root.setFilter(picked.modelData.kind, "")
                 }
               }
             }
@@ -366,7 +371,7 @@ Item {
               // The grid follows a pause in the typing, not each key: every
               // change of filter rebuilds its tiles.
               onTextChanged: queryPause.restart()
-              Timer { id: queryPause; interval: Theme.searchDebounce; onTriggered: root.query = search.text }
+              Timer { id: queryPause; interval: Theme.searchDebounce; onTriggered: root.setFilter("query", search.text) }
               Keys.onEscapePressed: { text = ""; root.app.focusScreen() }
             }
 
@@ -388,8 +393,8 @@ Item {
                     width: aside.width * stateSegment.modelData.count / root.deckSize
                     height: Theme.statBarHeight
                     color: Theme.stateColor(stateSegment.modelData.state)
-                    opacity: root.stateFilter === "" || root.stateFilter === stateSegment.modelData.state ? 1 : 0.3
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.stateFilter = root.stateFilter === stateSegment.modelData.state ? "" : stateSegment.modelData.state }
+                    opacity: root.filters.state === "" || root.filters.state === stateSegment.modelData.state ? 1 : 0.3
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.setFilter("state", root.filters.state === stateSegment.modelData.state ? "" : stateSegment.modelData.state) }
                   }
                 }
               }
@@ -397,7 +402,7 @@ Item {
                 x: -Theme.chipInset
                 width: parent.width + Theme.chipInset * 2
                 Repeater {
-                  model: root.stateList.filter(function(s) { return s.state !== root.stateFilter })
+                  model: root.stateList.filter(function(s) { return s.state !== root.filters.state })
                   delegate: Chip {
                     id: stateLink
                     required property var modelData
@@ -405,7 +410,7 @@ Item {
                     label: stateLink.modelData.state
                     count: stateLink.modelData.count
                     dot: Theme.stateColor(stateLink.modelData.state)
-                    onActivated: root.stateFilter = stateLink.modelData.state
+                    onActivated: root.setFilter("state", stateLink.modelData.state)
                   }
                 }
               }
@@ -414,12 +419,12 @@ Item {
                 width: parent.width + Theme.chipInset * 2
                 visible: root.decks.length > 1
                 Repeater {
-                  model: root.decks.filter(function(d) { return d !== root.deckFilter })
+                  model: root.decks.filter(function(d) { return d !== root.filters.deck })
                   delegate: Chip {
                     id: deckLink
                     required property var modelData
                     label: deckLink.modelData
-                    onActivated: root.deckFilter = deckLink.modelData
+                    onActivated: root.setFilter("deck", deckLink.modelData)
                   }
                 }
               }
@@ -434,7 +439,7 @@ Item {
                     objectName: "tagChip:" + tagLink.modelData.tag
                     label: "#" + tagLink.modelData.tag
                     count: tagLink.modelData.count
-                    onActivated: root.tagFilter = tagLink.modelData.tag
+                    onActivated: root.setFilter("tag", tagLink.modelData.tag)
                   }
                 }
               }

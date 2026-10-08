@@ -41,6 +41,12 @@ OmvidaTest {
     compare(item("statusMode").text, "RATE")
     verify(item("rate:3").suggested, "the suggested keycap is marked")
     verify(!item("rate:1").suggested && !item("rate:2").suggested && !item("rate:4").suggested, "and only that one")
+    // Each key says where it sends the card, from the deck server's preview.
+    var label = function(n) { return findNamed(item("rate:" + n), "interval").text }
+    for (var n = 1; n <= 4; n++)
+      verify(/^(<1m|\d+m|\d+h|\d+d|[\d.]+mo|[\d.]+y)$/.test(label(n)), "rate:" + n + " shows an interval: " + label(n))
+    verify(/m$/.test(label(1)), "again repeats within minutes: " + label(1))
+    verify(/d$|mo$|y$/.test(label(4)), "easy waits days: " + label(4))
     verify(findNamed(target, "statusHint:take good") !== null, "the status line offers to take it")
     key(Qt.Key_Return, Qt.ShiftModifier)
     tryVerify(function() { return study.card && study.card.id !== cardId && study.phase === "answering" }, 8000, "next card")
@@ -58,7 +64,6 @@ OmvidaTest {
     tryVerify(function() { return study.card && study.card.id !== cardId }, 8000, "moved on")
     var r = reviews()
     compare(r[r.length - 1], [cardId, 1], "the suggested Again was written")
-    verify(item("lastResult").visible, "the previous card's line shows")
   }
 
   function test_alt_enter_while_answering_reveals_and_accepts() {
@@ -94,7 +99,6 @@ OmvidaTest {
     tryVerify(function() { return study.card && study.card.id !== cardId }, 8000)
     var r = reviews()
     compare(r[r.length - 1], [cardId, 2], "Hard, not the suggested Easy")
-    verify(item("lastResult").children[1].text.indexOf("(your call)") !== -1, "marked as overridden")
   }
 
   function test_an_empty_answer_reveals_without_grading() {

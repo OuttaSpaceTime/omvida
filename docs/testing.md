@@ -48,7 +48,7 @@ and stops.
   backends. Helpers: `click`, `item`, `type`, `key`, `sql` (read the deck), `sqlWrite`,
   `kittyCalls`, `claudeCalls`, `gradeCalls`, `readFile`, `startSession`. Tests in a file share
   one app; a file whose tests change the deck resets what it needs in `init()` (tst_study makes
-  every card due again).
+  every card due again), or gets a file of its own (tst_delete deletes cards, from Study and from Cards).
 
 `started()` runs inside the test hook before the event loop turns, so it cannot run a process
 (`sql`, `run`); do setup in the test itself.
@@ -60,9 +60,10 @@ and stops.
 | `nav:<screen>` | the rail's icons |
 | `searchBox`, `addButton`, `backButton` | the top bar |
 | `add:flashcard`, `add:wiki`, `topicField`, `topicSubmit` | the Add menu and its dialog |
+| `confirmDialog`, `confirmQuote`, `confirmAccept`, `confirmCancel` (`app.confirmOpen` says whether it is up) | the confirm dialog (Del on Cards and in Study) |
 | `statusLine`, `statusMode`, `statusSegment:<i>`, `statusHint:<label>`, `statusAlert:<i>` | the status line (each has a plain `text`; hints are buttons: `statusHint:reveal`, `statusHint:skip`, `statusHint:end`...) |
-| `answerField`, `cardFront`, `cardRecap`, `cardBack`, `suggestionBox`, `suggestionLine` (`verdict`, `reason`), `fixCardButton`, `lastResult` | the study card |
-| `rate:<1-4>` (`suggested`), `startSessionButton`, `studyAgainButton` | the study controls |
+| `answerField`, `cardFront`, `cardRecap`, `cardBack`, `suggestionBox`, `suggestionLine` (`verdict`, `reason`), `fixCardButton` | the study card |
+| `rate:<1-4>` (`suggested`; its `interval` label), `startSessionButton`, `studyAgainButton` | the study controls |
 | `leechRewrite`, `leechSplit`, `leechDrop`, `leechDropConfirm`, `leechKeep`, `leechContinue` | a leech |
 | `summary`, `summaryLine`, `related:<path>` | the session summary |
 | `pageTitle`, `wikiFlick`, `pageCardsButton`, `pageAddCards`, `pageDeeper`, `heading:<anchor>` | a wiki page |
@@ -71,8 +72,9 @@ and stops.
 | `pageCardsFlip`, `flipCard` | a page's cards |
 | `searchField`, `result:<kind>:<i>`, `deepSearch`, `askView`, `askAnswer`, `askAnswerBlocks`, `askContinue`, `paletteHint:<label>` | search and Ask |
 | `stateChip:<state>`, `stateBar:<state>`, `tagChip:<tag>`, `cardFilter`, `filteredCount`, `clearFilters`, `retentionPanel`, `filtersToggle`, `selectedFilters`, `selected:<state|deck|tag>:<value>`, `moreTags` | the deck explorer's filters |
-| `cardsStage` (its card is `flipCard`, the front `flipFront`), `stagePosition`, `cardsPrev`, `cardsNext`, `upNext`, `cardsRestart`, `cardTile:<card id>` | the deck explorer's stage and grid |
+| `cardsStage` (its card is `flipCard`, the front `flipFront`), `upNext`, `cardsRestart`, `cardTile:<card id>` | the deck explorer's stage and grid |
 | `graphScreen`, `graphAll`, `graphLocal`, `graphView` | the graph |
+| `graphRailHandle`, `graphFullScreen` | the wiki page's graph rail: its drag edge, its full-screen icon |
 | `homeScreen`, `homeStudyButton`, `homeCardsButton`, `homeWikiButton`, `recent:<path>`, `topic:<path>`, `dueFigure`, `pressureVerdict`, `calibrationVerdict` | home |
 
 ## What the tests don't cover
