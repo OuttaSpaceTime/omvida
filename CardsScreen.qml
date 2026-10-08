@@ -19,10 +19,8 @@ import "Format.js" as Format
 // the grid stays as it was", was rejected: the grid would then no longer be
 // what comes next, and → would lead somewhere the grid doesn't show.
 //
-// There used to be a List / Flip through switch; the user asked for one
-// screen. A change of filter starts the walk over at the new list's first
-// card; a refresh of the deck keeps the current card (FlipThrough's
-// stage mode).
+// A change of filter starts the walk over at the new list's first card; a
+// refresh of the deck keeps the current card (FlipThrough's stage mode).
 Item {
   id: root
 
@@ -48,13 +46,7 @@ Item {
   readonly property var tagsShown: tagsOpen ? unpickedTags : unpickedTags.slice(0, Theme.cardsTagsShown)
   readonly property int tagsHidden: unpickedTags.length - tagsShown.length
   // What narrows the grid, in the order the section lists it.
-  readonly property var selectedFilters: {
-    var out = []
-    if (stateFilter !== "") out.push({ kind: "state", value: stateFilter, label: stateFilter })
-    if (deckFilter !== "") out.push({ kind: "deck", value: deckFilter, label: deckFilter })
-    if (tagFilter !== "") out.push({ kind: "tag", value: tagFilter, label: "#" + tagFilter })
-    return out
-  }
+  readonly property var selectedFilters: Cards.selectedFilters(filters)
   readonly property var decks: Cards.deckNames(all)
 
   // Where the walk is: the stage's card is filtered[current], the grid
@@ -279,18 +271,14 @@ Item {
               width: parent.width
               spacing: Theme.spaceLg
               Repeater {
-                model: root.calibration ? [
-                  { n: 1, label: "again", v: root.calibration.rating_mix.again },
-                  { n: 2, label: "hard", v: root.calibration.rating_mix.hard },
-                  { n: 3, label: "good", v: root.calibration.rating_mix.good },
-                  { n: 4, label: "easy", v: root.calibration.rating_mix.easy }
-                ] : []
+                model: root.calibration ? [1, 2, 3, 4] : []
                 delegate: UiText {
                   id: mixItem
-                  required property var modelData
-                  text: mixItem.modelData.v + " " + mixItem.modelData.label
+                  required property int modelData
+                  readonly property string name: Format.ratingName(mixItem.modelData).toLowerCase()
+                  text: root.calibration.rating_mix[mixItem.name] + " " + mixItem.name
                   font.pixelSize: Theme.bodySmallSize
-                  color: Theme.ratingColor(mixItem.modelData.n)
+                  color: Theme.ratingColor(mixItem.modelData)
                 }
               }
             }
@@ -519,9 +507,8 @@ Item {
           // A model sliced at the current card was the obvious way, and
           // rejected: a JS array model is rebuilt whole on every change, so
           // each → would have rebuilt some 350 tiles. Tiles are plain text
-          // (Format.stripHtml) rather than the old rich-text CardTile, which
-          // is what makes building the whole deck at once cheap enough that
-          // the list no longer pages 60 at a time.
+          // (Format.stripHtml), not rich text, which is what makes building
+          // the whole deck at once cheap enough.
           Repeater {
             model: root.visible ? root.filtered : []
             delegate: Item {

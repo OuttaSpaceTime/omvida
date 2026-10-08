@@ -3,11 +3,9 @@ import QtQuick
 // The bar over every screen: back, the search box (a button that opens the
 // palette, so typing never happens in two places), a status note, and Add.
 //
-// In the style the user chose ("no buttons in the way"), nothing here is
-// boxed: back and Add are quiet text buttons, and the search box is a faint
-// fill with no border, a prompt rather than a field. The keys they used to
-// print ("Ctrl+K", "Ctrl+N") are hints in the window's status line now, which
-// the screens hand it (StatusBits.js); the keys themselves are unchanged.
+// Nothing here is boxed: back and Add are quiet text buttons, and the search
+// box is a faint fill with no border, a prompt rather than a field. Their
+// keys (Ctrl+K, Ctrl+N) are named in the window's status line, not here.
 Rectangle {
   id: root
 

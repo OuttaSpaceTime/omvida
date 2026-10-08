@@ -9,8 +9,8 @@ import "Model.js" as Model
 // sentence on what clears it; how the deck has matured, as one thin bar;
 // retention with the calibration verdict; the next few reviews; and one
 // primary action, Study now, beside two icon buttons. Verdicts are the deck's
-// own words. The week chart and the section headers it had before were cut:
-// the panel is opened for a glance, and Omvida's Home has the rest.
+// own words. No week chart and no section headers: the panel is opened for
+// a glance, and Omvida's Home has the rest.
 //
 // Keys (PanelKeyCatcher): Enter studies now, Esc closes, Tab moves to the
 // neighbouring bar panel.

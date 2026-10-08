@@ -9,16 +9,16 @@ import "WikiTree.js" as WikiTree
 // Home: what to do now, then the Next.js viewer's dashboard (last studied
 // pages, recently updated pages, the topics).
 //
-// The top is the bar overlay's "Glance", the style the user chose for it,
-// so the overlay and its in-app twin read alike: the figure, the verdict and
-// the deck's maturity (ProgressPanel), the next reviews up, and one filled
-// action beside a square icon button. Sections are parted by a hairline and a
-// small caption instead of boxes; the "now" panel used to be a filled,
-// bordered card, which made the rest of the page look like an afterthought.
+// The top is the bar overlay's "Glance", so the overlay and its in-app twin
+// read alike: the figure, the verdict and the deck's maturity
+// (ProgressPanel), the next reviews up, and one filled action beside a square
+// icon button. Sections are parted by a hairline and a small caption, not
+// boxes: a boxed top panel makes the rest of the page look like an
+// afterthought.
 //
-// The screen's title and its counts ("52 pages · 14 topics...") went to the
-// window's status line, as did the keys the buttons used to print: the mode
-// block already says where you are, and the figure is the screen's subject.
+// The screen's title, its counts ("52 pages · 14 topics...") and its keys are
+// in the window's status line: the mode block already says where you are, and
+// the figure is the screen's subject.
 Item {
   id: root
   objectName: "homeScreen"

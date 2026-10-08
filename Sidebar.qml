@@ -84,10 +84,9 @@ Rectangle {
         height: Theme.railRowHeight
         readonly property bool selected: root.currentScreen === navRow.modelData.id
 
-        // The current screen is its icon in the accent, nothing more: the
-        // accent bar at the rail's edge that used to mark it doubled the
-        // signal, and the chosen style keeps each thing said once. The mode
-        // block in the status line names the screen too.
+        // The current screen is its icon in the accent, nothing more: a bar
+        // at the rail's edge as well would say it twice, and the mode block
+        // in the status line names the screen too.
         Rectangle {
           visible: navArea.containsMouse
           anchors.fill: parent
@@ -100,9 +99,8 @@ Rectangle {
           color: navRow.selected ? Theme.accentColor : Theme.faint
         }
         // The due count: reviews only, never the new-card pool (pressure's
-        // rule). A small accent figure by the icon rather than a filled pill,
-        // which was the one solid shape on the rail and drew the eye from
-        // whatever screen was open.
+        // rule). A small accent figure by the icon, not a filled pill: a
+        // solid shape on the rail draws the eye from the screen that is open.
         UiText {
           visible: navRow.modelData.id === "study" && root.dueCount > 0
           anchors.left: parent.horizontalCenter

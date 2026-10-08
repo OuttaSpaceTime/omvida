@@ -3,8 +3,8 @@ import Quickshell
 
 // A fenced code block: the highlighted HTML from the wiki service in <pre>,
 // on a fill, with its language and a copy button in the corner. The fill
-// alone sets it off from the prose; the 1px border it also had, and the boxed
-// copy button, were the chrome the chosen style takes away.
+// alone sets it off from the prose, so it has no border, and the copy button
+// no box.
 Rectangle {
   id: root
 

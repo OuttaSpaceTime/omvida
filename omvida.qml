@@ -43,7 +43,8 @@ ShellRoot {
     var s = screens.current
     if (!s || typeof s.takeFocus !== "function" || !s.takeFocus()) contentRoot.forceActiveFocus()
   }
-  // The Add menu, for the status line's ⌃N hint (StatusBits.js).
+  // The Add menu: toggleAdd for the status line's ⌃N hint (StatusBits.js);
+  // addMenuOpen for the tests.
   readonly property bool addMenuOpen: addMenu.opened
   function toggleAdd() { addMenu.toggle() }
 

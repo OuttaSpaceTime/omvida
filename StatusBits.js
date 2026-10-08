@@ -4,10 +4,8 @@
 // after every screen's own, Study's excepted. The keys these hints name are the window's own
 // (omvida.qml's contentRoot), and each hint's run() calls the same function
 // its key does, so a click on a hint and the key never drift apart.
-//
-// They moved here from the controls that used to print them ("Ctrl+K" in the
-// search box, "Ctrl+N" on Add, "Ctrl+2" on Study now): one line at the bottom
-// teaches the keys, and the buttons say only what they do.
+// One line at the bottom teaches the keys, so the buttons say only what
+// they do.
 
 function search(app) {
   return { keys: "⌃K", label: "search", run: function() { app.openSearch("") } }
@@ -36,9 +34,10 @@ function common(app, own) {
 // (warn, pause); "ok" says nothing. A click goes to Study, the one thing that
 // clears it. `color` is Theme.verdictColor, passed in because a .pragma
 // library script cannot see the Theme singleton.
-function pressure(app, clearance, color) {
-  var o = app && app.store ? app.store.overview : null
-  if (!o || o.pressure.verdict === "ok") return []
-  return [{ text: "● " + o.pressure.verdict, color: color(o.pressure.verdict), tip: clearance,
+// `p` is a pressure verdict object (the overview's, or Study's session's);
+// `tip` what clears it.
+function pressure(app, p, tip, color) {
+  if (!p || p.verdict === "ok") return []
+  return [{ text: "● " + p.verdict, color: color(p.verdict), tip: tip,
             run: function() { app.startStudy() } }]
 }

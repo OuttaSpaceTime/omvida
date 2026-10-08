@@ -65,22 +65,21 @@ function cardsForPage(page, allCards) {
   }).slice(0, 12)
 }
 
+// The chosen filters, in the order the explorer lists them, each with its
+// label: the chips on top of the filter column.
+function selectedFilters(filters) {
+  var out = []
+  if (filters.state) out.push({ kind: "state", value: filters.state, label: filters.state })
+  if (filters.deck) out.push({ kind: "deck", value: filters.deck, label: filters.deck })
+  if (filters.tag) out.push({ kind: "tag", value: filters.tag, label: "#" + filters.tag })
+  return out
+}
+
 // The active filters in a few words ("review · #http · “etag”"), "" for
 // none: the status line's segment for the deck explorer.
 function filterSummary(filters) {
-  var parts = []
-  if (filters.state) parts.push(filters.state)
-  if (filters.deck) parts.push(filters.deck)
-  if (filters.tag) parts.push("#" + filters.tag)
-  var q = String(filters.query || "").trim()
+  var parts = selectedFilters(filters).map(function(f) { return f.label })
+  var q = filters.query.trim()
   if (q) parts.push("“" + q + "”")
   return parts.join(" · ")
-}
-
-// Where a card is in a list, by id, or -1: the flip-through keeps its place
-// across a refresh of the deck, which hands it a new list of the same cards.
-function indexOfId(cards, id) {
-  if (!id) return -1
-  for (var i = 0; i < cards.length; i++) if (cards[i].id === id) return i
-  return -1
 }

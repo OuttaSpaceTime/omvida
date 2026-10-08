@@ -9,10 +9,9 @@ import "Format.js" as Format
 // on screen (the open page's title, the card being studied), and that is also
 // passed along as context, so "cards on this" is one Enter away.
 //
-// Styled as the rest of the app now is: the topic is typed on a line, not in
-// a box (the study answer's prompt), and the footer is one filled action with
-// Cancel as quiet text after it. The "Enter" the action used to print is the
-// default every dialog has; Esc cancels.
+// The topic is typed on a line, not in a box (the study answer's prompt),
+// and the footer is one filled action with Cancel as quiet text after it.
+// Enter takes the action, as in every dialog; Esc cancels.
 Modal {
   id: root
 

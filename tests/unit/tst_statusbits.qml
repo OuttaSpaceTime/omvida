@@ -36,10 +36,10 @@ TestCase {
   }
 
   function test_pressure_alert_is_the_verdict_verbatim() {
-    compare(S.pressure(fakeApp("ok"), "", color), [])
-    compare(S.pressure(fakeApp(null), "", color), [])
+    compare(S.pressure(fakeApp("ok"), { verdict: "ok" }, "", color), [])
+    compare(S.pressure(fakeApp(null), null, "", color), [])
     var app = fakeApp("warn")
-    var alerts = S.pressure(app, "Review 18 to leave warn", color)
+    var alerts = S.pressure(app, { verdict: "warn" }, "Review 18 to leave warn", color)
     compare(alerts.length, 1)
     compare(alerts[0].text, "● warn")
     compare(alerts[0].color, "orange")

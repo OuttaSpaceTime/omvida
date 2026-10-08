@@ -243,8 +243,7 @@ QtObject {
   readonly property int recapLines: 3
 
   // ---- app-wide style ----------------------------------------------------------
-  // The "Glance" look the user chose for the bar overlay, carried into the
-  // app: one big figure with its word, a thin segmented bar, hairline-divided
+  // The bar overlay's "Glance" look, carried into the app: one big figure with its word, a thin segmented bar, hairline-divided
   // sections under small letter-spaced captions, and a single filled action
   // beside square icon buttons. Key hints live in the window's status line, not
   // on the buttons.
@@ -252,8 +251,8 @@ QtObject {
   // The hero figure ("37 due"): larger than a screen title, because on Home it
   // is the screen's subject and nothing else competes with it.
   readonly property int heroSize: 44
-  // The maturity bar: thinner than the old 8px stacked bar, its segments
-  // parted by a 2px gap so a small share still reads as its own piece.
+  // The maturity bar: thin, its segments parted by a 2px gap so a small
+  // share still reads as its own piece.
   readonly property int segmentBarHeight: dotSize
   readonly property int segmentGap: spaceXxs
   // The one filled action of a screen and its square icon siblings, a step
@@ -289,8 +288,8 @@ QtObject {
 
   // ---- cards screen ----
   // The deck explorer is a grid of cards under a flip-through stage, not
-  // prose, so it is set in a wider column than the reading one: the reading
-  // column held one card a row, and the user asked for a few. Up to five
+  // prose, so it is set in a wider column than the reading one, which holds
+  // only one card a row. Up to five
   // tiles of at least cardTileMinWidth (two across at the window's minimum
   // width, four at the default size); past five, tiles of a line or two of
   // text would only grow wider and emptier, so the column stops there.

@@ -56,7 +56,7 @@ Rectangle {
   Rectangle { anchors.right: parent.right; width: Theme.hairlineWidth; height: parent.height; color: Theme.hairline }
 
   // Pulled left by a chip's inset, so "Context" starts on the panel's text
-  // edge now that an unselected chip has no box to align instead.
+  // edge: an unselected chip has no box to align instead.
   Row {
     id: modes
     x: Theme.spaceLg - Theme.spaceSm

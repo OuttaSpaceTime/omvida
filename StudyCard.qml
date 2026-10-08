@@ -19,18 +19,13 @@ Column {
 
   property var session: null
   property alias answerField: answer
-  spacing: root.revealedLayout ? Theme.spaceXl : Theme.space2xl
+  spacing: root.session.backShown ? Theme.spaceXl : Theme.space2xl
 
   // The answer box keeps the keyboard while a card is up, so typing starts at
   // once and the rating keys always reach it.
   function focusAnswer() { answer.forceActiveFocus() }
 
   readonly property bool showCard: root.session.inCard || root.session.phase === "loading"
-  // Grading, revealed, and a rating on its way after a reveal. A rating
-  // given straight from the answer (Shift+1-4) keeps the answering layout
-  // until the next card.
-  readonly property bool revealedLayout: root.session.phase === "grading" || root.session.phase === "revealed"
-    || (root.session.phase === "submitting" && root.session.revealedAt > 0)
 
   Binding { target: root.session; property: "answer"; value: answer.text }
   Connections {
@@ -68,7 +63,7 @@ Column {
 
   // ---- the front ---------------------------------------------------------------------
   Column {
-    visible: root.showCard && !root.revealedLayout
+    visible: root.showCard && !root.session.backShown
     width: parent.width
     spacing: Theme.spaceMd
     CardFace {
@@ -98,7 +93,7 @@ Column {
   // text, a few lines at most, so the answer and the back get the room.
   UiText {
     objectName: "cardRecap"
-    visible: root.showCard && root.revealedLayout
+    visible: root.showCard && root.session.backShown
     width: parent.width
     text: root.session.card ? Format.stripHtml(root.session.card.front) : ""
     wrapMode: Text.Wrap
@@ -124,7 +119,7 @@ Column {
     id: answerBox
     visible: root.showCard
     width: parent.width
-    readonly property bool split: root.revealedLayout
+    readonly property bool split: root.session.backShown
     readonly property int pad: split ? Theme.spaceLg : 0
     readonly property int half: split ? Math.floor(width / 2) : width
     readonly property int promptWidth: split ? 0 : promptGlyph.implicitWidth + Theme.spaceMd
@@ -222,7 +217,7 @@ Column {
   // plain parts, for the tests.
   Column {
     objectName: "suggestionBox"
-    visible: root.revealedLayout && (root.session.phase === "grading" || root.session.suggestion !== null || root.session.gradeError !== "")
+    visible: root.session.backShown && (root.session.phase === "grading" || root.session.suggestion !== null || root.session.gradeError !== "")
     width: parent.width
     spacing: Theme.spaceSm
 
@@ -278,10 +273,10 @@ Column {
 
   // ---- the rating keycaps -----------------------------------------------------------
   // The digit is the key (with Shift), the word is the rating in its colour.
-  // The suggestion is outlined in that colour and marked ◂; filling it, as
-  // the old buttons did, made it louder than the card.
+  // The suggestion is outlined in that colour and marked ◂, not filled:
+  // filled, it would be louder than the card.
   Row {
-    visible: root.revealedLayout
+    visible: root.session.backShown
     spacing: Theme.spaceSm
     Repeater {
       model: [1, 2, 3, 4]

@@ -2,13 +2,14 @@ import QtQuick
 import QtQuick.Controls
 
 import "Format.js" as Format
+import "StatusBits.js" as StatusBits
+import "bar/Model.js" as Overview
 
 // The Study screen: a view over the session (StudySession.qml, which omvida.qml
 // owns). The card, a leech and the summary are components of their own; this
 // file places them and tells the window's status line (StatusLine.qml) the
-// mode, where the session is, the keys that work now and what needs a look.
-// That line took over the session line, the button rows and the key-hint
-// footer this screen used to have, so the card is the only thing on it.
+// mode, where the session is, the keys that work now and what needs a look,
+// so the card is the only thing on the screen.
 Item {
   id: root
 
@@ -40,15 +41,14 @@ Item {
   onShowingSummaryChanged: if (!showingSummary) session.writeLog()
 
   // ---- the status line ---------------------------------------------------------------
-  // StatusLine.qml has the contract. What used to be the session line is
-  // here: the position and deck as segments; the pressure verdict, new cards
-  // held back and the Anki sync as alerts. The review/new split of the queue
-  // was dropped: the position's total already says how much is left.
+  // StatusLine.qml has the contract. The position and deck are segments; the
+  // pressure verdict, new cards held back and the Anki sync are alerts. The
+  // queue's review/new split is left out: the position's total already says
+  // how much is left.
   readonly property string phase: root.session.phase
-  readonly property bool revealedLayout: card.revealedLayout
   // Between cards (loading) the line keeps the answering keys, so it does
   // not flicker through a third set on every card.
-  readonly property bool answeringKeys: phase === "answering" || phase === "loading" || (phase === "submitting" && !revealedLayout)
+  readonly property bool answeringKeys: phase === "answering" || phase === "loading" || (phase === "submitting" && !root.session.backShown)
 
   // Study's keys and pressure are its session's, not the reading screens'
   // ⌃K, ⌃N and back (StatusLine.qml).
@@ -60,12 +60,12 @@ Item {
     case "done": return "DONE"
     case "error": return "ERROR"
     }
-    return revealedLayout ? "RATE" : "STUDY"
+    return root.session.backShown ? "RATE" : "STUDY"
   }
   readonly property color statusModeColor: {
     if (phase === "blocked") return Theme.orangeText
     if (phase === "error") return Theme.redText
-    if (revealedLayout && root.session.suggestion) return Theme.ratingColor(root.session.suggestion.rating)
+    if (root.session.backShown && root.session.suggestion) return Theme.ratingColor(root.session.suggestion.rating)
     return Theme.accentColor
   }
 
@@ -110,7 +110,7 @@ Item {
       { keys: "⇧1-4", label: "rate", run: function() { s.reveal(false) } },
       discuss, skip, end
     ]
-    if (revealedLayout) {
+    if (root.session.backShown) {
       var first
       if (phase === "grading") first = { keys: "⌥↵", label: s.acceptPending ? "taking claude's rating" : "take claude's rating", run: function() { s.acceptPending = true } }
       else if (s.suggestion) first = { keys: "⌥↵", label: "take " + Format.ratingName(s.suggestion.rating).toLowerCase(), run: function() { s.submit(s.suggestion.rating) } }
@@ -137,11 +137,9 @@ Item {
   // the Anki sync's note, which a click repeats as a toast.
   readonly property var statusAlerts: {
     var s = root.session
-    var out = []
     var pressure = s.info && s.info.pressure ? s.info.pressure
                  : (s.app.store.overview ? s.app.store.overview.pressure : null)
-    if (pressure && pressure.verdict && pressure.verdict !== "ok")
-      out.push({ text: "● " + pressure.verdict, color: Theme.verdictColor(pressure.verdict), tip: "review pressure: " + pressure.verdict })
+    var out = StatusBits.pressure(s.app, pressure, Overview.clearance(s.app.store.overview), Theme.verdictColor)
     if (s.info && s.info.newHeldBack > 0 && phase !== "done")
       out.push({ text: s.info.newHeldBack + " new held back", tip: "new cards held back while pressure is " + (pressure ? pressure.verdict : "high") })
     var note = s.syncNote
@@ -158,15 +156,7 @@ Item {
   Item {
     id: keyCatcher
     focus: true
-    Keys.onPressed: function(event) {
-      var phase = root.session.phase
-      if (event.key === Qt.Key_Escape && event.modifiers === Qt.NoModifier && phase === "blocked") {
-        root.session.endNow(); event.accepted = true; return
-      }
-      if (event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter) return
-      if (phase === "idle" || phase === "done" || phase === "error") { root.session.start(); event.accepted = true }
-      else if (phase === "blocked") { root.session.loadNext(); event.accepted = true }
-    }
+    Keys.onPressed: function(event) { event.accepted = root.session.handleKey(event) }
   }
 
   // The column sits in the middle of the screen when it fits, as a prompt

@@ -42,17 +42,16 @@ FocusScope {
   implicitHeight: col.implicitHeight
 
   onCardsChanged: {
-    var i = stage ? Cards.indexOfId(cards, placeId) : -1
+    var i = stage ? cards.findIndex(function(c) { return c.id === placeId }) : -1
     if (i === -1) forget()
     else index = i
   }
 
   // Make card i the current one, front up.
   function show(i) {
-    if (i < 0 || i >= cards.length) return
     index = i
     flipped = false
-    placeId = cards[i].id || ""
+    placeId = cards[i].id
   }
 
   function move(d) {

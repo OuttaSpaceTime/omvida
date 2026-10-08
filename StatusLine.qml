@@ -7,9 +7,8 @@ import "bar/Model.js" as Overview
 
 // The window's bottom line, the way helix or vim keep one: what mode the
 // screen is in, where you are, the keys that work right now and anything
-// that needs a look. It replaced Study's session line, its button rows and its
-// footer of key hints, so the card has the screen to itself, and every screen
-// gets the same place to say what its keys are.
+// that needs a look. Every screen gets the same place to say what its keys
+// are, so none needs button rows or a footer of key hints.
 //
 // It draws whatever the current screen declares. The contract (also in
 // docs/ui-spec.md), every property optional:
@@ -56,7 +55,8 @@ Rectangle {
   readonly property bool shared: prop("statusShared", true)
   readonly property var hints: shared ? StatusBits.common(app, prop("statusHints", [])) : prop("statusHints", [])
   readonly property var alerts: shared && app
-    ? prop("statusAlerts", []).concat(StatusBits.pressure(app, Overview.clearance(app.store.overview), Theme.verdictColor))
+    ? prop("statusAlerts", []).concat(StatusBits.pressure(app, app.store.overview ? app.store.overview.pressure : null,
+                                                           Overview.clearance(app.store.overview), Theme.verdictColor))
     : prop("statusAlerts", [])
 
   implicitHeight: Theme.statusLineHeight
@@ -153,8 +153,8 @@ Rectangle {
         objectName: "statusHint:" + hint.modelData.label
         visible: hint.index < root.hintsShown
         height: hintRow.height
-        keys: hint.modelData.keys || ""
-        label: hint.modelData.label || ""
+        keys: hint.modelData.keys
+        label: hint.modelData.label
         interactive: typeof hint.modelData.run === "function"
         onActivated: hint.modelData.run()
       }

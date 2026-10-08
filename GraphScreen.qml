@@ -13,10 +13,9 @@ Item {
   readonly property string focusPath: app ? app.wikiPath : ""
 
   // ---- the window's status line ---------------------------------------------
-  // The counts of what is drawn, and how to handle it. The mouse help used to
-  // be a line of faint text beside the chips; it is the status line's kind of
-  // thing (how to use what is on screen), and the top of the canvas is left to
-  // the chips and the legend.
+  // The counts of what is drawn, and how to handle it: how to use what is on
+  // screen is the status line's job, and the top of the canvas is left to the
+  // chips and the legend.
   readonly property var statusSegments: {
     var g = view.shown
     var out = []

@@ -36,13 +36,8 @@ TestCase {
   function test_filter_summary() {
     compare(C.filterSummary({ query: "", state: "", tag: "", deck: "" }), "")
     compare(C.filterSummary({ query: " etag ", state: "review", tag: "http", deck: "Web" }), "review · Web · #http · “etag”")
-    compare(C.filterSummary({ query: null, state: null, tag: "web", deck: null }), "#web")
-  }
-
-  function test_index_of_id() {
-    compare(C.indexOfId(deck, "b"), 1)
-    compare(C.indexOfId(deck, "zz"), -1)
-    compare(C.indexOfId(deck, ""), -1)
-    compare(C.indexOfId([], "a"), -1)
+    compare(C.filterSummary({ query: "", state: "", tag: "web", deck: "" }), "#web")
+    compare(C.selectedFilters({ query: "x", state: "new", tag: "web", deck: "" }),
+            [{ kind: "state", value: "new", label: "new" }, { kind: "tag", value: "web", label: "#web" }])
   }
 }

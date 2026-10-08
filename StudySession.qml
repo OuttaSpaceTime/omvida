@@ -55,6 +55,10 @@ QtObject {
   property string syncNote: ""
 
   readonly property bool inCard: phase === "answering" || phase === "grading" || phase === "revealed" || phase === "submitting"
+  // The back is on screen: grading, revealed, and a rating on its way after
+  // a reveal. A rating given straight from the answer (Shift+1-4) keeps the
+  // answering layout until the next card.
+  readonly property bool backShown: phase === "grading" || phase === "revealed" || (phase === "submitting" && revealedAt > 0)
 
   // The view empties the answer box: a new card is on its way.
   signal answerReset()
@@ -183,8 +187,8 @@ QtObject {
     root.app.launch(Launch.fixCardArgv(Paths.studyDir, root.card, root.suggestion.quality), "Opened Claude Code to fix the card")
   }
 
-  // A key from the answer box: true when it was a study key, which the box
-  // then doesn't type.
+  // A key from the answer box (or, with no card up, the screen): true when
+  // it was a study key, which the box then doesn't type.
   function handleKey(event) {
     var a = StudyKeys.action({ phase: root.phase, hasSuggestion: !!root.suggestion, answerEmpty: root.answer.trim() === "" },
                              event.key, event.modifiers, event.nativeScanCode)
@@ -198,6 +202,8 @@ QtObject {
     case "discuss": root.discuss(); break
     case "skip": root.skip(); break
     case "end": root.endNow(); break
+    case "start": root.start(); break
+    case "continue": root.loadNext(); break
     }
     return true
   }

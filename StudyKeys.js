@@ -21,9 +21,8 @@
 //                 is typed and not yet revealed: Esc is a reflex for a vim
 //                 or helix hand, and one press would throw the answer away
 //                 (the status line's hint still ends it, on purpose). Overlays
-//                 take Esc first: an open palette or dialog has the keyboard.
-//                 The Add menu never takes it, so StudySession closes that
-//                 menu instead of ending when it is open.
+//                 take Esc first: an open palette, dialog or Add menu has the
+//                 keyboard. On a leech, Esc ends the session too.
 // Plain Enter types a newline: answers are often code.
 //
 // Shift+digit is matched on the physical key, not the character. Shift+1
@@ -62,7 +61,8 @@ function shiftDigit(key, modifiers, scanCode) {
 function isEnter(key) { return key === KEY.Return || key === KEY.Enter }
 
 // state: { phase, hasSuggestion, answerEmpty }
-//   phase: "loading" | "answering" | "grading" | "revealed" | "submitting" | "blocked" | "done"
+//   phase: "idle" | "loading" | "answering" | "grading" | "revealed" | "submitting" |
+//          "blocked" | "done" | "error"
 // Returns { action, rating? } or null when the key is not ours (it then types
 // into the answer field as usual).
 //   reveal         show the back, grade the answer if there is one
@@ -71,8 +71,15 @@ function isEnter(key) { return key === KEY.Return || key === KEY.Enter }
 //   acceptLater    the grader is still running: submit its rating on arrival
 //   submit         submit `rating`
 //   discuss, skip, end
+//   start          a new session (Enter with no card up: idle, done, error)
+//   continue       go on past a leech (Enter on one)
 function action(state, key, modifiers, scanCode) {
   var phase = state.phase
+  if (phase === "idle" || phase === "done" || phase === "error") return isEnter(key) ? { action: "start" } : null
+  if (phase === "blocked") {
+    if (isEnter(key)) return { action: "continue" }
+    return key === KEY.Escape && !modifiers ? { action: "end" } : null
+  }
   var active = phase === "answering" || phase === "grading" || phase === "revealed"
   if (!active) return null
 

@@ -68,6 +68,17 @@ TestCase {
   function test_nothing_fires_outside_a_card() {
     compare(K.action(st("submitting"), Qt.Key_Return, Qt.ShiftModifier, 0), null)
     compare(K.action(st("blocked"), Qt.Key_Exclam, Qt.ShiftModifier, 10), null)
-    compare(K.action(st("done"), Qt.Key_Return, Qt.AltModifier, 0), null)
+    compare(K.action(st("done"), Qt.Key_Space, Qt.NoModifier, 0), null)
+  }
+
+  // With no card up, Enter goes on: a new session from idle, the summary or
+  // an error, past a leech; Esc on a leech ends the session.
+  function test_enter_goes_on_without_a_card() {
+    compare(K.action(st("idle"), Qt.Key_Return, Qt.NoModifier, 0), { action: "start" })
+    compare(K.action(st("done"), Qt.Key_Enter, Qt.KeypadModifier, 0), { action: "start" })
+    compare(K.action(st("error"), Qt.Key_Return, Qt.NoModifier, 0), { action: "start" })
+    compare(K.action(st("blocked"), Qt.Key_Return, Qt.NoModifier, 0), { action: "continue" })
+    compare(K.action(st("blocked"), Qt.Key_Escape, Qt.NoModifier, 0), { action: "end" })
+    compare(K.action(st("done"), Qt.Key_Escape, Qt.NoModifier, 0), null)
   }
 }

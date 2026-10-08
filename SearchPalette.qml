@@ -18,10 +18,8 @@ import "Launch.js" as Launch
 // ↑/↓ choose, Enter opens, Ctrl+Enter asks, Esc closes.
 //
 // Those keys are named once, in a line of hints along the palette's foot, the
-// way the window's status line names the screens' keys (the user's chosen
-// "keyboard, no buttons in the way" style). They used to be spread over a
-// note on the Ask row, the empty state's sentence and a Back button; each
-// hint is clickable and runs what its key does.
+// way the window's status line names the screens' keys; each hint is
+// clickable and runs what its key does.
 Item {
   id: root
 
@@ -76,7 +74,6 @@ Item {
   }
 
   function backToSearch() {
-    if (!root.askDone) return
     root.asking = false
     field.forceActiveFocus()
   }

@@ -1,7 +1,6 @@
 import QtQuick
 
-// Home and the other reading screens in the chosen style: the Glance panel's
-// actions, and what each screen hands the window's status line (its hints run
+// Home and the other reading screens: the Glance panel's actions, and what each screen hands the window's status line (its hints run
 // what their keys run).
 OmvidaTest {
   name: "home"

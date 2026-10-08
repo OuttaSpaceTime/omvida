@@ -5,20 +5,21 @@ import "Format.js" as Format
 import "bar/Model.js" as Overview
 
 // Where studying stands, from the deck's overview (flashcard-mcp
-// src/app/overview.ts), laid out as the bar overlay's "Glance" (the style the
-// user chose): the reviews due as one big figure with its word, the pressure
+// src/app/overview.ts), laid out as the bar overlay's "Glance": the reviews
+// due as one big figure with its word, the pressure
 // verdict in a small outlined chip, one dim sentence (what clears the
 // pressure, today's reviews), how the deck has matured as a thin segmented bar
 // with its legend, and one line for retention and the calibration verdict.
 //
 // Verdicts are shown verbatim, never re-derived (the study repo's rule: one
-// implementation, or the surfaces drift). The sentences are bar/Model.js's, so
-// the bar and the app say the same thing.
+// implementation, or the surfaces drift). The clearance and today's line are
+// bar/Model.js's; this panel puts its sentence and its retention line
+// together itself, with the review count the bar leaves out.
 //
-// The old panel's week chart, with a letter under each day, became a small
-// sparkline beside the figure: Glance has no chart, but the week (and the
-// Again share in red) is the only place the app shows how the last days went,
-// so it stays, at a size that does not compete with the figure.
+// A small sparkline sits beside the figure: Glance has no chart, but the
+// week (and the Again share in red) is the only place the app shows how the
+// last days went, so it stays, at a size that does not compete with the
+// figure.
 Column {
   id: root
 

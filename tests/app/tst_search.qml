@@ -41,7 +41,7 @@ OmvidaTest {
 
   // The palette's keys are hints along its foot, each clickable: "open" does
   // what Enter does, and once an answer is in, "back to search" what
-  // Backspace does (it replaced the Back to search button).
+  // Backspace does.
   function test_foot_hints_run_what_their_keys_run() {
     app.openSearch("caching")
     tryVerify(function() { return searchPalette.rows.length > 0 && searchPalette.rows[0].kind === "page" }, 3000)
