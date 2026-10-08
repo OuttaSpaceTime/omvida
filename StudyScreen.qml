@@ -141,7 +141,7 @@ Item {
                  : (s.app.store.overview ? s.app.store.overview.pressure : null)
     var out = StatusBits.pressure(s.app, pressure, Overview.clearance(s.app.store.overview), Theme.verdictColor)
     if (s.info && s.info.newHeldBack > 0 && phase !== "done")
-      out.push({ text: s.info.newHeldBack + " new held back", tip: "new cards held back while pressure is " + (pressure ? pressure.verdict : "high") })
+      out.push({ text: s.info.newHeldBack + " new held back", tip: "new cards held back while pressure is " + pressure.verdict })
     var note = s.syncNote
     if (note !== "") {
       var failed = note.indexOf("Anki sync failed") === 0
