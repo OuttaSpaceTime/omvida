@@ -77,6 +77,13 @@ Rectangle {
     else if (a === "done") { study.start(); rateAll.start() }
     else if (a === "keys") { study.start(); whenCardUp.run(function() { driver.study.keysWanted() }) }
     else if (a === "graphlocal") driver.app.openGraph(true)
+    // On a wiki page: fold the side panel, open the graph rail, or both
+    // (panels:side, panels:graph, panels:side,graph), as `[` and `]` would.
+    else if (a === "panels") {
+      var which = (arg || "side,graph").split(",")
+      if (which.indexOf("side") !== -1) driver.wiki.sideOpen = false
+      if (which.indexOf("graph") !== -1) driver.wiki.graphOpen = true
+    }
     else if (a === "syncfail") { study.start(); whenCardUp.run(function() { driver.study.syncNote = "Anki sync failed: offline (fixture)" }) }
     else if (a === "leech") leechDeck.running = (Quickshell.env("OMVIDA_SANDBOX") || "") !== ""
   }

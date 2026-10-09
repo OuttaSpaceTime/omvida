@@ -25,7 +25,7 @@ New tokens for both are in `Theme.qml`'s "app-wide style" block.
 ## Window
 
 A 64px icon rail (Home, Study, Wiki, Cards, Graph; the current one in the accent, Study with
-the due count as a small accent figure), a 56px top bar (a quiet back arrow, the search box
+the due count as a small accent figure), a 56px top bar (the search box
 that opens the palette, a fill with no border and no key printed in it, a status note for
 backend failures, a quiet Add), the screen, and a 36px status line along the bottom, right of
 the rail. Content sits in a reading column of 82 body characters, centred.
@@ -65,9 +65,8 @@ The Glance, as the bar overlay's: the reviews due as the hero figure with "due",
 small sparkline (Again in red, hidden when the week is empty) and the pressure verdict in an
 outlined chip on the right; a dim sentence (clearance, cards added today, today's reviews and
 streak, the new pool); maturity as a thin segmented bar and its legend; "Retention 75% over
-115 reviews, 30 days · <calibration verdict>". Then NEXT UP (the first four pending reviews,
-each with its deck's dot, and "+ N more" off the due count), and the footer: Study now, filled,
-with the deck and the wiki as square icons. Below, each under a hairline and a caption: last
+115 reviews, 30 days · <calibration verdict>". No list of the pending reviews. Then the footer:
+Study now, filled, with the deck and the wiki as square icons. Below, each under a hairline and a caption: last
 studied pages (latest review first, then coverage), recently updated, topic tiles (equal
 height, a hairline in the topic's colour over the name and three pages). Status line: HOME,
 the wiki's counts, ⌃2 study, the shared hints, the pressure verdict while it is not ok.
@@ -78,8 +77,8 @@ Drawn for the keyboard: no button rows, no session line, no hint footer; the sta
 the mode, the place and the keys. The card sits in the reading column, centred vertically
 while it fits.
 
-- Answering: the front large (20px), its tags
-  faint, then a borderless prompt: an accent `›` and the answer box ("answer, or leave
+- Answering: the front large (20px), without its tags (they can give the answer away), then
+  a borderless prompt: an accent `›` and the answer box ("answer, or leave
   empty").
 - Revealed: the front cut to a dim three-line recap; a box split by a hairline, "› you" with
   the typed answer (or "(nothing typed)") beside "back" on a faint fill; Claude's verdict as
@@ -117,7 +116,10 @@ Claude actions as quiet text buttons, the page's blocks (code on a fill with no 
 Linked from / Links to under hairlines. Status line: WIKI and the page's or folder's path.
 Right (280px, wide windows only): the page's neighbourhood graph. Its left edge drags it wider
 (kept while the app runs, never past the page's reading column), and a full-screen icon in its
-corner opens the Graph screen around the page. The side panels drop out
+corner opens the Graph screen around the page. Either panel folds away (the chevron in
+its corner, `[` for the left, `]` for the graph; the status line names both), leaving only a
+chevron in 40px at its edge, no hairline or fill. It stays as left while the app runs; the graph
+starts folded. The side panels drop out
 before the reading column narrows below ~60% of its measure.
 
 ## Cards
@@ -135,10 +137,10 @@ with `N more tags ›` for the rest. All text links, no boxes.
 
 Tags combine: a card must carry every picked tag. The tags offered, and the state bar, count only
 the cards the other filters leave, so each choice shows how many cards it would leave and none
-empties the grid. `N more tags ›` opens the tag panel, a sheet from the right over a scrim: the
+empties the grid. `N more tags ›` opens the tag panel, a sheet from the right that leaves the page undimmed: the
 picks on top with ✕, a `find a tag` field (tags starting with the text first), and every tag
 still worth picking with its count. ↑/↓ choose, Enter picks and clears the field, Backspace in
-the empty field drops the last pick, Esc or a click on the scrim closes; the status line names
+the empty field drops the last pick, Esc or a click beside the sheet closes; the status line names
 those keys while it is up.
 Below, `NEXT UP · n · m passed` and the grid: 2–5 tiles a row, each a hairline rule, the card's
 tags and lapses, its position, and five lines of its front as plain text, so every tile is the

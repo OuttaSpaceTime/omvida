@@ -19,6 +19,7 @@ Rectangle {
   // The open page's H2s, with the anchors its rendered headings carry.
   property var sections: []
   signal sectionPicked(string anchor)
+  signal collapseRequested()
 
   readonly property var index: app ? app.store.wikiIndex : null
   readonly property var meta: app && app.wikiPath !== "" ? app.store.pagesByPath[app.wikiPath] || null : null
@@ -62,6 +63,17 @@ Rectangle {
     spacing: Theme.spaceXs
     Chip { objectName: "panelMode:context"; label: "Context"; selected: root.mode === "context"; onActivated: root.mode = "context" }
     Chip { objectName: "panelMode:tree"; label: "Tree"; selected: root.mode === "tree"; onActivated: root.mode = "tree" }
+  }
+  // Folds the panel to a strip at the window's edge (WikiScreen keeps the
+  // strip and the `[` key that does the same).
+  PlainButton {
+    objectName: "sidePanelCollapse"
+    anchors.right: parent.right
+    anchors.rightMargin: Theme.spaceSm
+    anchors.verticalCenter: modes.verticalCenter
+    icon: "collapseLeft"
+    tip: "Hide the panel  ["
+    onActivated: root.collapseRequested()
   }
 
   GlideFlickable {

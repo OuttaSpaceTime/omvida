@@ -19,7 +19,10 @@ Item {
   property string icon: ""
   property string tip: ""
   property color tint: Theme.secondaryInk
-  property int size: Theme.bodySmallSize
+  // A control's height and body type: a quiet action beside an ActionButton
+  // (Cancel, the top bar's Add), so the pair sits on one line.
+  property bool large: false
+  property int size: large ? Theme.bodySize : Theme.bodySmallSize
   // False makes it a legend: the same words, no hover and no click. The
   // status line uses it for a key the mouse has no use for (⇧1-4 once the
   // keycaps are on screen).
@@ -29,13 +32,14 @@ Item {
 
   readonly property bool hovered: area.containsMouse
 
-  implicitHeight: Theme.smallControlHeight
+  implicitHeight: large ? Theme.controlHeight : Theme.smallControlHeight
   implicitWidth: row.implicitWidth + root.inset * 2
   opacity: enabled ? 1 : 0.45
 
   Rectangle {
+    id: fill
     x: -root.inset
-    width: row.implicitWidth + root.inset * 2
+    width: root.implicitWidth
     height: parent.height
     color: root.hovered && root.enabled && root.interactive ? Theme.hoverFill : "transparent"
   }
@@ -69,9 +73,7 @@ Item {
 
   MouseArea {
     id: area
-    x: -root.inset
-    width: row.implicitWidth + root.inset * 2
-    height: parent.height
+    anchors.fill: fill
     hoverEnabled: true
     enabled: root.enabled && root.interactive
     cursorShape: Qt.PointingHandCursor

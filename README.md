@@ -40,8 +40,8 @@ related to what you studied, and a `## Session N — Study` entry in the study r
 
 ## The rest
 
-- **Home**: what is due and why (pressure, clearance, calibration, the week, maturity), the
-  pending reviews, last studied pages, recently updated pages, topics.
+- **Home**: what is due and why (pressure, clearance, calibration, the week, maturity), last
+  studied pages, recently updated pages, topics.
 - **Wiki**: the page in a reading column, syntax-highlighted code, callouts, tables,
   `[[wikilinks]]` (broken ones in red); a context panel (where am I, siblings, the page's
   sections, outgoing and linked-from) or the whole tree; the page's local graph; its flashcards
@@ -63,8 +63,8 @@ Ctrl+1–5 switch screens, Alt+←/→ go back and forward.
 ## The bar
 
 `bar/` is an omarchy-shell plugin, `omvida.bar`: the Omvida mark with the number of reviews
-due. Click for a panel with your progress (pressure, calibration, the week, maturity) and the
-pending cards; right-click starts a session; middle-click refreshes. It reads `bin/omvida-overview`
+due. Click for a panel with your progress (pressure, calibration, maturity) and Study
+now; right-click starts a session; middle-click refreshes. It reads `bin/omvida-overview`
 (flashcard-mcp's `master overview`), so it needs neither the app nor its own copy of any rule.
 
 ## How it fits together

@@ -440,16 +440,14 @@ Item {
           onActivated: { root.app.launch(Launch.resumeArgv(Paths.studyDir, root.askSession), "Opened Claude Code"); root.close() }
         }
         PlainButton {
-          size: Theme.bodySize
-          height: Theme.controlHeight
+          large: true
           label: "Copy"
           icon: "copy"
           enabled: root.askText !== ""
           onActivated: Quickshell.clipboardText = root.askText
         }
         PlainButton {
-          size: Theme.bodySize
-          height: Theme.controlHeight
+          large: true
           visible: !root.askDone
           label: "Stop"
           onActivated: askProc.running = false

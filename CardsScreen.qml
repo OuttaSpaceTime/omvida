@@ -48,7 +48,7 @@ Item {
   // only the picked state).
   readonly property var stateBase: filters.state === "" ? filtered : Cards.filterCards(all, Object.assign({}, filters, { state: "" }))
   readonly property var stateList: Cards.stateCounts(stateBase)
-  readonly property int deckSize: Math.max(1, stateBase.length)
+  readonly property int stateTotal: Math.max(1, stateBase.length)
   // The tags still worth picking: those of the cards the filters left, less
   // the picked ones, each counted as the cards a pick would leave. Counting
   // over the whole deck instead offered tags that would empty the grid.
@@ -82,12 +82,7 @@ Item {
   // screen stays quiet.
   // While the tag panel is up its keys replace them: the stage has no
   // keyboard then.
-  readonly property var statusHints: tagPanel.opened ? [
-    { keys: "↑↓", label: "choose", run: function() { tagPanel.move(1) } },
-    { keys: "↵", label: "pick", run: function() { tagPanel.pick(tagPanel.highlight) } },
-    { keys: "⌫", label: "drop last", run: function() { tagPanel.dropLast() } },
-    { keys: "esc", label: "close", run: function() { tagPanel.close() } }
-  ] : [
+  readonly property var statusHints: tagPanel.opened ? tagPanel.statusHints : [
     { keys: "space", label: "flip", run: function() { root.flipStage() } },
     { keys: "←", label: "back", run: function() { root.page(-1) } },
     { keys: "→", label: "next", run: function() { root.page(1) } },
@@ -134,16 +129,11 @@ Item {
   }
 
   function addTag(tag) {
-    if (filters.tags.indexOf(tag) !== -1) return
-    var f = Object.assign({}, filters)
-    f.tags = filters.tags.concat([tag])
-    filters = f
+    if (filters.tags.indexOf(tag) === -1) setFilter("tags", filters.tags.concat([tag]))
   }
 
   function dropTag(tag) {
-    var f = Object.assign({}, filters)
-    f.tags = filters.tags.filter(function(t) { return t !== tag })
-    filters = f
+    setFilter("tags", filters.tags.filter(function(t) { return t !== tag }))
   }
 
   // A selected chip's ✕: a tag leaves the list, a state or deck goes back
@@ -264,8 +254,9 @@ Item {
             width: parent.width
             cards: root.filtered
             stage: true
-            // As tall as the column beside it, so neither leaves a gap or
-            // cuts the other off.
+            // As tall as the column beside it, or its own least height
+            // (FlipThrough's) if the column is shorter, so the column never
+            // runs past the card.
             stageHeight: top.sideBySide ? aside.implicitHeight : 0
           }
 
@@ -288,9 +279,8 @@ Item {
 
         // Retention and the filters. The stage takes this column's height,
         // which stays short because it lists only a few tags (the rest are
-        // in the tag panel), so the two end together and neither scrolls.
-        // Nothing clips it: chips pulled out past its edges (layout rule 2)
-        // keep their outline whole.
+        // in the tag panel), so neither scrolls. Nothing clips it: a chip's
+        // outline, drawn past its words (layout rule 2), stays whole.
         Column {
           id: aside
           objectName: "cardsAside"
@@ -440,7 +430,7 @@ Item {
                     id: stateSegment
                     required property var modelData
                     objectName: "stateBar:" + stateSegment.modelData.state
-                    width: aside.width * stateSegment.modelData.count / root.deckSize
+                    width: aside.width * stateSegment.modelData.count / root.stateTotal
                     height: Theme.statBarHeight
                     color: Theme.stateColor(stateSegment.modelData.state)
                     opacity: root.filters.state === "" || root.filters.state === stateSegment.modelData.state ? 1 : 0.3

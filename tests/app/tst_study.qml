@@ -27,6 +27,21 @@ OmvidaTest {
     compare(field.text, "abc")
   }
 
+  // A tag can name the answer, so the card shows none of them.
+  function test_the_card_shows_no_tags() {
+    startSession()
+    verify(study.card.tags.length > 0, "the fixture card has tags to hide")
+    var shown = []
+    var walk = function(it) {
+      if (!it || !it.visible) return
+      if (typeof it.text === "string" && study.card.tags.some(function(t) { return it.text.indexOf("#" + t) !== -1 }))
+        shown.push(it.text)
+      for (var i = 0; i < it.children.length; i++) walk(it.children[i])
+    }
+    walk(studyView)
+    compare(shown, [], "no tag on screen while answering")
+  }
+
   function test_shift_enter_reveals_and_grades_then_shift_enter_submits_good() {
     startSession()
     var before = gradeCalls().length

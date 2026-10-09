@@ -1,18 +1,19 @@
 import QtQuick
 
-// The bar over every screen: back, the search box (a button that opens the
+// The bar over every screen: the search box (a button that opens the
 // palette, so typing never happens in two places), a status note, and Add.
 //
-// Nothing here is boxed: back and Add are quiet text buttons, and the search
-// box is a faint fill with no border, a prompt rather than a field. Their
-// keys (Ctrl+K, Ctrl+N) are named in the window's status line, not here.
+// Nothing here is boxed: Add is a quiet text button, and the search box is a
+// faint fill with no border, a prompt rather than a field. Their keys
+// (Ctrl+K, Ctrl+N) are named in the window's status line, not here. No back
+// arrow: Alt+← goes back, and the status line offers "back" whenever there is
+// history, so the arrow was a second way to do it that sat greyed out on
+// every first screen.
 Rectangle {
   id: root
 
   property string status: ""
-  property bool canGoBack: false
   signal searchRequested()
-  signal backRequested()
   signal addRequested()
 
   height: Theme.topBarHeight
@@ -26,27 +27,13 @@ Rectangle {
     color: Theme.hairline
   }
 
-  PlainButton {
-    size: Theme.bodySize
-    height: Theme.controlHeight
-    id: back
-    objectName: "backButton"
-    anchors.left: parent.left
-    anchors.leftMargin: Theme.spaceLg
-    anchors.verticalCenter: parent.verticalCenter
-    icon: "back"
-    tip: "Back  Alt+←"
-    enabled: root.canGoBack
-    onActivated: root.backRequested()
-  }
-
   Rectangle {
     id: searchBox
     objectName: "searchBox"
-    anchors.left: back.right
-    anchors.leftMargin: Theme.spaceSm
+    anchors.left: parent.left
+    anchors.leftMargin: Theme.spaceLg
     anchors.verticalCenter: parent.verticalCenter
-    width: Math.min(Theme.paletteWidth, root.width - back.width - add.width - Theme.space4xl * 2)
+    width: Math.min(Theme.paletteWidth, root.width - add.width - Theme.space4xl * 2)
     height: Theme.controlHeight
     color: searchArea.containsMouse ? Theme.hoverFill : Theme.fill
 
@@ -91,9 +78,8 @@ Rectangle {
   }
 
   PlainButton {
-    size: Theme.bodySize
-    height: Theme.controlHeight
     id: add
+    large: true
     objectName: "addButton"
     anchors.right: parent.right
     anchors.rightMargin: Theme.spaceLg

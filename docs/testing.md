@@ -59,7 +59,7 @@ and stops.
 | objectName | control |
 |---|---|
 | `nav:<screen>` | the rail's icons |
-| `searchBox`, `addButton`, `backButton` | the top bar |
+| `searchBox`, `addButton` | the top bar |
 | `add:flashcard`, `add:wiki`, `topicField`, `topicSubmit` | the Add menu and its dialog |
 | `confirmDialog`, `confirmQuote`, `confirmAccept`, `confirmCancel` (`app.confirmOpen` says whether it is up) | the confirm dialog (Del on Cards and in Study) |
 | `statusLine`, `statusMode`, `statusSegment:<i>`, `statusHint:<label>`, `statusAlert:<i>` | the status line (each has a plain `text`; hints are buttons: `statusHint:keys` on Study, `statusHint:delete` on Cards...) |
@@ -77,7 +77,8 @@ and stops.
 | `tagPanel` (`cardsScreen.tagPanelOpen` says whether it is up), `tagPanelField`, `tagPanelList`, `tagRow:<tag>`, `tagPanelSelected:<tag>`, `tagPanelClose` | the deck explorer's tag panel |
 | `cardsStage` (its card is `flipCard`, the front `flipFront`), `upNext`, `cardsRestart`, `cardTile:<card id>` | the deck explorer's stage and grid |
 | `graphScreen`, `graphAll`, `graphLocal`, `graphView` | the graph |
-| `graphRailHandle`, `graphFullScreen` | the wiki page's graph rail: its drag edge, its full-screen icon |
+| `graphRailHandle`, `graphFullScreen`, `graphCollapse`, `graphExpand` | the wiki page's graph rail: its drag edge, its full-screen icon, folding it and opening it again |
+| `sidePanelCollapse`, `sidePanelExpand` | folding the wiki's side panel and opening it again |
 | `homeScreen`, `homeStudyButton`, `homeCardsButton`, `homeWikiButton`, `recent:<path>`, `topic:<path>`, `dueFigure`, `pressureVerdict`, `calibrationVerdict` | home |
 
 ## What the tests don't cover

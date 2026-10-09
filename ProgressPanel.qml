@@ -182,13 +182,13 @@ Column {
           spacing: Theme.spaceXs
           UiText {
             text: legendItem.modelData.n
-            font.pixelSize: Theme.captionSize
+            font.pixelSize: Theme.bodySmallSize
             font.weight: Font.Medium
             color: legendItem.modelData.n > 0 ? maturity.numberColor(legendItem.modelData.key) : Theme.secondaryInk
           }
           UiText {
             text: legendItem.modelData.key
-            font.pixelSize: Theme.captionSize
+            font.pixelSize: Theme.bodySmallSize
             color: Theme.dim
           }
         }
@@ -202,13 +202,13 @@ Column {
     width: parent.width
     UiText {
       text: root.retentionLine() + " · "
-      font.pixelSize: Theme.captionSize
+      font.pixelSize: Theme.bodySmallSize
       color: Theme.dim
     }
     UiText {
       objectName: "calibrationVerdict"
       text: root.c ? root.c.verdict + (root.c.marginal ? " (marginal)" : "") : ""
-      font.pixelSize: Theme.captionSize
+      font.pixelSize: Theme.bodySmallSize
       color: root.c ? Theme.verdictColor(root.c.verdict) : Theme.dim
     }
   }

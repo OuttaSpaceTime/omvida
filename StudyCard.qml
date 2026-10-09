@@ -46,31 +46,16 @@ Column {
   }
 
   // ---- the front ---------------------------------------------------------------------
-  Column {
+  // The front alone, without the card's tags: a tag often names the answer
+  // ("#max-age" under "How long does a response stay fresh?"). Cards shows
+  // them; studying, they would be a hint.
+  CardFace {
+    objectName: "cardFront"
     visible: root.showCard && !root.session.backShown
     width: parent.width
-    spacing: Theme.spaceMd
-    CardFace {
-      objectName: "cardFront"
-      width: parent.width
-      html: root.session.card ? root.session.card.front : ""
-      size: Theme.cardFrontSize
-      opacity: root.session.phase === "loading" ? 0.4 : 1
-    }
-    Row {
-      visible: root.session.card !== null && root.session.card.tags.length > 0
-      spacing: Theme.spaceSm
-      Repeater {
-        model: root.session.card ? root.session.card.tags : []
-        delegate: UiText {
-          id: tagItem
-          required property var modelData
-          text: "#" + tagItem.modelData
-          font.pixelSize: Theme.captionSize
-          color: Theme.faint
-        }
-      }
-    }
+    html: root.session.card ? root.session.card.front : ""
+    size: Theme.cardFrontSize
+    opacity: root.session.phase === "loading" ? 0.4 : 1
   }
 
   // Once revealed, the front is only a reminder of the question: plain

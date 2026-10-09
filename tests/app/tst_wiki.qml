@@ -32,6 +32,7 @@ OmvidaTest {
   function test_the_graph_rail_goes_full_screen_and_resizes() {
     app.openPage("web/http-caching", "")
     tryVerify(function() { return wiki.loadedPath === "web/http-caching" }, 8000)
+    wiki.graphOpen = true
     var handle = item("graphRailHandle")
     var rail = handle.parent
     var before = rail.width
@@ -87,6 +88,44 @@ OmvidaTest {
     app.openGraph(true)
     tryVerify(function() { return ids().indexOf("security/same-origin-policy") >= 0 }, 3000)
     verify(ids().indexOf("web/cookies") < 0, ids().join())
+  }
+
+  // Both panels fold to a strip, by their chevron or by `[` and `]` (typed
+  // as text: on a German layout `[` is AltGr+8), and the page takes the
+  // room. The graph starts folded.
+  function test_the_side_panels_fold_away() {
+    wiki.graphOpen = false   // the default; an earlier test opened it
+    app.openPage("web/http-caching", "")
+    tryVerify(function() { return wiki.loadedPath === "web/http-caching" }, 8000)
+    item("graphExpand")
+    var flick = item("wikiFlick"), before = flick.width
+
+    click("sidePanelCollapse")
+    verify(!wiki.sideOpen)
+    item("sidePanelExpand")
+    verify(flick.width > before, "the page took the panel's room: " + flick.width + " from " + before)
+    // The folded strip's glyph stays faint until the pointer is on it.
+    var expand = item("sidePanelExpand")
+    mouseMove(flick, flick.width / 2, flick.height / 2)
+    // A string: a color read into a var is a live reference to the property.
+    var quiet = String(expand.tint)
+    mouseMove(expand, expand.width / 2, expand.height / 2)
+    tryVerify(function() { return String(expand.tint) !== quiet }, 2000, "hover darkens the glyph")
+    mouseMove(flick, flick.width / 2, flick.height / 2)
+    tryVerify(function() { return String(expand.tint) === quiet }, 2000, "leaving fades it back")
+    key("[")
+    verify(wiki.sideOpen, "[ opens it again")
+
+    key("]")
+    verify(wiki.graphOpen, "] opens the graph")
+    item("graphRailHandle")
+    click("graphCollapse")
+    verify(!wiki.graphOpen)
+    click("graphExpand")
+    verify(wiki.graphOpen)
+    key("]")
+    verify(!wiki.graphOpen)
+    compare(flick.width, before)
   }
 
   function test_context_panel_lists_sections_and_links() {

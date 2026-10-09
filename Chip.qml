@@ -26,8 +26,9 @@ Item {
   opacity: enabled ? 1 : 0.45
 
   Rectangle {
+    id: fill
     x: -Theme.chipInset
-    width: row.implicitWidth + Theme.chipInset * 2
+    width: root.implicitWidth
     height: parent.height
     color: !root.selected && area.containsMouse ? Theme.hoverFill : "transparent"
     border.color: root.selected ? Theme.accentColor : "transparent"
@@ -62,9 +63,7 @@ Item {
 
   MouseArea {
     id: area
-    x: -Theme.chipInset
-    width: row.implicitWidth + Theme.chipInset * 2
-    height: parent.height
+    anchors.fill: fill
     hoverEnabled: true
     cursorShape: Qt.PointingHandCursor
     onClicked: root.activated()

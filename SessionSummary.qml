@@ -124,7 +124,6 @@ Column {
   Row {
     spacing: Theme.spaceSm
     PlainButton {
-      id: studyAgain
       objectName: "studyAgainButton"
       keys: "↵"
       label: "start another session"

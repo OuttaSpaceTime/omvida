@@ -37,7 +37,7 @@ Item {
   }
 
   function loadOverview() {
-    deckClient.call("overview", { pendingLimit: 5 }, function(err, o) {
+    deckClient.call("overview", { pendingLimit: 0 }, function(err, o) {
       if (err) { root.status = "deck: " + err; return }
       root.overview = o
     })

@@ -11,10 +11,11 @@ import "WikiTree.js" as WikiTree
 //
 // The top is the bar overlay's "Glance", so the overlay and its in-app twin
 // read alike: the figure, the verdict and the deck's maturity
-// (ProgressPanel), the next reviews up, and one filled action beside a square
-// icon button. Sections are parted by a hairline and a small caption, not
-// boxes: a boxed top panel makes the rest of the page look like an
-// afterthought.
+// (ProgressPanel), then one filled action beside square icon buttons. No list
+// of the reviews waiting: their fronts, cut to one line, said less than the
+// count, and Study shows them one at a time anyway. Sections are parted by a
+// hairline and a small caption, not boxes: a boxed top panel makes the rest
+// of the page look like an afterthought.
 //
 // The screen's title, its counts ("52 pages · 14 topics...") and its keys are
 // in the window's status line: the mode block already says where you are, and
@@ -35,11 +36,6 @@ Item {
           + (root.overview ? " · " + Format.plural(root.overview.totalCards, "card") : "")
   }] : []
   readonly property var statusHints: root.app ? [StatusBits.study(root.app)] : []
-
-  // Pending reviews past the rows shown, counted off the due figure rather
-  // than the list, which the deck server caps.
-  readonly property var nextUp: root.overview ? root.overview.pending.slice(0, Theme.nextUpRows) : []
-  readonly property int moreDue: root.overview ? Math.max(0, root.overview.pressure.flashcardsDue - root.nextUp.length) : 0
 
   GlideFlickable {
     id: flick
@@ -62,31 +58,6 @@ Item {
         ProgressPanel {
           width: parent.width
           overview: root.overview
-        }
-
-        Column {
-          visible: root.nextUp.length > 0
-          width: parent.width
-          SectionLabel { divided: true; text: "Next up" }
-          Repeater {
-            model: root.nextUp
-            delegate: ListRow {
-              id: pendingRow
-              required property var modelData
-              width: col.width
-              dot: Theme.topicColor(pendingRow.modelData.deck.toLowerCase())
-              title: pendingRow.modelData.text
-              note: pendingRow.modelData.deck + (pendingRow.modelData.lapses > 0 ? " · " + Format.plural(pendingRow.modelData.lapses, "lapse") : "")
-              onActivated: root.app.startStudy()
-            }
-          }
-          UiText {
-            visible: root.moreDue > 0
-            topPadding: Theme.spaceXs
-            text: "+ " + root.moreDue + " more"
-            font.pixelSize: Theme.captionSize
-            color: Theme.faint
-          }
         }
 
         // One filled action, the way forward, and the deck beside it as a

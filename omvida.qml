@@ -288,9 +288,7 @@ ShellRoot {
         anchors.right: parent.right
         anchors.top: parent.top
         status: dataStore.deck.failure !== "" ? dataStore.deck.failure : (dataStore.wiki.failure !== "" ? dataStore.wiki.failure : dataStore.status)
-        canGoBack: root.history.length > 0
         onSearchRequested: root.openSearch("")
-        onBackRequested: root.goBack()
         onAddRequested: addMenu.toggle()
       }
 

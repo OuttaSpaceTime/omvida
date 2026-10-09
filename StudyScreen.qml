@@ -199,7 +199,6 @@ Item {
           color: Theme.redText
         }
         PlainButton {
-          id: startButton
           objectName: "startSessionButton"
           visible: root.phase === "idle" || root.phase === "error"
           keys: "↵"

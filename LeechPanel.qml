@@ -32,7 +32,7 @@ Column {
   // The decisions, as plain words.
   Row {
     spacing: Theme.spaceSm
-    PlainButton { id: rewrite; objectName: "leechRewrite"; label: "rewrite in claude"; tint: Theme.accentColor; onActivated: root.session.leechFix("rewrite") }
+    PlainButton { objectName: "leechRewrite"; label: "rewrite in claude"; tint: Theme.accentColor; onActivated: root.session.leechFix("rewrite") }
     PlainButton { objectName: "leechSplit"; label: "split in claude"; onActivated: root.session.leechFix("split") }
     PlainButton { objectName: "leechKeep"; label: "keep as is"; onActivated: root.session.leechResolve("resolveLeech", "kept as is") }
     PlainButton { objectName: "leechDrop"; label: "delete"; tint: Theme.redText; onActivated: dropConfirm.visible = true }
@@ -47,7 +47,7 @@ Column {
   }
   Row {
     spacing: Theme.spaceXs
-    PlainButton { id: cont; objectName: "leechContinue"; keys: "↵"; label: "continue"; anchors.verticalCenter: parent.verticalCenter; onActivated: root.session.loadNext() }
+    PlainButton { objectName: "leechContinue"; keys: "↵"; label: "continue"; anchors.verticalCenter: parent.verticalCenter; onActivated: root.session.loadNext() }
     UiText {
       text: "after fixing it in Claude Code"
       font.pixelSize: Theme.captionSize

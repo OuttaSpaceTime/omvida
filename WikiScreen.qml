@@ -11,6 +11,14 @@ import "Launch.js" as Launch
 // it, and the local graph on the right when the window is wide enough. With
 // no page open it shows a folder (the viewer's FolderView).
 //
+// Either panel folds to a strip at its edge, `[` and `]` or the chevron in
+// its corner, and stays as left while the app runs. The graph starts folded:
+// it is for finding your way, not for reading, and a page read beside it got
+// a narrower column for a picture that rarely changed. Folded, a panel leaves
+// only its chevron: no edge and no fill, so the page reads as the whole
+// screen, and the chevron keeps the panel one click from back. The strip
+// still holds its width, so the chevron never sits over the page's text.
+//
 // The header's actions hand the page to Claude Code: cards on this page
 // (/study-flashcard) and go deeper (/study-walkthrough --write). Its cards
 // button opens the page's own flashcards, overview or flip-through.
@@ -30,14 +38,72 @@ Item {
   // The graph rail's width: dragged by its left edge, kept while the app
   // runs, never so wide that the page loses its reading column.
   property real graphRailWidth: Theme.sidePanelWidth
-  readonly property real graphRailMax: Math.max(Theme.sidePanelWidth, width - Theme.sidePanelWidth - Theme.pageMeasure * 0.85)
+  readonly property real graphRailMax: Math.max(Theme.sidePanelWidth, width - leftWidth - Theme.pageMeasure * 0.85)
   readonly property bool showGraph: width >= Theme.sidePanelWidth * 2 + Theme.pageMeasure * 0.85
+
+  property bool sideOpen: true
+  property bool graphOpen: false
+  readonly property bool sideFits: width >= Theme.sidePanelWidth + Theme.pageMeasure * 0.6
+  readonly property bool graphFits: showGraph && path !== ""
+  // What each edge takes from the page: the panel, its folded strip, or
+  // nothing when the window has no room for it.
+  readonly property real leftWidth: !sideFits ? 0 : (sideOpen ? Theme.sidePanelWidth : Theme.collapsedPanelWidth)
+  readonly property real rightWidth: !graphFits ? 0 : (graphOpen ? graphRail.width : Theme.collapsedPanelWidth)
 
   // ---- the window's status line ---------------------------------------------
   // Where you are: the open page's file path, or the folder's.
   readonly property var statusSegments: {
     var f = root.app ? root.app.wikiFolder : ""
     return [{ text: root.path !== "" ? root.path : (f === "" ? "wiki" : f + "/") }]
+  }
+  // The panels' keys, while there is room to show them.
+  readonly property var statusHints: {
+    var h = []
+    if (root.sideFits) h.push({ keys: "[", label: "panel", run: function() { root.sideOpen = !root.sideOpen } })
+    if (root.graphFits) h.push({ keys: "]", label: "graph", run: function() { root.graphOpen = !root.graphOpen } })
+    return h
+  }
+
+  // The screen holds the keyboard while shown so `[` and `]` reach it; the
+  // keys it doesn't use travel up to the window. Matched on the character,
+  // not the key code: on a German layout `[` is AltGr+8.
+  function takeFocus() {
+    if (!root.visible) return false
+    root.forceActiveFocus()
+    return true
+  }
+  // The keys are the hints': a panel with no room has neither.
+  Keys.onPressed: function(event) {
+    if (event.modifiers & (Qt.ControlModifier | Qt.AltModifier)) return
+    var hint = root.statusHints.filter(function(h) { return h.keys === event.text })[0]
+    if (!hint) return
+    hint.run()
+    event.accepted = true
+  }
+
+  // A panel folded: a strip at its edge holding only the icon that opens it
+  // again. The button's fill reaches `inset` left of the glyph and ends
+  // `inset` after it, so offsetting by `inset` centres the glyph. The glyph
+  // is faint until hovered: a folded panel should not compete with the page,
+  // and faint is the lightest grey that still meets the contrast floor
+  // (layout rule 8).
+  component FoldStrip: Item {
+    id: strip
+    property alias name: expand.objectName
+    property alias icon: expand.icon
+    property alias tip: expand.tip
+    signal activated()
+    anchors.top: parent.top
+    anchors.bottom: parent.bottom
+    width: Theme.collapsedPanelWidth
+    PlainButton {
+      id: expand
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.horizontalCenterOffset: expand.inset
+      y: Theme.spaceSm
+      tint: expand.hovered ? Theme.ink : Theme.faint
+      onActivated: strip.activated()
+    }
   }
 
   function openPageCards() { if (root.meta && root.pageCards.length) root.app.openPageCards(root.meta.title, root.pageCards) }
@@ -85,14 +151,26 @@ Item {
     anchors.top: parent.top
     anchors.bottom: parent.bottom
     width: Theme.sidePanelWidth
-    visible: root.width >= Theme.sidePanelWidth + Theme.pageMeasure * 0.6
+    visible: root.sideFits && root.sideOpen
     onSectionPicked: function(anchor) { root.scrollTo(anchor) }
+    onCollapseRequested: root.sideOpen = false
+  }
+
+  FoldStrip {
+    visible: root.sideFits && !root.sideOpen
+    anchors.left: parent.left
+    name: "sidePanelExpand"
+    icon: "collapseRight"
+    tip: "Show the panel  ["
+    onActivated: root.sideOpen = true
   }
 
   Item {
     id: centre
-    anchors.left: side.visible ? side.right : parent.left
-    anchors.right: graphRail.visible ? graphRail.left : parent.right
+    anchors.left: parent.left
+    anchors.leftMargin: root.leftWidth
+    anchors.right: parent.right
+    anchors.rightMargin: root.rightWidth
     anchors.top: parent.top
     anchors.bottom: parent.bottom
 
@@ -253,7 +331,7 @@ Item {
   // The local graph: this page and two hops out (the viewer's graph rail).
   Rectangle {
     id: graphRail
-    visible: root.showGraph && root.path !== ""
+    visible: root.graphFits && root.graphOpen
     anchors.right: parent.right
     anchors.top: parent.top
     anchors.bottom: parent.bottom
@@ -261,15 +339,23 @@ Item {
     color: Theme.paper
     Rectangle { width: Theme.hairlineWidth; height: parent.height; color: Theme.hairline }
     SectionLabel { x: Theme.spaceLg; y: Theme.spaceLg; text: "Neighbourhood" }
-    // The whole graph screen, around this page.
-    PlainButton {
-      objectName: "graphFullScreen"
+    // The whole graph screen, around this page; then folding the rail.
+    Row {
       anchors.right: parent.right
       anchors.rightMargin: Theme.spaceSm
       y: Theme.spaceSm
-      icon: "fullscreen"
-      tip: "Open in the graph screen"
-      onActivated: root.app.openGraph(true)
+      PlainButton {
+        objectName: "graphFullScreen"
+        icon: "fullscreen"
+        tip: "Open in the graph screen"
+        onActivated: root.app.openGraph(true)
+      }
+      PlainButton {
+        objectName: "graphCollapse"
+        icon: "collapseRight"
+        tip: "Hide the graph  ]"
+        onActivated: root.graphOpen = false
+      }
     }
     GraphView {
       anchors.fill: parent
@@ -294,5 +380,14 @@ Item {
         root.graphRailWidth = Math.max(Theme.sidePanelWidth * 0.75, Math.min(root.graphRailMax, w))
       }
     }
+  }
+
+  FoldStrip {
+    visible: root.graphFits && !root.graphOpen
+    anchors.right: parent.right
+    name: "graphExpand"
+    icon: "collapseLeft"
+    tip: "Show the graph  ]"
+    onActivated: root.graphOpen = true
   }
 }

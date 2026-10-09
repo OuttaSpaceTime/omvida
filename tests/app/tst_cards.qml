@@ -120,6 +120,13 @@ OmvidaTest {
     key(Qt.Key_Escape)
     verify(!cardsScreen.tagPanelOpen)
     tryVerify(function() { return stage().activeFocus }, timeout, "the stage has the keyboard again")
+
+    // Nothing dims the page beside the sheet, but a click there still closes it.
+    tryVerify(function() { return findNamed(target, "tagPanel") === null }, timeout, "slid out")
+    click("moreTags")
+    tryVerify(function() { return item("tagPanelField").activeFocus }, timeout)
+    mouseClick(item("tagPanel"), 5, 5)   // check: allow-px a point beside the sheet
+    verify(!cardsScreen.tagPanelOpen, "a click beside the sheet closes it")
   }
 
   // The stage is as tall as the column of filters beside it, or its least

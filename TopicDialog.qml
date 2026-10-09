@@ -110,6 +110,6 @@ Modal {
       label: "Open in Claude Code"
       onActivated: root.submit()
     }
-    PlainButton { size: Theme.bodySize; label: "Cancel"; onActivated: root.close() }
+    PlainButton { large: true; label: "Cancel"; onActivated: root.close() }
   }
 }

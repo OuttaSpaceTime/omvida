@@ -21,7 +21,6 @@ Rectangle {
   property color fill: Theme.accentColor
   property bool small: false
   property bool prominent: false
-  property color tint: Theme.ink
   signal activated()
 
   readonly property bool hovered: area.containsMouse
@@ -48,7 +47,7 @@ Rectangle {
       icon: root.icon
       anchors.verticalCenter: parent.verticalCenter
       font.pixelSize: root.small ? Theme.bodySmallSize : Theme.bodySize
-      color: root.filled ? Theme.paper : root.tint
+      color: root.filled ? Theme.paper : Theme.ink
     }
     UiText {
       visible: root.label !== ""
@@ -56,7 +55,7 @@ Rectangle {
       text: root.label
       font.pixelSize: root.small ? Theme.bodySmallSize : Theme.bodySize
       font.weight: root.filled && root.prominent ? Font.Medium : Font.Normal
-      color: root.filled ? Theme.paper : root.tint
+      color: root.filled ? Theme.paper : Theme.ink
     }
   }
 

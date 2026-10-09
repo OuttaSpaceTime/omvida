@@ -214,6 +214,9 @@ QtObject {
   // The wiki's two side panels: the tree or context on the left, the page's
   // sections and links on the right (the viewer's 280px sidebar).
   readonly property int sidePanelWidth: 280
+  // A side panel folded away: room just wide enough for the icon that opens
+  // it again, so the panel is one click from back without a menu.
+  readonly property int collapsedPanelWidth: space2xl + spaceSm
   readonly property int dotSize: 6
   readonly property int listRowHeight: 32
   readonly property int answerMinHeight: 120
@@ -251,7 +254,7 @@ QtObject {
   readonly property int heroSize: 44
   // The maturity bar: thin, its segments parted by a 2px gap so a small
   // share still reads as its own piece.
-  readonly property int segmentBarHeight: dotSize
+  readonly property int segmentBarHeight: spaceSm
   readonly property int segmentGap: spaceXxs
   // The one filled action of a screen and its square icon siblings, a step
   // taller than an ordinary control so the primary reads as the way forward
@@ -262,8 +265,6 @@ QtObject {
   // day letters (today is the last, accent bar).
   readonly property int glanceSparkHeight: 24
   readonly property int glanceSparkBarWidth: spaceSm
-  // How many pending reviews Home lists before "+ N more".
-  readonly property int nextUpRows: 4
 
   // The reading column: the viewer's max-w-3xl, in characters of the body
   // font so it follows the type size.

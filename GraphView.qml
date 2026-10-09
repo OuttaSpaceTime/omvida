@@ -31,6 +31,9 @@ Item {
 
   readonly property var graph: app && app.store.wikiIndex ? app.store.wikiIndex.graph : null
   readonly property var shown: graph ? (local ? Graph.localSubgraph(graph, focusPath, 2) : graph) : null
+  // The local view's tag-only pages (the dashed lines), worked out once per
+  // layout: paint runs every settling frame and hover asks on every move.
+  readonly property var tagKin: local && layout ? Graph.tagOnly(layout, focusPath) : ({})
 
   // A graph is laid out before it is seen: settled on screen, a new one grew
   // out of its starting circle while fit() rescaled it to its bounds every
@@ -80,10 +83,8 @@ Item {
   // tag lines too, from either end.
   function related(id) {
     var out = Graph.neighbours(layout, id)
-    if (!local || layout.index[focusPath] === undefined) return out
-    var kin = Graph.tagOnly(layout, focusPath)
-    if (id === focusPath) Object.keys(kin).forEach(function(k) { out[k] = true })
-    else if (kin[id]) out[focusPath] = true
+    if (id === focusPath) Object.keys(tagKin).forEach(function(k) { out[k] = true })
+    else if (tagKin[id]) out[focusPath] = true
     return out
   }
   function toLayout(x, y) { var f = fit(); return { x: (x - f.ox) / f.s, y: (y - f.oy) / f.s } }
@@ -117,29 +118,22 @@ Item {
       var nb = root.hoverNeighbours
       ctx.lineWidth = 1
       var litLink = Theme.accentColor, plainLink = Theme.alpha(Theme.ink, hv !== "" ? 0.06 : 0.14)
-      L.links.forEach(function(l) {
-        var a = L.nodes[l.s], b = L.nodes[l.t]
-        var lit = hv !== "" && (a.id === hv || b.id === hv)
-        ctx.strokeStyle = lit ? litLink : plainLink
+      // An edge, lit when the hovered node is either end.
+      function edge(a, b) {
+        ctx.strokeStyle = hv !== "" && (a.id === hv || b.id === hv) ? litLink : plainLink
         ctx.beginPath()
         ctx.moveTo(f.ox + a.x * f.s, f.oy + a.y * f.s)
         ctx.lineTo(f.ox + b.x * f.s, f.oy + b.y * f.s)
         ctx.stroke()
-      })
+      }
+      L.links.forEach(function(l) { edge(L.nodes[l.s], L.nodes[l.t]) })
       // Only the local view: across the whole wiki a line per shared tag is
       // a few hundred more, and the clustering already shows the topics.
       var centre = root.local ? L.nodes[L.index[root.focusPath]] : null
       if (centre) {
-        var kin = Graph.tagOnly(L, centre.id)
+        var kin = root.tagKin
         ctx.setLineDash([Theme.spaceXs, Theme.spaceXs])
-        L.nodes.forEach(function(n) {
-          if (!kin[n.id]) return
-          ctx.strokeStyle = hv !== "" && (n.id === hv || centre.id === hv) ? litLink : plainLink
-          ctx.beginPath()
-          ctx.moveTo(f.ox + centre.x * f.s, f.oy + centre.y * f.s)
-          ctx.lineTo(f.ox + n.x * f.s, f.oy + n.y * f.s)
-          ctx.stroke()
-        })
+        L.nodes.forEach(function(n) { if (kin[n.id]) edge(centre, n) })
         ctx.setLineDash([])
       }
       L.nodes.forEach(function(n) {

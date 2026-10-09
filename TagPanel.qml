@@ -16,14 +16,17 @@ import "Format.js" as Format
 // would leave nothing is never offered. Picks stay open for another; what is
 // picked sits on top, each with ✕ to drop it, as in the filter column.
 //
-// Keys, in the field (the status line names them while the panel is up):
-// ↑/↓ choose, Enter picks and clears the field for the next name, Backspace
-// in an empty field drops the last pick, Esc closes. A click on the scrim
-// closes too.
+// Keys, in the field: ↑/↓ choose, Enter picks and clears the field for the
+// next name, Backspace in an empty field drops the last pick, Esc closes. A
+// click beside the sheet closes too. `statusHints` names them, for the
+// screen's status line while the panel is up, and runs the same functions
+// the keys do, so a hint clicked and a key pressed cannot differ.
 //
 // A centred dialog (Modal.qml) was the obvious frame, and rejected: the user
 // asked for a sidebar, and a sheet on the right leaves the stage and the
-// grid in view beside it, so each pick shows its effect at once.
+// grid in view beside it, so each pick shows its effect at once. For the
+// same reason nothing dims them, as a modal's scrim would: the hairline on
+// the sheet's edge is frame enough.
 Item {
   id: root
   objectName: "tagPanel"
@@ -62,6 +65,11 @@ Item {
     if (!m) return
     root.picked(m.tag)
   }
+  function pickHighlighted() {
+    if (root.matches.length === 0) return
+    root.pick(root.highlight)
+    field.text = ""
+  }
   function move(d) {
     root.highlight = Math.max(0, Math.min(root.matches.length - 1, root.highlight + d))
     var row = rows.itemAt(root.highlight)
@@ -70,22 +78,26 @@ Item {
     else if (row.y + row.height > list.contentY + list.height) list.contentY = row.y + row.height - list.height
   }
 
+  readonly property var statusHints: [
+    { keys: "↑↓", label: "choose", run: function() { root.move(1) } },
+    { keys: "↵", label: "pick", run: function() { root.pickHighlighted() } },
+    { keys: "⌫", label: "drop last", run: function() { root.dropLast() } },
+    { keys: "esc", label: "close", run: function() { root.close() } }
+  ]
+
   // A new list (a pick, a letter typed) starts the choice at its top.
   onMatchesChanged: { root.highlight = 0; list.contentY = 0 }
 
-  // 0 shut, 1 open; the scrim and the sheet follow it, so closing slides out
-  // as opening slid in.
+  // 0 shut, 1 open; the sheet follows it, so closing slides out as opening
+  // slid in.
   property real shown: opened ? 1 : 0
   Behavior on shown { NumberAnimation { duration: Theme.sheetDuration; easing.type: Easing.OutCubic } }
   visible: shown > 0
   z: 30
 
-  Rectangle {
-    anchors.fill: parent
-    color: Theme.scrim
-    opacity: root.shown
-    MouseArea { anchors.fill: parent; onClicked: root.close() }
-  }
+  // Clear, not a scrim: a click beside the sheet closes it rather than
+  // reaching the grid under it, as Esc would.
+  MouseArea { anchors.fill: parent; onClicked: root.close() }
 
   Rectangle {
     id: sheet
@@ -165,11 +177,8 @@ Item {
           if (event.key === Qt.Key_Escape) root.close()
           else if (event.key === Qt.Key_Down) root.move(1)
           else if (event.key === Qt.Key_Up) root.move(-1)
-          else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-            if (root.matches.length === 0) return
-            root.pick(root.highlight)
-            field.text = ""
-          } else if (event.key === Qt.Key_Backspace && field.text === "" && root.selected.length > 0)
+          else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) root.pickHighlighted()
+          else if (event.key === Qt.Key_Backspace && field.text === "" && root.selected.length > 0)
             root.dropLast()
           else return
           event.accepted = true
@@ -194,7 +203,10 @@ Item {
         width: list.width
         Repeater {
           id: rows
-          model: root.matches
+          // Rows only while the sheet is on screen: shut, the panel stays
+          // loaded, and every filter change would rebuild a row per tag
+          // for a list nobody sees.
+          model: root.visible ? root.matches : []
           delegate: Rectangle {
             id: tagRow
             required property var modelData
