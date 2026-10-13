@@ -36,18 +36,7 @@ OmvidaTest {
   // Enter continues and Esc ends while a leech blocks (no answer box then:
   // the screen's key catcher has the keyboard).
   function test_b_enter_continues_and_esc_ends_a_blocked_session() {
-    sqlWrite("UPDATE Card SET lapses = 6, leechDeferredLapses = 0, due = '2020-01-01T00:00:00.000+00:00' WHERE id = 'fixturecard0003'")
-    sqlWrite("UPDATE Card SET due = '2099-01-01T00:00:00.000+00:00' WHERE id != 'fixturecard0003'")
-    // After the first test the server may block the card at once, before
-    // serving it; either way, one rating at most gets to the block.
-    app.setScreen("study")
-    study.start()
-    tryVerify(function() { return study.phase === "answering" || study.phase === "blocked" }, 15000)
-    if (study.phase === "answering") {
-      tryVerify(function() { return item("answerField").activeFocus }, 3000)
-      key(Qt.Key_NumberSign, Qt.ShiftModifier)
-    }
-    tryCompare(study, "phase", "blocked", 8000)
+    blockOnLeech("fixturecard0003")
     compare(item("statusMode").text, "LEECH")
     wait(100)
     // Enter asks the server again (loading), which blocks again.

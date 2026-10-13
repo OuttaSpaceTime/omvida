@@ -223,8 +223,7 @@ Column {
       UiText {
         width: parent.width - issueGlyph.implicitWidth - fixButton.width - Theme.spaceSm * 2
         wrapMode: Text.Wrap
-        text: root.session.suggestion && root.session.suggestion.quality
-          ? "card issue, " + root.session.suggestion.quality.issue.replace(/_/g, " ") + ": " + root.session.suggestion.quality.detail : ""
+        text: root.session.suggestion ? Format.cardIssue(root.session.suggestion.quality) : ""
         font.pixelSize: Theme.bodySmallSize
         color: Theme.orangeText
         anchors.verticalCenter: parent.verticalCenter

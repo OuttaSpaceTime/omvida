@@ -10,10 +10,11 @@ function pct(x) {
   return x === null || x === undefined || isNaN(x) ? "–" : Math.round(x * 100) + "%"
 }
 
+function pad(n) { return (n < 10 ? "0" : "") + n }
+
 // YYYY-MM-DD in local time.
 function dayKey(d) {
-  var m = d.getMonth() + 1, day = d.getDate()
-  return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (day < 10 ? "0" : "") + day
+  return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
 }
 
 var RATING_NAMES = ["", "Again", "Hard", "Good", "Easy"]
@@ -110,14 +111,37 @@ function calibrationLine(c) {
   return s
 }
 
+// Calendar days from the local day `day` (YYYY-MM-DD) to now's.
+function daysBefore(day, now) {
+  return Math.round((new Date(dayKey(now || new Date()) + "T00:00:00") - new Date(day + "T00:00:00")) / 86400000)
+}
+
 // How long ago an ISO day was, for list rows ("today", "3d ago", the date).
 function ago(day, now) {
   if (!day) return ""
-  var today = dayKey(now || new Date())
-  if (day === today) return "today"
-  var a = new Date(day + "T00:00:00"), b = new Date(today + "T00:00:00")
-  var d = Math.round((b - a) / 86400000)
+  var d = daysBefore(day, now)
+  if (d === 0) return "today"
   if (d === 1) return "yesterday"
   if (d > 1 && d < 14) return d + "d ago"
   return day
+}
+
+// When a session started, for Home's list: "today 14:05", "yesterday 09:12",
+// a weekday within the week ("Mon 18:40"), else the day ("2026-09-28").
+var WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+function sessionWhen(iso, now) {
+  if (!iso) return ""
+  var d = new Date(iso)
+  var time = pad(d.getHours()) + ":" + pad(d.getMinutes())
+  var day = dayKey(d), days = daysBefore(day, now)
+  if (days === 0) return "today " + time
+  if (days === 1) return "yesterday " + time
+  if (days > 1 && days < 7) return WEEKDAYS[d.getDay()] + " " + time
+  return day
+}
+
+// The grader's flag on a card (a suggestion's `quality`), as one line: the
+// study card's orange flag, and the start of a note on a flagged card.
+function cardIssue(q) {
+  return q ? "card issue, " + q.issue.replace(/_/g, " ") + ": " + (q.detail || "") : ""
 }

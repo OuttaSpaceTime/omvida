@@ -4,6 +4,7 @@ import QtQuick.Controls
 
 import "Cards.js" as Cards
 import "Format.js" as Format
+import "NoteEdit.js" as NoteEdit
 
 // The whole deck, the viewer's /flashcards, as one screen: a flip-through
 // stage at the top, retention over the last 30 days (flashcard-mcp's
@@ -36,17 +37,20 @@ Item {
   // any), and any number of tags, all of which a card must carry
   // (Cards.filterCards). Changed only through setFilter(), addTag() and
   // dropTag(), as a new object, so every binding on it updates.
-  property var filters: ({ query: "", state: "", deck: "", tags: [] })
+  // `noted` keeps only the cards with a note (Ctrl+N in Study), and then
+  // "fix it" hands those to Claude Code.
+  property var filters: ({ query: "", state: "", deck: "", tags: [], noted: false })
   readonly property var calibration: app && app.store.overview ? app.store.overview.calibration : null
 
   readonly property var all: app ? app.store.allCards : []
-  readonly property var filtered: Cards.filterCards(all, filters)
+  readonly property var notes: app ? app.store.notes : ({})
+  readonly property var filtered: Cards.filterCards(all, filters, notes)
   readonly property bool filtering: filters.query !== "" || selectedFilters.length > 0
   // The states, counted over what every filter but the state leaves, so
   // the bar shows how the picked tags' cards split, and switching from one
   // state to another stays one click (counting over `filtered` would leave
   // only the picked state).
-  readonly property var stateBase: filters.state === "" ? filtered : Cards.filterCards(all, Object.assign({}, filters, { state: "" }))
+  readonly property var stateBase: filters.state === "" ? filtered : Cards.filterCards(all, Object.assign({}, filters, { state: "" }), notes)
   readonly property var stateList: Cards.stateCounts(stateBase)
   readonly property int stateTotal: Math.max(1, stateBase.length)
   // The tags still worth picking: those of the cards the filters left, less
@@ -64,6 +68,10 @@ Item {
   // What narrows the grid, in the order the section lists it.
   readonly property var selectedFilters: Cards.selectedFilters(filters)
   readonly property var decks: Cards.deckNames(all)
+  // How many of the cards the filters leave have a note: the "noted" chip.
+  readonly property int notedHere: Cards.notedCount(filtered, notes)
+  // The stage's card's note, if it has one.
+  readonly property var stageNote: flip.card ? notes[flip.card.id] || null : null
 
   // Where the walk is: the stage's card is filtered[current], the grid
   // shows filtered[current + 1 ...].
@@ -86,6 +94,7 @@ Item {
     { keys: "space", label: "flip", run: function() { root.flipStage() } },
     { keys: "←", label: "back", run: function() { root.page(-1) } },
     { keys: "→", label: "next", run: function() { root.page(1) } },
+    { keys: "n", label: "note", run: function() { root.noteStage() } },
     { keys: "del", label: "delete", run: function() { root.askDelete() } }
   ]
   readonly property var statusAlerts: filtered.length === 0 && all.length > 0
@@ -93,6 +102,13 @@ Item {
     : []
 
   function flipStage() { flip.flipped = !flip.flipped }
+  // The stage's card's note, new or as it is (NoteDialog.qml).
+  function noteStage() { if (flip.card) app.openNote(flip.card, "") }
+  // The noted cards the filters leave, to Claude Code in one session. Its
+  // button shows only with the noted filter on, so `filtered` is all noted.
+  function fixNoted() {
+    app.fixNotes(filtered.map(function(c) { return c.id }))
+  }
   function page(d) { flip.move(d) }
 
   // ---- deleting the stage's card ----------------------------------------------
@@ -140,12 +156,13 @@ Item {
   // to "any".
   function dropFilter(kind, value) {
     if (kind === "tag") dropTag(value)
+    else if (kind === "noted") setFilter("noted", false)
     else setFilter(kind, "")
   }
 
   function clearFilters() {
     search.text = ""
-    filters = { query: "", state: "", deck: "", tags: [] }
+    filters = { query: "", state: "", deck: "", tags: [], noted: false }
   }
 
   function openTags() { tagPanel.open() }
@@ -167,6 +184,7 @@ Item {
     var tags = (card.tags || []).slice(0, 2).map(function(t) { return "#" + t }).join(" ")
     if (tags !== "") parts.push(tags)
     if (card.lapses > 0) parts.push(Format.plural(card.lapses, "lapse"))
+    if (notes[card.id]) parts.push("noted")
     return parts.join(" · ")
   }
 
@@ -193,15 +211,19 @@ Item {
   // return finds the stage, not a sheet left over from before.
   onVisibleChanged: {
     if (!visible) tagPanel.opened = false
-    else if (app) app.store.refreshDeck()
+    else if (app) app.store.checkDeck()
   }
   onFiltersChanged: flip.forget()
 
   // Del reaches here from the stage, which passes on the keys it doesn't
   // use; from the filter field it deletes text, as it should.
+  // N notes the stage's card, as Ctrl+N does a card in Study (here Ctrl+N
+  // stays the window's Add).
   Keys.onPressed: function(event) {
-    if (event.key !== Qt.Key_Delete || event.modifiers !== Qt.NoModifier || !flip.activeFocus) return
-    root.askDelete()
+    if (event.modifiers !== Qt.NoModifier || !flip.activeFocus) return
+    if (event.key === Qt.Key_Delete) root.askDelete()
+    else if (event.key === Qt.Key_N) root.noteStage()
+    else return
     event.accepted = true
   }
 
@@ -260,6 +282,17 @@ Item {
             stageHeight: top.sideBySide ? aside.implicitHeight : 0
           }
 
+          // The stage card's note, its first line; a click opens it.
+          MarkedRow {
+            objectName: "stageNote"
+            visible: root.stageNote !== null && root.filtered.length > 0
+            width: parent.width
+            icon: "pencil"
+            text: root.stageNote ? "note: " + NoteEdit.firstLine(root.stageNote.body) : ""
+            color: Theme.accentColor
+            onActivated: root.noteStage()
+          }
+
           // Clearing is the filter header's "clear" (and the status line's
           // alert), so this only says why the stage is empty.
           UiText {
@@ -293,9 +326,35 @@ Item {
             objectName: "retentionPanel"
             width: parent.width
             spacing: Theme.spaceSm
-            SectionLabel { text: "Retention · " + (root.calibration ? root.calibration.window_days : 30) + " days" }
-            Row {
-              spacing: Theme.spaceMd
+            // How many reviews the figure rests on sits at the header's right
+            // end, as the filter header carries its count, so the line below
+            // is only the figure and its verdict. It used to trail the
+            // verdict after a "·", which made that line run past the aside
+            // and read as one more clause of the verdict.
+            Item {
+              width: parent.width
+              height: retentionLabel.height
+              SectionLabel {
+                id: retentionLabel
+                text: "Retention · " + (root.calibration ? root.calibration.window_days : 30) + " days"
+              }
+              UiText {
+                objectName: "retentionReviews"
+                visible: root.calibration !== null
+                anchors.right: parent.right
+                anchors.baseline: retentionLabel.baseline
+                text: root.calibration ? Format.plural(root.calibration.reviews, "review") : ""
+                font.pixelSize: Theme.captionSize; color: Theme.dim
+              }
+            }
+            // The verdict takes what the figure leaves of the column and
+            // wraps, should a verdict ever be too long for it. An Item, not
+            // a Row: a Row never bounds its children, and is as tall as its
+            // tallest child without counting the verdict's baseline offset,
+            // so a wrapped verdict would run into the rating mix below.
+            Item {
+              width: parent.width
+              height: Math.max(retentionFigure.height, retentionVerdict.y + retentionVerdict.height)
               UiText {
                 id: retentionFigure
                 text: root.calibration && root.calibration.true_retention !== null ? Format.pct(root.calibration.true_retention) : "–"
@@ -304,13 +363,19 @@ Item {
                 color: root.calibration ? Theme.verdictColor(root.calibration.verdict) : Theme.faint
               }
               UiText {
+                id: retentionVerdict
+                objectName: "retentionVerdict"
+                x: retentionFigure.width + Theme.spaceMd
+                width: parent.width - x
+                wrapMode: Text.Wrap
                 anchors.baseline: retentionFigure.baseline
-                text: root.calibration ? root.calibration.verdict + (root.calibration.marginal ? " (marginal)" : "") + " · " + Format.plural(root.calibration.reviews, "review") : "loading…"
+                text: root.calibration ? root.calibration.verdict + (root.calibration.marginal ? " (marginal)" : "") : "loading…"
                 font.pixelSize: Theme.bodySmallSize
                 color: root.calibration ? Theme.verdictColor(root.calibration.verdict) : Theme.faint
               }
             }
             Flow {
+              objectName: "ratingMix"
               visible: root.calibration !== null
               width: parent.width
               spacing: Theme.spaceLg
@@ -351,7 +416,14 @@ Item {
               Row {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.spaceMd
+                spacing: Theme.spaceXl
+                PlainButton {
+                  objectName: "fixNoted"
+                  visible: root.filters.noted && root.notedHere > 0
+                  label: "fix it · " + root.notedHere
+                  tint: Theme.accentColor
+                  onActivated: root.fixNoted()
+                }
                 PlainButton { objectName: "clearFilters"; visible: root.filtering; label: "clear"; onActivated: root.clearFilters() }
                 UiText {
                   objectName: "filteredCount"
@@ -378,7 +450,8 @@ Item {
                   required property var modelData
                   objectName: "selected:" + picked.modelData.kind + ":" + picked.modelData.value
                   label: picked.modelData.label + " ✕"
-                  dot: picked.modelData.kind === "state" ? Theme.stateColor(picked.modelData.value) : "transparent"
+                  dot: picked.modelData.kind === "state" ? Theme.stateColor(picked.modelData.value)
+                     : picked.modelData.kind === "noted" ? Theme.accentColor : "transparent"
                   selected: true
                   onActivated: root.dropFilter(picked.modelData.kind, picked.modelData.value)
                 }
@@ -451,6 +524,17 @@ Item {
                     dot: Theme.stateColor(stateLink.modelData.state)
                     onActivated: root.setFilter("state", stateLink.modelData.state)
                   }
+                }
+              }
+              Flow {
+                width: parent.width
+                visible: !root.filters.noted && root.notedHere > 0
+                Chip {
+                  objectName: "notedChip"
+                  label: "noted"
+                  count: root.notedHere
+                  dot: Theme.accentColor
+                  onActivated: root.setFilter("noted", true)
                 }
               }
               Flow {

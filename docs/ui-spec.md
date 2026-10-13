@@ -31,7 +31,7 @@ backend failures, a quiet Add), the screen, and a 36px status line along the bot
 the rail. Content sits in a reading column of 82 body characters, centred.
 
 Keys everywhere: Ctrl+1–5 screens, Ctrl+K or `/` search (not on Study, where `/` is typed),
-Ctrl+N Add, Alt+←/→ history. Esc closes an overlay. The reading screens name ⌃K, ⌃N (once the
+Ctrl+N Add (on a study card, Ctrl+N notes the card instead), Alt+←/→ history. Esc closes an overlay. The reading screens name ⌃K, ⌃N (once the
 window offers `toggleAdd()`) and alt+← (when there is history) in the status line.
 
 ### The status line
@@ -66,7 +66,10 @@ small sparkline (Again in red, hidden when the week is empty) and the pressure v
 outlined chip on the right; a dim sentence (clearance, cards added today, today's reviews and
 streak, the new pool); maturity as a thin segmented bar and its legend; "Retention 75% over
 115 reviews, 30 days · <calibration verdict>". No list of the pending reviews. Then the footer:
-Study now, filled, with the deck and the wiki as square icons. Below, each under a hairline and a caption: last
+Study now, filled, with the deck and the wiki as square icons. Below, each under a hairline and a caption: past
+sessions (the last five that reviewed something: when, reviews, accuracy, then up to three cards
+it exposed, `lapsed` in red or `noted` in the accent with the note's first line, a noted one
+opening its note; `fix all · N notes` on the caption's right, in the accent), last
 studied pages (latest review first, then coverage), recently updated, topic tiles (equal
 height, a hairline in the topic's colour over the name and three pages). Status line: HOME,
 the wiki's counts, ⌃2 study, the shared hints, the pressure verdict while it is not ok.
@@ -91,9 +94,10 @@ while it fits.
   colour, SYNC, LEECH (orange), DONE, ERROR (red). Segments: the position from the server
   (`3/12`), the deck, `repeat`. One hint, `alt+? keys`: Alt+? (or a click) opens the key list
   (KeyHelp.qml), a modal of the keys that work now, each row clickable; Esc or Alt+? closes it.
-  Answering it lists `⇧↵ reveal`, `⌥↵ reveal+accept`, `⇧1-4 rate`, `⌃D discuss`, `⌃S skip`,
-  `esc end`, `del delete`; revealed `⌥↵ take <rating>` (or `⇧↵ good` with no suggestion),
-  `⇧1-4 rate` as a legend, discuss, skip, end, delete. Del asks in the
+  Answering it lists `⇧↵ reveal`, `⌥↵ reveal+accept`, `⇧1-4 rate`, `⌃D discuss`, `⌃N note`,
+  `⌃S skip`, `esc end`, `del delete`; revealed `⌥↵ take <rating>` (or `⇧↵ good` with no
+  suggestion), `⇧1-4 rate` as a legend, discuss, note, skip, end, delete. A noted card says
+  `noted` (accent) among the segments. Del asks in the
   confirm dialog, then deletes the card and the session goes on; with an answer typed and not
   yet revealed, Del edits the answer instead. Alerts: the pressure verdict when
   not ok (`● warn` in its colour), new cards held back, and the Anki sync (`sync ✕` in red on
@@ -103,13 +107,15 @@ States: syncing (skip the sync), starting, answering, grading, revealed, submitt
 (a leech: why, its card between hairlines, rewrite/split in claude, keep as is, delete with a
 confirm, `↵ continue`), done (the summary with an honest duration, accuracy, lapses, leeches;
 related pages; a walkthrough offer per lapse; `↵ start another session`, browse the wiki,
-home), error (`↵ try again`). The leech and the summary set their actions as plain words
+home; the cards noted, with "fix them in claude"), error (`↵ try again`). The leech and the summary set their actions as plain words
 (`PlainButton.qml`), never a row of boxes. Keys: README's table; Enter and Esc also work on a
 leech, Enter on the summary.
 
 ## Wiki
 
-Left (280px): Context (You are here, the folder's pages with the open page's sections under
+Left (280px, its right edge drags it from 200px up to where the page would drop below 85% of
+its measure): over either mode, while a session has left any, "From study" (its related pages,
+the open one marked, ✕ on hover, "clear all"); then Context (You are here, the folder's pages with the open page's sections under
 it, subfolders, Outgoing, Linked from, each section under a hairline) or Tree. Centre:
 breadcrumb, title, tags, updated and aliases (wrapped to the column), the cards button and
 Claude actions as quiet text buttons, the page's blocks (code on a fill with no border), then
@@ -129,8 +135,8 @@ grid. At the top, the stage: the current card at a fixed height (`Theme.cardStag
 its front set large (`Theme.cardStageFrontSize`) and centred, under a progress hairline; the
 position ("12/357") and the ←/→ keys are in the status line. Paging shows the next card front up. Beside it (above it when the stage would drop
 under 480px), a column that never scrolls; the stage takes its height, or its own least height
-when the column is shorter: retention (`Retention · 30 days`, the figure with verdict and review
-count, the rating mix), then the filters. The `▾ FILTER` header folds the section to what is
+when the column is shorter: retention (`Retention · 30 days` with the review count at its right
+end, as the filter header has its card count; the figure with its verdict; the rating mix), then the filters. The `▾ FILTER` header folds the section to what is
 selected; the selected filters always sit on top, each with ✕ to drop it; then the text field
 (kept when folded), the state bar and the remaining states, decks, and the six most common tags
 with `N more tags ›` for the rest. All text links, no boxes.
@@ -142,6 +148,9 @@ picks on top with ✕, a `find a tag` field (tags starting with the text first),
 still worth picking with its count. ↑/↓ choose, Enter picks and clears the field, Backspace in
 the empty field drops the last pick, Esc or a click beside the sheet closes; the status line names
 those keys while it is up.
+A `noted` chip (with its count, in the accent) keeps the cards with a note; picked, the header
+offers `fix it · N`, the noted cards left to Claude Code in one session. Under the stage, the
+card's note's first line (✎, accent) opens the note; N notes the stage's card. Tiles say `noted`.
 Below, `NEXT UP · n · m passed` and the grid: 2–5 tiles a row, each a hairline rule, the card's
 tags and lapses, its position, and five lines of its front as plain text, so every tile is the
 same height.
@@ -170,6 +179,9 @@ Search palette (as tall as its results; Keyword or Deep; Ask streams, then rende
 with Continue in Claude filled and Copy/Stop quiet; a foot line of clickable key hints: ↑↓
 choose, ↵ open, ⌃↵ ask Claude, esc close, and ⌫ back to search once an answer is in), Add menu,
 the topic dialog (the topic typed on a line; Open in Claude Code filled, Cancel quiet), the
+note dialog (the card's front dim, the markdown source on the code fill, its rendered preview
+under a PREVIEW caption, Save filled, Cancel and a red Delete note quiet, `markdown · ⌃↵ save ·
+esc cancel` faint on the right; Enter continues a list, ⌃B and ⌃I mark the selection), the
 confirm dialog (what goes quoted, what else goes in dim text, the action filled in red, Cancel
 quiet; ↵ or y takes it, esc, n or the scrim cancels), a
 page's cards (overview grid or flip-through), toasts. Dialogs and the palette have a 1px frame.

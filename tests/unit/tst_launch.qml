@@ -50,4 +50,13 @@ TestCase {
     compare(L.parseAskLine("not json"), {})
     compare(L.toolLabel("mcp__qmd__query"), "searching the wiki")
   }
+
+  // Fix noted cards: one session, through the study repo's skill, which
+  // reads the notes itself; the app names only the cards.
+  function test_fix_notes_hands_the_cards_to_the_skill() {
+    compare(L.fixNotesArgv("/s", ["c1", "c2"]), ["kitty", "--directory", "/s", "--title", "Omvida · Fix noted cards",
+                                                 "--class", "omvida-claude", "claude", "/study-fix-notes c1 c2"])
+    compare(L.fixNotesArgv("/s", null).slice(-1), ["/study-fix-notes"], "every open note")
+    compare(L.fixNotesArgv("/s", []).slice(-1), ["/study-fix-notes"])
+  }
 }

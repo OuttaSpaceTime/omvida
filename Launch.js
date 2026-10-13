@@ -9,6 +9,8 @@
 // flashcard MCP server and AGENTS.md live. The app never edits cards or pages
 // itself: the skills own those rules (content format, duplicate checks, the
 // wiki-write protocol), and a second implementation would drift.
+// The app sees what they saved by polling the deck (Store.checkDeck), and
+// a session catches up with the card it is showing (StudySession.catchUp).
 //
 // The question box is the one place Claude runs headless (askArgv): an
 // answer streams into the app, and "continue in Claude" resumes the same
@@ -78,6 +80,19 @@ function fixCardArgv(studyDir, card, quality) {
     + "\nPropose a fix (update_card to tighten it, or a split with inheritFrom), following /study-flashcard's format and size rules. Show me the draft before writing it.\n\n"
     + cardBlock(card)
   return kittyArgv(studyDir, "Omvida · Fix card", [p])
+}
+
+// Fix noted cards: one Claude Code session for them, through the study repo's
+// /study-fix-notes skill. A note is what the developer wrote about a card
+// mid-study (Ctrl+N, NoteDialog.qml) so the session could go on: an edit to
+// make, something to understand better, anything. The skill owns how each is
+// handled and resolves it (resolve_card_note) once done, which takes it off
+// the app's lists; it reads the notes itself (list_card_notes), so the app
+// passes only which cards, and a session started without the app runs the
+// same flow. One session, not one per card: the point of noting is to deal
+// with them together, later. `ids` null or empty is every open note.
+function fixNotesArgv(studyDir, ids) {
+  return kittyArgv(studyDir, "Omvida · Fix noted cards", ["/study-fix-notes" + (ids && ids.length ? " " + ids.join(" ") : "")])
 }
 
 // Resume an Ask session interactively.

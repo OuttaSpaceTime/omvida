@@ -2,6 +2,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
+import "Launch.js" as Launch
+import "Format.js" as Format
+
 
 // Omvida: the study wiki and its flashcards, as a Quickshell app beside
 // Omvision. Launched with bin/omvida (single instance; see there).
@@ -125,14 +128,44 @@ ShellRoot {
   }
   function openPageCards(title, cards) { pageCardsDialog.open(title, cards) }
   function openAdd(kind, topic, context) { topicDialog.open(kind, topic, context) }
+
+  // ---- card notes ---------------------------------------------------------------
+  // A card's note (NoteDialog.qml), new or as it is; `prefill` starts a new
+  // one. noteOpen for the tests.
+  readonly property bool noteOpen: noteDialog.opened
+  function openNote(card, prefill) { noteDialog.open(card, prefill) }
+  // Every noted card (or those of `ids`) to Claude Code in one session
+  // (Launch.fixNotesArgv), which resolves each note as it deals with it.
+  function fixNotes(ids) {
+    var noted = dataStore.notedIds(ids || null)
+    if (noted.length === 0) { toast("No noted cards to fix"); return }
+    launch(Launch.fixNotesArgv(Paths.studyDir, ids ? noted : null), "Opened Claude Code with " + Format.plural(noted.length, "noted card"))
+  }
+
+  // ---- pages from study ----------------------------------------------------------
+  // The wiki pages a finished session pointed to (its summary's related
+  // pages), kept in the wiki's side panel so they stay one click apart while
+  // you read them: the summary is gone once a page is open, and was the only
+  // place they were listed. Newest session's first, each page once, until
+  // cleared (one by one or all) or the app closes. [{ path, title, lapsed, via, cards }]
+  property var studyPages: []
+  function addStudyPages(pages) {
+    var paths = pages.map(function(p) { return p.path })
+    root.studyPages = pages.concat(root.studyPages.filter(function(p) { return paths.indexOf(p.path) === -1 }))
+  }
+  function dropStudyPage(path) { root.studyPages = root.studyPages.filter(function(p) { return p.path !== path }) }
+  function clearStudyPages() { root.studyPages = [] }
   // Ask before something that cannot be undone (ConfirmDialog.qml);
   // confirmOpen for the tests.
   readonly property bool confirmOpen: confirmDialog.opened
+  // The IPC handler, for the tests: they call it as `qs ipc` would.
+  readonly property alias ipc: ipc
   function confirm(title, quote, note, action, accept) { confirmDialog.open(title, quote, note, action, accept) }
 
   Store {
     id: dataStore
     active: contentRoot.windowActive
+    studying: study.phase !== "idle" && study.phase !== "done" && study.phase !== "error"
     onWikiFilesChanged: wikiScreen.reloadPage()
   }
 
@@ -147,6 +180,7 @@ ShellRoot {
 
   // ---- IPC: bin/omvida and the bar widget ----------------------------------------
   IpcHandler {
+    id: ipc
     target: "omvida"
     function show(): void { }
     function home(): void { root.setScreen("home") }
@@ -156,6 +190,9 @@ ShellRoot {
     function graph(): void { root.setScreen("graph") }
     function open(path: string): void { if (path !== "") root.openPage(path, "") }
     function search(text: string): void { root.openSearch(text) }
+    // A card was written elsewhere (bin/omvida-deck-changed, from the study
+    // repo's Claude Code hook): check the deck now rather than at the next poll.
+    function deckChanged(): void { dataStore.deckPushed() }
   }
 
   function applyStart() {
@@ -197,15 +234,11 @@ ShellRoot {
       focus: true
       Component.onCompleted: { forceActiveFocus(); root.applyStart() }
 
-      // The deck changes behind the app's back too (a skill in kitty, the
-      // phone through anki-sync): refresh what is shown whenever the window
-      // comes back to the front.
       readonly property bool windowActive: Window.active
-      onWindowActiveChanged: if (windowActive && dataStore.deck.ready && Date.now() - dataStore.refreshedAt > 15000) dataStore.refreshDeck()
 
       // App-wide keys. A focused field gets them first and passes on what it
       // doesn't use: the study answer box handles its own Shift/Alt+Enter and
-      // lets these through.
+      // lets these through. A dialog keeps its keys (Modal.qml).
       readonly property var screenKeys: ({
         [Qt.Key_1]: "home", [Qt.Key_2]: "study", [Qt.Key_3]: "wiki", [Qt.Key_4]: "cards", [Qt.Key_5]: "graph"
       })
@@ -374,6 +407,12 @@ ShellRoot {
 
       TopicDialog {
         id: topicDialog
+        anchors.fill: parent
+        app: root
+      }
+
+      NoteDialog {
+        id: noteDialog
         anchors.fill: parent
         app: root
       }

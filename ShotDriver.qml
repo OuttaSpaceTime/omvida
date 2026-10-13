@@ -86,6 +86,36 @@ Rectangle {
     }
     else if (a === "syncfail") { study.start(); whenCardUp.run(function() { driver.study.syncNote = "Anki sync failed: offline (fixture)" }) }
     else if (a === "leech") leechDeck.running = (Quickshell.env("OMVIDA_SANDBOX") || "") !== ""
+    // The note dialog over a study card, with `arg` (or a sample) typed in;
+    // the shot never saves it.
+    else if (a === "note") {
+      study.start()
+      whenCardUp.run(function() {
+        driver.studyView.answerField.text = "half an answer"
+        driver.app.openNote(driver.study.card, arg || "Split it:\n- what **max-age** counts from\n- what happens after\n\nAnd why not `Expires`?")
+      })
+    }
+    // Notes and a past session in the sandbox deck, as Study and Claude Code
+    // would leave them: Home's past sessions, and on Cards (notes:cards) the
+    // "noted" filter picked. Refused under -R.
+    else if (a === "notes") notesDeck.running = (Quickshell.env("OMVIDA_SANDBOX") || "") !== ""
+    // The wiki panel's "From study" list: the first three pages, as a
+    // finished session would leave them, and the first one open. Memory only.
+    else if (a === "studypages") {
+      var pages = driver.app.store.wikiIndex.pages.slice(0, 3).map(function(p) { return { path: p.path, title: p.title, lapsed: 0 } })
+      pages[1].lapsed = 1
+      driver.app.addStudyPages(pages)
+      driver.app.openPage(pages[0].path, "")
+    }
+  }
+
+  Process {
+    id: notesDeck
+    command: ["python3", Paths.root + "/tests/fixtures/seed_deck.py", Quickshell.env("FLASHCARD_DB") || "", "--notes"]
+    onRunningChanged: if (!running) {
+      driver.app.store.refreshDeck()
+      if (driver.action === "notes:cards") driver.cardsScreen.setFilter("noted", true)
+    }
   }
 
   // Rating every card Good until the queue is empty: the summary.

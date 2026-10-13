@@ -31,7 +31,7 @@ Column {
 
   // The decisions, as plain words.
   Row {
-    spacing: Theme.spaceSm
+    spacing: Theme.spaceXl
     PlainButton { objectName: "leechRewrite"; label: "rewrite in claude"; tint: Theme.accentColor; onActivated: root.session.leechFix("rewrite") }
     PlainButton { objectName: "leechSplit"; label: "split in claude"; onActivated: root.session.leechFix("split") }
     PlainButton { objectName: "leechKeep"; label: "keep as is"; onActivated: root.session.leechResolve("resolveLeech", "kept as is") }
@@ -40,13 +40,13 @@ Column {
   Row {
     id: dropConfirm
     visible: false
-    spacing: Theme.spaceSm
+    spacing: Theme.spaceXl
     UiText { text: "Delete this card and its history?"; font.pixelSize: Theme.bodySmallSize; color: Theme.redText; anchors.verticalCenter: parent.verticalCenter }
     PlainButton { objectName: "leechDropConfirm"; label: "delete"; tint: Theme.redText; onActivated: { dropConfirm.visible = false; root.session.leechResolve("deleteCard", "deleted") } }
     PlainButton { label: "cancel"; onActivated: dropConfirm.visible = false }
   }
   Row {
-    spacing: Theme.spaceXs
+    spacing: Theme.spaceLg
     PlainButton { objectName: "leechContinue"; keys: "↵"; label: "continue"; anchors.verticalCenter: parent.verticalCenter; onActivated: root.session.loadNext() }
     UiText {
       text: "after fixing it in Claude Code"

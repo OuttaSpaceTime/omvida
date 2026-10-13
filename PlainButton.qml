@@ -6,11 +6,13 @@ import QtQuick.Controls
 // first in bold ("⇧↵ reveal"), so a status-line hint and the click target it
 // stands for read alike. Bordered and filled buttons are ActionButton's.
 //
-// The words start at the button's own left edge, so a quiet button lines up
-// with the text around it (layout rule 2) wherever it is placed; the hover
-// fill reaches `inset` past the words on both sides, the left beyond the
-// button's bounds. The button's width keeps that much after the words too,
-// which is the gap to the next button in a row, so rows need no spacing.
+// The button is as wide as its words, so a quiet button lines up with the
+// text around it (layout rule 2) wherever it is placed, at a left edge or,
+// anchored right, at a right one; the hover fill reaches `inset` past the
+// words on both sides, beyond the button's bounds. A row of them sets its own
+// spacing, at least Theme.spaceLg so two fills do not overlap. The width
+// once kept an inset after the words as that gap, and every button anchored
+// right needed a flag to drop it.
 Item {
   id: root
 
@@ -33,13 +35,13 @@ Item {
   readonly property bool hovered: area.containsMouse
 
   implicitHeight: large ? Theme.controlHeight : Theme.smallControlHeight
-  implicitWidth: row.implicitWidth + root.inset * 2
+  implicitWidth: row.implicitWidth
   opacity: enabled ? 1 : 0.45
 
   Rectangle {
     id: fill
     x: -root.inset
-    width: root.implicitWidth
+    width: row.implicitWidth + root.inset * 2
     height: parent.height
     color: root.hovered && root.enabled && root.interactive ? Theme.hoverFill : "transparent"
   }

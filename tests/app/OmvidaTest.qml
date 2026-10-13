@@ -18,8 +18,10 @@ import Quickshell.Io
 //   readFile(path), sandbox       files in the sandbox
 //   sql(query)                    rows from the fixture deck, as arrays
 //   kittyCalls(), claudeCalls()   what the fake kitty and claude were run with
+//   barOverviews()                what was handed to the bar (fake omarchy-shell)
 //   waitReady()                   both backends up and the data loaded
 //   startSession()                Study, a session started, a card up
+//   blockOnLeech(cardId)          Study, a session blocked on that card as a leech
 // plus everything TestCase has.
 //
 // Results go to stdout one line per test (PASS / FAIL / XFAIL / SKIP), then
@@ -44,6 +46,8 @@ TestCase {
   readonly property string outDir: Quickshell.env("OMVIDA_TEST_OUT") || ""
   readonly property string studyDir: Quickshell.env("OMVIDA_STUDY_DIR") || ""
   readonly property string deckDb: Quickshell.env("FLASHCARD_DB") || ""
+  // This checkout, for its fixtures' scripts (tests/fixtures/seed_deck.py).
+  readonly property string repo: String(Qt.resolvedUrl("../..")).replace(/^file:\/\//, "").replace(/\/$/, "")
   readonly property string only: Quickshell.env("OMVIDA_TEST_ONLY") || ""
   readonly property string fileName: String(base.name || "test")
 
@@ -217,6 +221,12 @@ TestCase {
     return t.split("\n").filter(function(l) { return l !== "" }).map(function(l) { return JSON.parse(l) })
   }
   function kittyCalls() { return jsonLines(base.outDir + "/kitty-calls.jsonl") }
+  // The overviews handed to the bar through the fake omarchy-shell, oldest first.
+  function barOverviews() {
+    return jsonLines(base.outDir + "/omarchy-shell-calls.jsonl")
+      .filter(function(a) { return a[2] === "setOverview" })
+      .map(function(a) { return JSON.parse(a[3]) })
+  }
   function claudeCalls() { return jsonLines(base.outDir + "/claude-calls.jsonl") }
   function gradeCalls() { return claudeCalls().filter(function(a) { return a.indexOf("--json-schema") !== -1 }) }
 
@@ -235,6 +245,22 @@ TestCase {
     // went to the screen, and the test lost its first letter.
     var field = item("answerField")
     tryVerify(function() { return field.activeFocus }, base.timeout, "the answer box has the keyboard")
+  }
+
+  // A session blocked on a leech: `cardId` at six lapses and the only card
+  // due. The server may block at once (a card it flagged before) or serve the
+  // card first; either way one Again gets to the block.
+  function blockOnLeech(cardId) {
+    sqlWrite("UPDATE Card SET lapses = 6, leechDeferredLapses = NULL, due = '2020-01-01T00:00:00.000+00:00' WHERE id = '" + cardId + "'")
+    sqlWrite("UPDATE Card SET due = '2099-01-01T00:00:00.000+00:00' WHERE id != '" + cardId + "'")
+    base.app.setScreen("study")
+    base.study.start()
+    tryVerify(function() { return base.study.phase === "answering" || base.study.phase === "blocked" }, 15000)
+    if (base.study.phase === "answering") {
+      tryVerify(function() { return item("answerField").activeFocus }, 3000)
+      key(Qt.Key_NumberSign, Qt.ShiftModifier)
+    }
+    tryCompare(base.study, "phase", "blocked", 8000)
   }
 
   // ---- finding and clicking -----------------------------------------------------------------

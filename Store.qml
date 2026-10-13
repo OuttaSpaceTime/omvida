@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 
 // The app's data, apart from the window that shows it: the two backends
 // (flashcard-mcp's app server for the deck, backend/omvida_backend for the
@@ -10,7 +11,7 @@ Item {
 
   readonly property alias deck: deckClient
   readonly property alias wiki: wikiClient
-  // Whether the window is in front: the wiki poll runs only then.
+  // Whether the window is in front: the wiki and deck polls run only then.
   property bool active: true
 
   property var wikiIndex: null          // {pages, tree, graph, stamp}
@@ -21,6 +22,33 @@ Item {
   property var recentPages: []
   property string status: ""            // a one-line note for the top bar
   property double refreshedAt: 0
+  // The deck server's stamp, in three parts: the cards' content (count and
+  // newest edit; a review does not move it), the reviews, and the notes, so
+  // each reloads only what it changed.
+  property string deckStamp: ""
+  property string reviewsStamp: ""
+  property string notesStamp: ""
+  // A study session is open (omvida.qml binds it). Its ratings then reload
+  // only the overview, for the due count and the bar; the cards' scheduling
+  // waits for the session's end (scheduleStale), as nothing on screen shows
+  // it, where a reload per rating cost a whole-deck read each time.
+  property bool studying: false
+  property bool scheduleStale: false
+  // Every card by id, for the lists that name a card by its id (notes,
+  // Home's past sessions), as pagesByPath does for pages.
+  readonly property var cardsById: {
+    var m = {}
+    allCards.forEach(function(c) { m[c.id] = c })
+    return m
+  }
+  // Card notes (flashcard-mcp's CardNote), card id -> { cardId, body,
+  // createdAt }, oldest first as the server sends them; written mid-study,
+  // handled in a fix session.
+  property var notes: ({})
+  readonly property int noteCount: Object.keys(notes).length
+  // Recent study sessions with the cards each lapsed and noted (the deck
+  // server's `sessions`), newest first, for Home.
+  property var sessions: []
 
   // A wiki page changed on disk (a Claude session wrote one).
   signal wikiFilesChanged()
@@ -36,22 +64,64 @@ Item {
     })
   }
 
+  // Sets `prop` to a freshly loaded `value` only if it differs: an unchanged
+  // reload keeps the same object, so nothing bound to it re-runs. A new cards
+  // array rebuilds every tile of the Cards grid, a new overview goes to the
+  // bar, and reloads come with every poll that sees the stamp move.
+  function put(prop, value) {
+    if (JSON.stringify(value) !== JSON.stringify(root[prop])) root[prop] = value
+  }
+
   function loadOverview() {
+    root.refreshedAt = Date.now()
     deckClient.call("overview", { pendingLimit: 0 }, function(err, o) {
       if (err) { root.status = "deck: " + err; return }
-      root.overview = o
+      root.put("overview", o)
     })
   }
+
+  // The bar shows this same overview; hand it each new one (its setOverview,
+  // docs/architecture.md). Best effort: -q is quiet with no shell or plugin.
+  onOverviewChanged: Quickshell.execDetached(["omarchy-shell", "-q", "omvida.bar", "setOverview", JSON.stringify(overview)])
 
   function loadCards() {
     deckClient.call("cards", {}, function(err, cards) {
       if (err) { root.status = "deck: " + err; return }
-      // A refresh that changed nothing keeps the same array: a new one
-      // rebuilds every tile of the Cards grid, and refreshes come on every
-      // visit to Cards and every return to the window.
-      if (JSON.stringify(cards) !== JSON.stringify(root.allCards)) root.allCards = cards
+      root.put("allCards", cards)
       root.cardsLoaded = true
     })
+  }
+
+  function loadNotes() {
+    deckClient.call("notes", {}, function(err, list) {
+      if (err) { root.status = "deck: " + err; return }
+      var m = {}
+      list.forEach(function(n) { m[n.cardId] = n })
+      root.put("notes", m)
+    })
+  }
+
+  function loadSessions() {
+    deckClient.call("sessions", { limit: Theme.homeSessions }, function(err, list) {
+      if (!err) root.put("sessions", list)
+    })
+  }
+
+  // Writes a card's note (an empty body deletes it), then reloads the notes
+  // whatever their stamp says, as refreshDeck does the cards. `done(err)`
+  // runs once the deck has it.
+  function saveNote(cardId, body, done) {
+    deckClient.call("setNote", { cardId: cardId, body: body }, function(err) {
+      if (!err) { root.notesStamp = ""; root.checkDeck() }
+      if (done) done(err)
+    })
+  }
+
+  // The cards with an open note, oldest note first (the order `notes`
+  // keeps): what a fix session gets (Launch.fixNotesArgv). `ids` narrows it
+  // to those cards (a summary's, the Cards filter's); null takes every note.
+  function notedIds(ids) {
+    return Object.keys(root.notes).filter(function(id) { return root.cardsById[id] && (!ids || ids.indexOf(id) !== -1) })
   }
 
   function loadRecentPages() {
@@ -63,20 +133,53 @@ Item {
     })
   }
 
-  // After anything that changes the deck: a session, a leech decision, a
-  // return from Claude Code.
-  function refreshDeck() {
-    root.refreshedAt = Date.now()
-    loadOverview()
-    loadCards()
-    loadRecentPages()
+  // A moved stamp (a card written by anyone: Claude Code, the CLI, this
+  // app) reloads the deck; the first check is the initial load. Pushed by the
+  // deckChanged IPC and polled while in front: docs/architecture.md has why.
+  // Reviews (this app's, a /study chat's) reload the deck too, except during
+  // a session (`studying`); the notes have their own part, which reloads only
+  // them. Past sessions follow the deck and the notes. `overviewToo` re-reads
+  // the overview even if nothing moved: its due counts move with the clock.
+  function checkDeck(overviewToo) {
+    if (!deckClient.ready) return
+    deckClient.call("stamp", {}, function(err, s) {
+      if (err) return
+      var cards = s.stamp !== root.deckStamp
+      var reviews = s.reviews !== root.reviewsStamp
+      var notes = s.notes !== root.notesStamp
+      root.deckStamp = s.stamp
+      root.reviewsStamp = s.reviews
+      root.notesStamp = s.notes
+      var deck = cards || ((reviews || root.scheduleStale) && !root.studying)
+      if (reviews && !deck) root.scheduleStale = true
+      if (deck || reviews || overviewToo) root.loadOverview()
+      if (deck) {
+        root.scheduleStale = false
+        root.loadCards()
+        root.loadRecentPages()
+      }
+      if (notes) root.loadNotes()
+      if (deck || notes) root.loadSessions()
+    })
   }
+
+  // After the app's own writes (a session, a leech decision, a delete): a
+  // reload whatever the stamp says, which it then holds, so the poll does not
+  // reload the same writes again.
+  function refreshDeck() {
+    root.deckStamp = ""
+    root.checkDeck()
+  }
+
+  // Coming back to the front checks the deck at once, and re-reads the
+  // overview if it is a while old: its due counts move with no write at all.
+  onActiveChanged: if (active) checkDeck(Date.now() - refreshedAt > 15000)
 
   JsonLineClient {
     id: deckClient
     name: "deck"
     command: [Paths.deckBin]
-    onReadyChanged: if (ready) { root.loadOverview(); root.loadCards() }
+    onReadyChanged: if (ready) root.checkDeck()
   }
 
   JsonLineClient {
@@ -101,4 +204,23 @@ Item {
       }
     })
   }
+
+  // Three aggregate queries, so it runs more often than the wiki's stamp.
+  // Not triggered on start: the client's start and coming back to the front
+  // check the deck already (onReadyChanged, onActiveChanged).
+  Timer {
+    interval: Theme.deckPollInterval
+    running: deckClient.ready && root.active
+    repeat: true
+    onTriggered: root.checkDeck()
+  }
+
+  // The IPC comes once per card Claude writes: a batch of new cards is one
+  // reload, not one each.
+  Timer {
+    id: pushed
+    interval: Theme.deckPushDebounce
+    onTriggered: root.checkDeck()
+  }
+  function deckPushed() { pushed.restart() }
 }

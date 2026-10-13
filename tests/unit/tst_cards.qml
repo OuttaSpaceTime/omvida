@@ -62,4 +62,14 @@ TestCase {
     compare(C.selectedFilters({ query: "x", state: "new", tags: ["web"], deck: "" }),
             [{ kind: "state", value: "new", label: "new" }, { kind: "tag", value: "web", label: "#web" }])
   }
+
+  function test_the_noted_filter() {
+    var notes = {}
+    notes["a"] = { body: "x" }
+    compare(C.filterCards(deck, { query: "", state: "", deck: "", tags: [], noted: true }, notes).map(function(c) { return c.id }), ["a"])
+    compare(C.filterCards(deck, { query: "", state: "", deck: "", tags: [], noted: false }, notes).length, deck.length)
+    compare(C.filterCards(deck, { query: "", state: "", deck: "", tags: [], noted: true }, null).length, 0)
+    compare(C.notedCount(deck, notes), 1)
+    compare(C.selectedFilters({ state: "new", deck: "", tags: [], noted: true }).map(function(f) { return f.kind }), ["noted", "state"])
+  }
 }

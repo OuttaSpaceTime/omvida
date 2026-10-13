@@ -11,6 +11,10 @@ import "Launch.js" as Launch
 // it, and the local graph on the right when the window is wide enough. With
 // no page open it shows a folder (the viewer's FolderView).
 //
+// The left panel's right edge drags it wider, as the graph rail's left edge
+// does; over either of its modes it lists the pages a finished session
+// pointed to (WikiSidePanel, app.studyPages).
+//
 // Either panel folds to a strip at its edge, `[` and `]` or the chevron in
 // its corner, and stays as left while the app runs. The graph starts folded:
 // it is for finding your way, not for reading, and a page read beside it got
@@ -41,13 +45,24 @@ Item {
   readonly property real graphRailMax: Math.max(Theme.sidePanelWidth, width - leftWidth - Theme.pageMeasure * 0.85)
   readonly property bool showGraph: width >= Theme.sidePanelWidth * 2 + Theme.pageMeasure * 0.85
 
+  // The left panel's width: dragged by its right edge, as the graph rail is
+  // by its left, kept while the app runs, never so wide that the page loses
+  // its reading column: the page keeps 85% of its measure, as the graph rail
+  // leaves it (60%, where the panel drops out, read as a column squeezed).
+  property real sidePanelWidth: Theme.sidePanelWidth
+  // The graph's own wish (graphRailWidth), not the width it gets: that one
+  // depends on this panel's, and the two would bind in a loop.
+  readonly property real sidePanelMax: Math.max(Theme.sidePanelWidth, width - Theme.pageMeasure * 0.85
+                                                - (!graphFits ? 0 : (graphOpen ? graphRailWidth : Theme.collapsedPanelWidth)))
+  readonly property real sideWidth: Math.min(sidePanelWidth, sidePanelMax)
+
   property bool sideOpen: true
   property bool graphOpen: false
   readonly property bool sideFits: width >= Theme.sidePanelWidth + Theme.pageMeasure * 0.6
   readonly property bool graphFits: showGraph && path !== ""
   // What each edge takes from the page: the panel, its folded strip, or
   // nothing when the window has no room for it.
-  readonly property real leftWidth: !sideFits ? 0 : (sideOpen ? Theme.sidePanelWidth : Theme.collapsedPanelWidth)
+  readonly property real leftWidth: !sideFits ? 0 : (sideOpen ? sideWidth : Theme.collapsedPanelWidth)
   readonly property real rightWidth: !graphFits ? 0 : (graphOpen ? graphRail.width : Theme.collapsedPanelWidth)
 
   // ---- the window's status line ---------------------------------------------
@@ -99,11 +114,28 @@ Item {
     PlainButton {
       id: expand
       anchors.horizontalCenter: parent.horizontalCenter
-      anchors.horizontalCenterOffset: expand.inset
       y: Theme.spaceSm
       tint: expand.hovered ? Theme.ink : Theme.faint
       onActivated: strip.activated()
     }
+  }
+
+  // A panel's drag edge, on its inner side: `direction` 1 for the left
+  // panel's right edge (dragging right widens it), -1 for the graph rail's
+  // left. It reports the width the drag asks for; the panel clamps it.
+  // Positions are taken in the scene (mapToItem(null)): only their change
+  // counts, and an inline component cannot name this file's root.
+  component DragEdge: MouseArea {
+    id: edge
+    property int direction: 1
+    property real startX: 0
+    property real startWidth: 0
+    signal resized(real width)
+    width: Theme.spaceSm
+    height: parent.height
+    cursorShape: Qt.SplitHCursor
+    onPressed: function(m) { startX = mapToItem(null, m.x, 0).x; startWidth = parent.width }
+    onPositionChanged: function(m) { edge.resized(startWidth + edge.direction * (mapToItem(null, m.x, 0).x - startX)) }
   }
 
   function openPageCards() { if (root.meta && root.pageCards.length) root.app.openPageCards(root.meta.title, root.pageCards) }
@@ -150,10 +182,20 @@ Item {
     anchors.left: parent.left
     anchors.top: parent.top
     anchors.bottom: parent.bottom
-    width: Theme.sidePanelWidth
+    width: root.sideWidth
+    // Over the page, so the half of its drag edge that lies past it can be grabbed.
+    z: 1
     visible: root.sideFits && root.sideOpen
     onSectionPicked: function(anchor) { root.scrollTo(anchor) }
     onCollapseRequested: root.sideOpen = false
+
+    // The right edge drags the panel wider or narrower.
+    DragEdge {
+      objectName: "sidePanelHandle"
+      x: parent.width - width / 2
+      direction: 1
+      onResized: function(w) { root.sidePanelWidth = Math.max(Theme.sidePanelMinWidth, Math.min(root.sidePanelMax, w)) }
+    }
   }
 
   FoldStrip {
@@ -249,7 +291,7 @@ Item {
           // over the first paragraph read as a toolbar, louder than the page.
           Flow {
             width: parent.width
-            spacing: Theme.spaceXs
+            spacing: Theme.spaceLg
             topPadding: Theme.spaceXs
             PlainButton {
               objectName: "pageCardsButton"
@@ -342,8 +384,9 @@ Item {
     // The whole graph screen, around this page; then folding the rail.
     Row {
       anchors.right: parent.right
-      anchors.rightMargin: Theme.spaceSm
+      anchors.rightMargin: Theme.spaceLg
       y: Theme.spaceSm
+      spacing: Theme.spaceLg
       PlainButton {
         objectName: "graphFullScreen"
         icon: "fullscreen"
@@ -366,19 +409,11 @@ Item {
       compact: true
     }
     // The left edge drags the rail wider or narrower.
-    MouseArea {
+    DragEdge {
       objectName: "graphRailHandle"
       x: -width / 2
-      width: Theme.spaceSm
-      height: parent.height
-      cursorShape: Qt.SplitHCursor
-      property real startX: 0
-      property real startWidth: 0
-      onPressed: function(m) { startX = mapToItem(root, m.x, 0).x; startWidth = graphRail.width }
-      onPositionChanged: function(m) {
-        var w = startWidth - (mapToItem(root, m.x, 0).x - startX)
-        root.graphRailWidth = Math.max(Theme.sidePanelWidth * 0.75, Math.min(root.graphRailMax, w))
-      }
+      direction: -1
+      onResized: function(w) { root.graphRailWidth = Math.max(Theme.sidePanelMinWidth, Math.min(root.graphRailMax, w)) }
     }
   }
 

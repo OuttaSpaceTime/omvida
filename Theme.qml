@@ -217,6 +217,9 @@ QtObject {
   // A side panel folded away: room just wide enough for the icon that opens
   // it again, so the panel is one click from back without a menu.
   readonly property int collapsedPanelWidth: space2xl + spaceSm
+  // How narrow either wiki panel may be dragged: below this the left one's
+  // tree rows and section names elide to a word.
+  readonly property int sidePanelMinWidth: 200
   readonly property int dotSize: 6
   readonly property int listRowHeight: 32
   readonly property int answerMinHeight: 120
@@ -317,6 +320,18 @@ QtObject {
   // The tag panel, a sheet from the window's right edge: wide enough for a
   // long tag name ("#Software::Design") and its count on one row.
   readonly property int sheetWidth: 360
+  // The card note dialog (NoteDialog.qml): wider than a dialog, since a
+  // note is written there, and its source box this many lines tall before
+  // it scrolls.
+  readonly property int noteDialogWidth: 720
+  readonly property int noteEditorLines: 8
+  // Home's past sessions: the newest few, and per session this many of the
+  // cards it lapsed or noted before "N more".
+  readonly property int homeSessions: 5
+  readonly property int sessionFlawsShown: 3
+  // The "lapsed" / "noted" column before each card there, so the fronts
+  // start on one edge.
+  readonly property int sessionFlawKindWidth: 64
 
   // ---- motion ----------------------------------------------------------------------
   // A card turning over, or turning in as you page: slow enough to read as
@@ -334,6 +349,8 @@ QtObject {
   // Over a typing gap, so a word is one search, not one per letter.
   readonly property int searchDebounce: 250
   readonly property int wikiPollInterval: 3000
+  readonly property int deckPollInterval: 2000
+  readonly property int deckPushDebounce: 300
 
   // ---- loading the theme ------------------------------------------------------------
   function parseToml(text) {

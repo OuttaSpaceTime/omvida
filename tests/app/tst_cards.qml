@@ -175,6 +175,24 @@ OmvidaTest {
     item("retentionPanel")
   }
 
+  // The verdict line is the figure and the verdict alone, inside the
+  // column beside the stage; the review count sits at the header's right
+  // end, and the rating mix below.
+  function test_retention_verdict_stays_in_the_aside() {
+    tryVerify(function() { return cardsScreen.calibration !== null }, 5000)
+    var was = app.store.overview
+    app.store.overview = Object.assign({}, was, { calibration: Object.assign({}, was.calibration,
+      { verdict: "over-difficult", marginal: true, reviews: 139 }) })
+    var verdict = item("retentionVerdict"), mix = item("ratingMix")
+    compare(verdict.text, "over-difficult (marginal)")
+    compare(item("retentionReviews").text, "139 reviews")
+    var asideRight = item("cardsAside").mapToItem(null, item("cardsAside").width, 0).x
+    var verdictRight = verdict.mapToItem(null, verdict.contentWidth, 0).x
+    verify(verdictRight <= asideRight + 1, "the verdict ends inside the aside: " + verdictRight + " vs " + asideRight)
+    tryVerify(function() { return mix.mapToItem(null, 0, 0).y >= verdict.mapToItem(null, 0, verdict.height).y }, timeout, "the rating mix sits below")
+    app.store.overview = was
+  }
+
   // One screen: no List / Flip through switch, the stage and the grid both up.
   function test_one_screen_no_mode_switch() {
     verify(findNamed(target, "cardsFlipMode") === null, "no mode switch")

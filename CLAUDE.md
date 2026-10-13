@@ -10,8 +10,8 @@ and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
 
 - **Never open the app on the user's desktop to test a change**, and never point a test at
   real data. Everything runs offscreen in a sandbox (`bin/sandbox`): a fixture study repo, a
-  fixture deck built from flashcard-mcp's own schema, and fake `claude`, `kitty` and `qmd`
-  first on PATH.
+  fixture deck built from flashcard-mcp's own schema, and fake `claude`, `kitty`, `qmd` and
+  `omarchy-shell` first on PATH.
 - `bin/check` runs everything a change should pass: lint (against `.qmllint-baseline`), the
   no-pixel-numbers rule, an offscreen load, `omarchy plugin validate` on `bar/`, and `bin/test`.
   Run it before you stop.
@@ -34,8 +34,11 @@ and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
   (`backend/omvida_backend/wiki.py` says which rules). Show verdicts verbatim; never recompute.
 - The app never edits cards or wiki pages. Those go through Claude Code skills in kitty
   (`Launch.js`), which own the content rules. The only writes the app makes are reviews,
-  leech decisions (keep, delete) and deleting a card (Del on Cards or in Study) through the deck
-  server, and the study log entry through the wiki service.
+  leech decisions (keep, delete), deleting a card (Del on Cards or in Study) and card notes
+  (Ctrl+N in Study, N on Cards: what to fix later, never the card itself) through the deck
+  server, and the study log entry through the wiki service. Fixing a noted card is a skill's
+  job too: "fix all" hands the noted cards to one Claude Code session, the study repo's
+  `/study-fix-notes` (`Launch.fixNotesArgv`).
 - Don't name a QML file after a QtQuick.Controls type (`Button`, `Dialog`...): in a file that
   imports Controls, the Controls type wins. That is why ours are `ActionButton` and `Modal`.
 - Don't import a JS module as `Keys` (or any attached-property name): it shadows

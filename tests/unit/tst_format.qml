@@ -65,4 +65,19 @@ TestCase {
     compare(F.stripHtml(""), "")
     compare(F.stripHtml(null), "")
   }
+
+  function test_session_when() {
+    var now = new Date(2026, 9, 10, 20, 0)
+    compare(F.sessionWhen(new Date(2026, 9, 10, 9, 5).toISOString(), now), "today 09:05")
+    compare(F.sessionWhen(new Date(2026, 9, 9, 18, 40).toISOString(), now), "yesterday 18:40")
+    compare(F.sessionWhen(new Date(2026, 9, 5, 7, 0).toISOString(), now), "Mon 07:00")
+    compare(F.sessionWhen(new Date(2026, 8, 28, 7, 0).toISOString(), now), "2026-09-28")
+    compare(F.sessionWhen("", now), "")
+  }
+
+  function test_card_issue() {
+    compare(F.cardIssue({ issue: "too_vague", detail: "which header?" }), "card issue, too vague: which header?")
+    compare(F.cardIssue({ issue: "ambiguous" }), "card issue, ambiguous: ")
+    compare(F.cardIssue(null), "")
+  }
 }

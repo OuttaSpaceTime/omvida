@@ -44,6 +44,8 @@ Rectangle {
     anchors.right: parent.right
     anchors.top: parent.top
     anchors.margins: Theme.spaceXs
+    // The copy icon ends where the code's text starts on the left.
+    anchors.rightMargin: Theme.spaceMd
     spacing: Theme.spaceSm
     opacity: hover.hovered ? 1 : 0.6
     UiText {

@@ -93,4 +93,15 @@ TestCase {
     compare(K.action(st("blocked"), Qt.Key_Escape, Qt.NoModifier, 0), { action: "end" })
     compare(K.action(st("done"), Qt.Key_Escape, Qt.NoModifier, 0), null)
   }
+
+  // Ctrl+N notes the card mid-study, in every phase a card is up; with no
+  // card it is not Study's (the window's Add has it).
+  function test_ctrl_n_notes_the_card() {
+    compare(K.action(st("answering"), Qt.Key_N, Qt.ControlModifier, 0), { action: "note" })
+    compare(K.action(st("answering", { answerEmpty: true }), Qt.Key_N, Qt.ControlModifier, 0), { action: "note" })
+    compare(K.action(st("grading"), Qt.Key_N, Qt.ControlModifier, 0), { action: "note" })
+    compare(K.action(st("revealed"), Qt.Key_N, Qt.ControlModifier, 0), { action: "note" })
+    compare(K.action(st("done"), Qt.Key_N, Qt.ControlModifier, 0), null)
+    compare(K.action(st("answering"), Qt.Key_N, Qt.NoModifier, 0), null, "a plain n is typed")
+  }
 }

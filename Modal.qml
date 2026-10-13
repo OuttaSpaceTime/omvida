@@ -21,6 +21,12 @@ Item {
   visible: opened
   z: 30
 
+  // A dialog holds the keyboard: what its fields pass on (Ctrl+N in a note,
+  // Ctrl+2 in a topic) stops here rather than acting on the screen or the
+  // window under it. Here and not in the window's handler, which named the
+  // dialogs one by one and missed the key list; a new dialog is covered too.
+  Keys.onPressed: function(event) { event.accepted = true }
+
   Rectangle {
     anchors.fill: parent
     color: Theme.scrim

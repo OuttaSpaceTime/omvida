@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Tells every running Omvida that a card was written, so it reloads the deck
+# now rather than at its next poll. Run by the study repo's Claude Code hook
+# (~/Code/study/.claude/settings.json); docs/architecture.md has why.
+#
+# Unlike bin/omvida it never starts or focuses Omvida: the hook fires while
+# you are talking to Claude. The calls go to the background and the script
+# always exits 0, quietly: a hook that waits, fails or prints holds up or
+# interrupts the Claude session for something cosmetic.
+CONFIG="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/omvida.qml"
+
+for pid in $(qs list -p "$CONFIG" -j 2>/dev/null | jq -r '.[].pid' 2>/dev/null); do
+  timeout 2 qs ipc --pid "$pid" call omvida deckChanged >/dev/null 2>&1 &
+done
+exit 0

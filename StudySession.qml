@@ -36,6 +36,17 @@ QtObject {
   // submitting | blocked | done | error
   property string phase: "idle"
   property string sessionId: ""
+  // The session the summary is about, once finish() has cleared sessionId.
+  property string endedId: ""
+  // The cards noted during this session: the deck server's account of it
+  // (Store.sessions, `noted`: notes written in its time and still open), the
+  // same as Home's, so a note deleted again no longer counts. Not kept here
+  // as well: two records of one fact disagreed.
+  readonly property var noted: {
+    var id = root.sessionId !== "" ? root.sessionId : root.endedId
+    var s = root.app ? root.app.store.sessions.find(function(x) { return x.id === id }) : null
+    return s ? s.noted : []
+  }
   property var info: null        // startSession's result
   property var next: null        // nextCard's result
   readonly property var card: next && next.card ? next.card : null
@@ -54,6 +65,9 @@ QtObject {
   property string syncNote: ""
 
   readonly property bool inCard: phase === "answering" || phase === "grading" || phase === "revealed" || phase === "submitting"
+  // A card is up and nothing is on its way to the deck: it can still change
+  // under the session (catchUp) or be deleted (askDelete).
+  readonly property bool cardOpen: phase === "answering" || phase === "grading" || phase === "revealed"
   // The back is on screen: grading, revealed, and a rating on its way after
   // a reveal. A rating given straight from the answer (Shift+1-4) keeps the
   // answering layout until the next card.
@@ -93,6 +107,7 @@ QtObject {
     deck.call("startSession", {}, function(err, res) {
       if (err) { root.fail(err); return }
       root.sessionId = res.sessionId
+      root.endedId = ""
       root.info = res
       root.loadNext()
     })
@@ -100,10 +115,7 @@ QtObject {
 
   function loadNext() {
     root.phase = "loading"
-    root.suggestion = null
-    root.gradeError = ""
-    root.acceptPending = false
-    root.gradeSeq++
+    root.dropGrade()
     root.answerReset()
     deck.call("nextCard", { sessionId: root.sessionId }, function(err, res) {
       if (err) { root.fail(err); return }
@@ -121,6 +133,14 @@ QtObject {
       root.rec = Session.shown(root.rec, root.shownAt)
       root.phase = "answering"
     })
+  }
+
+  // Forget the suggestion, and any grade still running.
+  function dropGrade() {
+    root.suggestion = null
+    root.gradeError = ""
+    root.acceptPending = false
+    root.gradeSeq++
   }
 
   function fail(msg) {
@@ -169,6 +189,45 @@ QtObject {
     })
   }
 
+  // ---- a card changed in Claude Code ----------------------------------------------
+  // Discuss, Fix card and a leech's Rewrite or Split hand the card to Claude
+  // Code, which saves it from another process; the store reloads every card
+  // (Store.checkDeck) and the session looks its own up in that list.
+  //   changed: it replaces the shown one where it is, back shown or not, so
+  //            the rating is of the card as it now is; the suggestion was for
+  //            the old one and goes.
+  //   gone (split, deleted): on to the next card.
+  //   a blocked leech changed or gone: ask for the next card, and the server
+  //            decides whether the block lifts (Continue, pressed for you).
+  property Connections deckWatch: Connections {
+    target: root.app ? root.app.store : null
+    function onAllCardsChanged() { root.catchUp() }
+  }
+
+  function catchUp() {
+    var byId = root.app.store.cardsById
+    var find = function(id) { return byId[id] || null }
+    if (root.phase === "blocked") {
+      var b = find(root.blocked.card.id)
+      if (b && JSON.stringify(b) === JSON.stringify(root.blocked.card)) return
+      root.app.toast(b ? "The leech changed in Claude Code" : "The leech is gone from the deck")
+      root.loadNext()
+      return
+    }
+    if (!root.cardOpen) return
+    var c = find(root.card.id)
+    if (!c) {
+      root.app.toast("This card was removed in Claude Code")
+      root.loadNext()
+      return
+    }
+    if (JSON.stringify(c) === JSON.stringify(root.card)) return
+    root.next = Object.assign({}, root.next, { card: c })
+    root.dropGrade()
+    if (root.phase === "grading") root.phase = "revealed"
+    root.app.toast("Card updated in Claude Code")
+  }
+
   function skip() {
     if (!root.inCard) return
     deck.call("skip", { sessionId: root.sessionId }, function() { root.loadNext() })
@@ -185,6 +244,17 @@ QtObject {
     root.app.launch(Launch.fixCardArgv(Paths.studyDir, root.card, root.suggestion.quality), "Opened Claude Code to fix the card")
   }
 
+  // Note the card for later (NoteDialog.qml), and go on studying: a fix
+  // session takes every note at once (Launch.fixNotesArgv). A card the
+  // grader flagged starts its note with the flag, so "fix in claude" need
+  // not break the session. The answer box keeps what was typed; the window
+  // hands the keyboard back to it when the dialog closes.
+  function note() {
+    if (!root.card) return
+    var q = root.suggestion ? root.suggestion.quality : null
+    root.app.openNote(root.card, q ? "> " + Format.cardIssue(q) + "\n\n" : "")
+  }
+
   // Delete the card on screen, once the window's confirm dialog says so.
   // The deck server deletes it and its history (deleteCard, as for a leech)
   // and its session passes over a deleted card's place in the queue
@@ -192,7 +262,7 @@ QtObject {
   // rating. The session record notes nothing: the card was not rated, and
   // the log's lines are flashcard-mcp's format.
   function askDelete() {
-    if (!root.card || !(root.phase === "answering" || root.phase === "grading" || root.phase === "revealed")) return
+    if (!root.card || !root.cardOpen) return
     var c = root.card
     root.app.confirm("Delete this card?", Format.stripHtml(c.front),
                      "Its review history goes with it. This cannot be undone.",
@@ -224,6 +294,7 @@ QtObject {
     case "submit": root.submit(a.rating); break
     case "discuss": root.discuss(); break
     case "skip": root.skip(); break
+    case "note": root.note(); break
     case "delete": root.askDelete(); break
     case "end": root.endNow(); break
     case "start": root.start(); break
@@ -236,7 +307,7 @@ QtObject {
   // ---- leeches ------------------------------------------------------------------------
   function leechFix(how) {
     root.app.launch(Launch.leechArgv(Paths.studyDir, root.blocked.card, root.blocked.lapses, how),
-                    "Fix it in Claude Code, then press Continue")
+                    "Fix it in Claude Code: the session goes on once it is saved")
     root.rec = Session.leech(root.rec, root.blocked.card, root.blocked.lapses, how === "split" ? "split in Claude Code" : "rewritten in Claude Code")
   }
 
@@ -256,11 +327,15 @@ QtObject {
     root.next = null
     var sid = root.sessionId
     if (sid !== "") deck.call("endSession", { sessionId: sid }, function() {})
+    root.endedId = sid
     root.sessionId = ""
     if (root.rec.reviews.length === 0) return
     root.logPending = true
     wikiService.call("related", { studied: Session.studiedCards(root.rec), limit: 3 }, function(err, pages) {
-      if (!err) root.related = pages
+      if (err) return
+      root.related = pages
+      // Kept in the wiki's side panel too, where they stay once a page is open.
+      root.app.addStudyPages(pages)
     })
     root.app.store.refreshDeck()
   }

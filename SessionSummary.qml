@@ -65,6 +65,27 @@ Column {
     }
   }
 
+  // The cards noted during the session (Ctrl+N), and the fix session for
+  // them, which is the reason they were noted rather than fixed then.
+  Row {
+    visible: root.session.noted.length > 0
+    spacing: Theme.spaceMd
+    UiText {
+      objectName: "summaryNoted"
+      text: "Noted " + Format.plural(root.session.noted.length, "card")
+      font.pixelSize: Theme.bodySmallSize
+      color: Theme.accentColor
+      anchors.verticalCenter: parent.verticalCenter
+    }
+    PlainButton {
+      objectName: "summaryFixNotes"
+      label: "fix them in claude"
+      tint: Theme.accentColor
+      anchors.verticalCenter: parent.verticalCenter
+      onActivated: root.session.app.fixNotes(root.session.noted)
+    }
+  }
+
   Rectangle {
     visible: root.session.summaryData !== null && root.session.summaryData.reviews > 0
     width: parent.width
@@ -122,7 +143,7 @@ Column {
   Rectangle { width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
 
   Row {
-    spacing: Theme.spaceSm
+    spacing: Theme.spaceXl
     PlainButton {
       objectName: "studyAgainButton"
       keys: "↵"

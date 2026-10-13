@@ -439,18 +439,21 @@ Item {
           label: "Continue in Claude"
           onActivated: { root.app.launch(Launch.resumeArgv(Paths.studyDir, root.askSession), "Opened Claude Code"); root.close() }
         }
-        PlainButton {
-          large: true
-          label: "Copy"
-          icon: "copy"
-          enabled: root.askText !== ""
-          onActivated: Quickshell.clipboardText = root.askText
-        }
-        PlainButton {
-          large: true
-          visible: !root.askDone
-          label: "Stop"
-          onActivated: askProc.running = false
+        Row {
+          spacing: Theme.spaceXl
+          PlainButton {
+            large: true
+            label: "Copy"
+            icon: "copy"
+            enabled: root.askText !== ""
+            onActivated: Quickshell.clipboardText = root.askText
+          }
+          PlainButton {
+            large: true
+            visible: !root.askDone
+            label: "Stop"
+            onActivated: askProc.running = false
+          }
         }
       }
     }
@@ -468,6 +471,7 @@ Item {
         anchors.left: parent.left
         anchors.leftMargin: Theme.spaceMd
         anchors.verticalCenter: parent.verticalCenter
+        spacing: Theme.spaceLg
         Repeater {
           model: root.hints
           // The status line's hint, so a key reads the same in both places.

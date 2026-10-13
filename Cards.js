@@ -14,15 +14,17 @@ function searchableText(card) {
     .replace(/<[^>]*>/g, " ").toLowerCase()
 }
 
-// filters: { query, state, deck, tags }: query, state and deck "" or null
-// for "any"; tags a list, every one of which a card must carry. All, not
+// filters: { query, state, deck, tags, noted }: query, state and deck "" or
+// null for "any"; tags a list, every one of which a card must carry; noted
+// true for only the cards with a note (`notes`, card id -> note, the store's). All, not
 // any: picking a second tag narrows to the cards that have both, so each
 // pick is a step further in, the way the user asked for it. "Any of them"
 // would widen with every pick and leave no way to say "security and csp".
-function filterCards(cards, filters) {
+function filterCards(cards, filters, notes) {
   var q = String(filters.query || "").trim().toLowerCase()
   var tags = filters.tags || []
   return cards.filter(function(card) {
+    if (filters.noted && !(notes && notes[card.id])) return false
     if (filters.state && stateOf(card) !== filters.state) return false
     if (filters.deck && card.deck !== filters.deck) return false
     var own = card.tags || []
@@ -58,6 +60,12 @@ function stateCounts(cards) {
     .map(function(s) { return { state: s, count: counts[s] } })
 }
 
+// How many of `cards` have a note: the "noted" filter's count.
+function notedCount(cards, notes) {
+  if (!notes) return 0
+  return cards.filter(function(c) { return !!notes[c.id] }).length
+}
+
 // A page's cards: its declared flashcard_ids in order, or, for a page that
 // declares none, up to 12 cards sharing a tag (the viewer's fallback).
 function cardsForPage(page, allCards) {
@@ -79,6 +87,7 @@ function cardsForPage(page, allCards) {
 // label: the chips on top of the filter column.
 function selectedFilters(filters) {
   var out = []
+  if (filters.noted) out.push({ kind: "noted", value: "yes", label: "noted" })
   if (filters.state) out.push({ kind: "state", value: filters.state, label: filters.state })
   if (filters.deck) out.push({ kind: "deck", value: filters.deck, label: filters.deck })
   var tags = filters.tags || []

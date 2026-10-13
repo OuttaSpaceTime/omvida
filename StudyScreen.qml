@@ -77,6 +77,7 @@ Item {
       if (pos !== "") out.push({ text: pos, color: Theme.ink })
       out.push({ text: s.card.deck })
       if (s.next.repeat) out.push({ text: "repeat" })
+      if (s.app.store.notes[s.card.id]) out.push({ text: "noted", color: Theme.accentColor })
       return out
     }
     switch (phase) {
@@ -107,6 +108,7 @@ Item {
     var s = root.session
     var discuss = { keys: "⌃D", label: "discuss", run: function() { s.discuss() } }
     var skip = { keys: "⌃S", label: "skip", run: function() { s.skip() } }
+    var note = { keys: "⌃N", label: "note", run: function() { s.note() } }
     var end = { keys: "esc", label: "end", run: function() { s.endNow() } }
     var del = { keys: "del", label: "delete", run: function() { s.askDelete() } }
     if (answeringKeys) return [
@@ -114,7 +116,7 @@ Item {
       { keys: "⌥↵", label: "reveal+accept", run: function() { s.reveal(true) } },
       // The mouse has no Shift: a click reveals, where the keycaps are.
       { keys: "⇧1-4", label: "rate", run: function() { s.reveal(false) } },
-      discuss, skip, end, del
+      discuss, note, skip, end, del
     ]
     if (root.session.backShown) {
       var first
@@ -122,7 +124,7 @@ Item {
       else if (s.suggestion) first = { keys: "⌥↵", label: "take " + Format.ratingName(s.suggestion.rating).toLowerCase(), run: function() { s.submit(s.suggestion.rating) } }
       else first = { keys: "⇧↵", label: "good", run: function() { s.submit(3) } }
       // ⇧1-4 is a legend here: the keycaps above are its buttons.
-      return [first, { keys: "⇧1-4", label: "rate" }, discuss, skip, end, del]
+      return [first, { keys: "⇧1-4", label: "rate" }, discuss, note, skip, end, del]
     }
     switch (phase) {
     case "idle": return [{ keys: "↵", label: "start", run: function() { s.start() } }]

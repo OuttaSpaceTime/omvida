@@ -2,14 +2,22 @@
 """Fill an empty deck database (flashcard-mcp's schema) with the fixture cards.
 
     tests/fixtures/seed_deck.py <master.db>
+    tests/fixtures/seed_deck.py <master.db> --notes
 
-Run by tests/fixtures/make-deck.sh after `prisma db push` has created the
-tables. Datetimes are ISO text with +00:00, the format flashcard-mcp writes
+Run by tests/fixtures/make-deck.sh after flashcard-mcp's db-sync has created
+the tables. Datetimes are ISO text with +00:00, the format flashcard-mcp writes
 today. The card ids match the fixture wiki's flashcard_ids, so related pages
 and per-page cards line up. Nothing here comes from the real deck.
 
 Due now: three review cards (pressure ok). One new card. A suspended card.
 A week of review history, so the overview has something to draw.
+
+--notes adds, to a deck already seeded, what Study and a /study chat leave
+behind for Home's past sessions and the Cards "noted" filter: a session an
+hour and a half ago that lapsed two cards and noted one, and a second note
+since. The app tests (tst_notes) and the shots (bin/shot -a notes) both use
+it, so the rows are written in one place. INSERT OR REPLACE: a test file may
+run it again on its deck.
 """
 
 import sqlite3
@@ -24,6 +32,25 @@ def iso(d):
 
 
 db = sqlite3.connect(sys.argv[1])
+
+if sys.argv[2:] == ["--notes"]:
+    def ago(minutes):
+        return iso(now - timedelta(minutes=minutes))
+
+    db.execute(
+        "INSERT OR REPLACE INTO StudySession (id, startTime, endTime, cardsReviewed, newCards, accuracy)"
+        " VALUES ('fixturesession', ?, ?, 9, 1, 0.67)", (ago(90), ago(70)))
+    for rid, cid, minutes in [("fixturelapse0", "fixturecard0003", 85), ("fixturelapse1", "fixturecard0002", 84)]:
+        db.execute(
+            "INSERT OR REPLACE INTO Review (id, cardId, rating, stability, difficulty, elapsedDays, reviewedAt)"
+            " VALUES (?, ?, 1, 1, 5, 1, ?)", (rid, cid, ago(minutes)))
+    for cid, body, minutes in [("fixturecard0001", "**Reword**: say what the 60 counts from", 80),
+                               ("fixturecard0004", "Why is the port part of it?", 30)]:
+        db.execute("INSERT OR REPLACE INTO CardNote (cardId, body, createdAt, updatedAt) VALUES (?, ?, ?, ?)",
+                   (cid, body, ago(minutes), ago(minutes)))
+    db.commit()
+    sys.exit(0)
+
 db.execute("INSERT INTO Deck (id, name, createdAt) VALUES ('deckweb', 'Web', ?)", (iso(now - timedelta(days=60)),))
 
 cards = [

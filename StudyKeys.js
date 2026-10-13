@@ -15,6 +15,11 @@
 //                 "I knew it" or "no idea" needs no typing.
 //   Ctrl+D        discuss the card in Claude Code.
 //   Ctrl+S        skip the card. It stays due.
+//   Ctrl+N        note the card (NoteDialog.qml): an edit to make or a thing
+//                 to understand, kept with the card for a fix session later,
+//                 so the session goes on. Elsewhere Ctrl+N is the window's
+//                 Add; on a card, noting it is what the hand wants, and Add
+//                 is still the top bar's button.
 //   Del           delete the card, after the window's confirm dialog asks.
 //                 Not while an answer is typed and not yet revealed, for
 //                 Esc's reason below: there Del edits the answer, as in any
@@ -43,7 +48,7 @@ var KEY = {
   Return: 0x01000004, Enter: 0x01000005, Escape: 0x01000000, Delete: 0x01000007,
   K1: 0x31, K2: 0x32, K3: 0x33, K4: 0x34,
   Exclam: 0x21, At: 0x40, QuoteDbl: 0x22, NumberSign: 0x23, Section: 0xa7, Dollar: 0x24,
-  D: 0x44, S: 0x53, Question: 0x3f, Slash: 0x2f
+  D: 0x44, S: 0x53, N: 0x4e, Question: 0x3f, Slash: 0x2f
 }
 var MOD = { Shift: 0x02000000, Control: 0x04000000, Alt: 0x08000000, Meta: 0x10000000 }
 
@@ -76,7 +81,7 @@ function isEnter(key) { return key === KEY.Return || key === KEY.Enter }
 //   accept         submit the suggestion now
 //   acceptLater    the grader is still running: submit its rating on arrival
 //   submit         submit `rating`
-//   discuss, skip, end, delete
+//   discuss, skip, note, end, delete
 //   help           show the keys (Alt+?, in every phase)
 //   start          a new session (Enter with no card up: idle, done, error)
 //   continue       go on past a leech (Enter on one)
@@ -99,6 +104,7 @@ function action(state, key, modifiers, scanCode) {
   var ctrl = !!(modifiers & MOD.Control), alt = !!(modifiers & MOD.Alt), shift = !!(modifiers & MOD.Shift)
   if (ctrl && !alt && !shift && key === KEY.D) return { action: "discuss" }
   if (ctrl && !alt && !shift && key === KEY.S) return { action: "skip" }
+  if (ctrl && !alt && !shift && key === KEY.N) return { action: "note" }
   if (key === KEY.Escape && !ctrl && !alt && !shift && !(modifiers & MOD.Meta)) {
     if (phase === "answering" && !state.answerEmpty) return { action: "none" }
     return { action: "end" }

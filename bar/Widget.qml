@@ -19,7 +19,9 @@ import "Model.js" as Model
 // prints flashcard-mcp's overview: the same numbers, from the same code, as
 // the app and the /study skill. It runs on a timer (the settings'
 // refreshIntervalSec) and whenever the panel opens; it is about a second of
-// node, so never per frame.
+// node, so never per frame. While Omvida is open, it hands over each
+// overview it loads (setOverview), so the count follows a session rating by
+// rating without a node start per rating.
 //
 // The panel follows the first-party pattern (omarchy.weather): a Panel.qml
 // loaded here, and this widget standing in for it as the bar's popout
@@ -47,6 +49,12 @@ BarWidget {
 
   function refresh() {
     if (!overviewProc.running) overviewProc.running = true
+  }
+
+  // An overview as JSON, from bin/omvida-overview or from Omvida.
+  function take(text) {
+    var o = Model.parse(text)
+    if (o) { root.overview = o; root.loadError = "" }
   }
 
   // An argv, never a shell string: bar.run takes one, and a path with a space
@@ -90,10 +98,7 @@ BarWidget {
     id: overviewProc
     command: [root.omvidaRoot + "/bin/omvida-overview", "0"]   // no pending list: the panel shows none
     stdout: StdioCollector {
-      onStreamFinished: {
-        var o = Model.parse(text)
-        if (o) { root.overview = o; root.loadError = "" }
-      }
+      onStreamFinished: root.take(text)
     }
     stderr: StdioCollector {
       onStreamFinished: if (String(text).trim() !== "") root.loadError = String(text).trim().split("\n").pop()
@@ -119,6 +124,9 @@ BarWidget {
   IpcHandler {
     target: "omvida.bar"
     function refresh(): void { root.refresh() }
+    // An overview Omvida already has (Store.onOverviewChanged): the same object
+    // bin/omvida-overview prints, as JSON.
+    function setOverview(json: string): void { root.take(json) }
     function open(): void { root.open() }
     function close(): void { root.close() }
     function toggle(): void { root.togglePanel() }

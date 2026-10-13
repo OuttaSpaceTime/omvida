@@ -5,6 +5,7 @@ import QtQuick.Controls
 import "Format.js" as Format
 import "StatusBits.js" as StatusBits
 import "WikiTree.js" as WikiTree
+import "NoteEdit.js" as NoteEdit
 
 // Home: what to do now, then the Next.js viewer's dashboard (last studied
 // pages, recently updated pages, the topics).
@@ -27,6 +28,23 @@ Item {
   property var app: null
   readonly property var index: app ? app.store.wikiIndex : null
   readonly property var overview: app ? app.store.overview : null
+  readonly property var store: app ? app.store : null
+
+  // What a past session exposed, as one list: the cards it lapsed (red),
+  // then those noted during it (accent, with the note's first line), each
+  // card once. A card both lapsed and noted shows as noted: the note says
+  // what to do about it.
+  function flaws(session) {
+    var byId = root.store.cardsById
+    var noted = session.noted.filter(function(id) { return root.store.notes[id] && byId[id] })
+    var out = session.lapses.filter(function(l) { return noted.indexOf(l.cardId) === -1 }).map(function(l) {
+      return { kind: "lapsed", cardId: l.cardId, text: Format.stripHtml(l.front) }
+    })
+    return out.concat(noted.map(function(id) {
+      return { kind: "noted", cardId: id, card: byId[id],
+               text: Format.stripHtml(byId[id].front) + " — " + NoteEdit.firstLine(root.store.notes[id].body) }
+    }))
+  }
 
   // ---- the window's status line ---------------------------------------------
   readonly property var statusSegments: root.index ? [{
@@ -88,6 +106,86 @@ Item {
               icon: "wiki"
               tip: "Read the wiki"
               onActivated: root.app.setScreen("wiki")
+            }
+          }
+        }
+      }
+
+      // ---- past sessions ------------------------------------------------------
+      // The last few sessions and what each exposed: lapses and the cards
+      // noted on the way (Ctrl+N). "fix all" hands every open note to one
+      // Claude Code session (app.fixNotes), which resolves each as it goes;
+      // the list then loses them on the deck's next reload.
+      Column {
+        objectName: "homeSessions"
+        visible: root.store !== null && (root.store.sessions.length > 0 || root.store.noteCount > 0)
+        width: parent.width
+        spacing: Theme.spaceSm
+        Item {
+          width: parent.width
+          height: sessionsLabel.implicitHeight
+          SectionLabel { id: sessionsLabel; width: parent.width; divided: true; text: "Past sessions" }
+          PlainButton {
+            objectName: "homeFixAll"
+            visible: root.store !== null && root.store.noteCount > 0
+            // Its words end on the column's right edge, as the rows' notes do.
+            anchors.right: parent.right
+            y: sessionsLabel.topPadding + (sessionsLabel.implicitHeight - sessionsLabel.topPadding - sessionsLabel.bottomPadding - height) / 2
+            icon: "pencil"
+            label: "fix all · " + (root.store ? Format.plural(root.store.noteCount, "note") : "")
+            tint: Theme.accentColor
+            onActivated: root.app.fixNotes(null)
+          }
+        }
+        Repeater {
+          model: root.store ? root.store.sessions : []
+          delegate: Column {
+            id: sessionItem
+            required property var modelData
+            required property int index
+            objectName: "session:" + sessionItem.index
+            readonly property var flaws: root.flaws(sessionItem.modelData)
+            width: col.width
+            spacing: Theme.spaceXs
+            topPadding: sessionItem.index > 0 ? Theme.spaceSm : 0
+            Row {
+              spacing: Theme.spaceMd
+              UiText { id: whenText; text: Format.sessionWhen(sessionItem.modelData.startTime) }
+              UiText {
+                text: Format.plural(sessionItem.modelData.cardsReviewed, "review") + " · accuracy " + Format.pct(sessionItem.modelData.accuracy)
+                font.pixelSize: Theme.bodySmallSize
+                color: Theme.dim
+                anchors.baseline: whenText.baseline
+              }
+            }
+            UiText {
+              visible: sessionItem.flaws.length === 0
+              text: "no lapses, nothing noted"
+              font.pixelSize: Theme.bodySmallSize
+              color: Theme.faint
+            }
+            Repeater {
+              model: sessionItem.flaws.slice(0, Theme.sessionFlawsShown)
+              // A noted card opens its note; a lapse has nothing to open.
+              delegate: MarkedRow {
+                id: flawRow
+                required property var modelData
+                objectName: "flaw:" + flawRow.modelData.kind + ":" + flawRow.modelData.cardId
+                width: col.width
+                lead: flawRow.modelData.kind
+                leadWidth: Theme.sessionFlawKindWidth
+                leadColor: flawRow.modelData.kind === "noted" ? Theme.accentColor : Theme.redText
+                text: flawRow.modelData.text
+                clickable: flawRow.modelData.kind === "noted"
+                onActivated: root.app.openNote(flawRow.modelData.card, "")
+              }
+            }
+            UiText {
+              visible: sessionItem.flaws.length > Theme.sessionFlawsShown
+              x: Theme.sessionFlawKindWidth
+              text: "+" + (sessionItem.flaws.length - Theme.sessionFlawsShown) + " more"
+              font.pixelSize: Theme.captionSize
+              color: Theme.faint
             }
           }
         }

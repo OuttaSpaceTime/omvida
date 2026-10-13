@@ -28,12 +28,14 @@ and stops.
   nothing links it, but it shares a tag), with a broken link, links in code, an embed, a
   callout, a table, a task list and highlighted code.
 - `master.db`: the fixture deck, built by `tests/fixtures/make-deck.sh` with flashcard-mcp's
-  own `prisma db push` (so its schema can never drift) and seeded by `seed_deck.py`: three
+  own `db-sync` (its start-up `prisma db push`, so its schema can never drift) and seeded by `seed_deck.py`: three
   review cards due, one new, one suspended, a few days of history. The card ids are the
-  fixture wiki's `flashcard_ids`.
+  fixture wiki's `flashcard_ids`. `seed_deck.py <db> --notes` adds a past session with two
+  lapses and two card notes, for Home and the Cards "noted" filter (tst_notes, `bin/shot -a notes`).
 - `out/`: where the fakes record their calls.
 - `tests/fixtures/bin` first on PATH: `claude` (grades 3, or 1 for "wrong", 4 for "perfect",
-  flags a card issue for "flagme"; streams a short answer for Ask), `kitty` and `qmd`.
+  flags a card issue for "flagme"; streams a short answer for Ask), `kitty`, `qmd`, and
+  `omarchy-shell` (records the overviews handed to the bar, so a test never reaches the real one).
 
 ## Layers
 
@@ -42,14 +44,18 @@ and stops.
   output parser, the session log format and numbering, the protocol.
 - `tests/unit`: `StudyKeys.js` (every binding in every phase, US and German Shift+digit),
   `Format.js`, `Cards.js`, `Graph.js`, `Launch.js` (the prompts and the Ask tool allowlist),
+  `NoteEdit.js` (the note editor's list and bold/italic keys),
   `Session.js`, `StatusBits.js` (the status line's shared hints and pressure alert), and the
   bar's `Model.js`.
 - `tests/app`: `OmvidaTest.qml` is Omvision's harness adapted: the app loads the test file
   through `OMVIDA_TEST`, and tests click and type into the real screens against the real
   backends. Helpers: `click`, `item`, `type`, `key`, `sql` (read the deck), `sqlWrite`,
-  `kittyCalls`, `claudeCalls`, `gradeCalls`, `readFile`, `startSession`. Tests in a file share
+  `kittyCalls`, `claudeCalls`, `gradeCalls`, `barOverviews`, `readFile`, `startSession`, `blockOnLeech`, and `repo`
+  (this checkout, for the fixture scripts). Tests in a file share
   one app; a file whose tests change the deck resets what it needs in `init()` (tst_study makes
-  every card due again), or gets a file of its own (tst_delete deletes cards, from Study and from Cards).
+  every card due again), or gets a file of its own (tst_delete deletes cards, from Study and
+  from Cards; tst_catchup rewrites and deletes them behind a session's back, as Claude Code
+  does, and watches the session catch up; tst_notes writes card notes and past sessions).
 
 `started()` runs inside the test hook before the event loop turns, so it cannot run a process
 (`sql`, `run`); do setup in the test itself.
@@ -73,12 +79,17 @@ and stops.
 | `folderTitle`, `folder:<path>`, `folderPage:<path>` | a folder |
 | `pageCardsFlip`, `flipCard` | a page's cards |
 | `searchField`, `result:<kind>:<i>`, `deepSearch`, `askView`, `askAnswer`, `askAnswerBlocks`, `askContinue`, `paletteHint:<label>` | search and Ask |
-| `stateChip:<state>`, `stateBar:<state>`, `tagChip:<tag>`, `cardFilter`, `filteredCount`, `clearFilters`, `retentionPanel`, `filtersToggle`, `selectedFilters`, `selected:<state|deck|tag>:<value>`, `moreTags`, `cardsAside` | the deck explorer's filters |
+| `stateChip:<state>`, `stateBar:<state>`, `tagChip:<tag>`, `cardFilter`, `filteredCount`, `clearFilters`, `retentionPanel`, `retentionReviews`, `retentionVerdict`, `ratingMix`, `filtersToggle`, `selectedFilters`, `selected:<state|deck|tag>:<value>`, `moreTags`, `cardsAside` | the deck explorer's filters |
 | `tagPanel` (`cardsScreen.tagPanelOpen` says whether it is up), `tagPanelField`, `tagPanelList`, `tagRow:<tag>`, `tagPanelSelected:<tag>`, `tagPanelClose` | the deck explorer's tag panel |
 | `cardsStage` (its card is `flipCard`, the front `flipFront`), `upNext`, `cardsRestart`, `cardTile:<card id>` | the deck explorer's stage and grid |
 | `graphScreen`, `graphAll`, `graphLocal`, `graphView` | the graph |
 | `graphRailHandle`, `graphFullScreen`, `graphCollapse`, `graphExpand` | the wiki page's graph rail: its drag edge, its full-screen icon, folding it and opening it again |
-| `sidePanelCollapse`, `sidePanelExpand` | folding the wiki's side panel and opening it again |
+| `sidePanelCollapse`, `sidePanelExpand`, `sidePanelHandle` | folding the wiki's side panel, opening it again, its drag edge |
+| `studyPages`, `studyPage:<path>`, `studyPageDrop:<path>`, `studyPagesClear` | the side panel's "From study" pages (`app.studyPages`) |
+| `noteDialog` (`app.noteOpen` says whether it is up), `noteCardFront`, `noteEditor`, `notePreview`, `noteSave`, `noteDelete` | a card's note |
+| `summaryNoted`, `summaryFixNotes` | the summary's noted cards |
+| `notedChip`, `selected:noted:yes`, `fixNoted`, `stageNote` | the deck explorer's noted filter, its fix, the stage card's note |
+| `homeSessions`, `session:<i>`, `flaw:<lapsed|noted>:<card id>`, `homeFixAll` | Home's past sessions |
 | `homeScreen`, `homeStudyButton`, `homeCardsButton`, `homeWikiButton`, `recent:<path>`, `topic:<path>`, `dueFigure`, `pressureVerdict`, `calibrationVerdict` | home |
 
 ## What the tests don't cover

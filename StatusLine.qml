@@ -140,8 +140,9 @@ Rectangle {
   Row {
     id: hintRow
     anchors.right: alertRow.left
-    anchors.rightMargin: Theme.spaceSm
+    anchors.rightMargin: Theme.spaceLg
     height: parent.height
+    spacing: Theme.spaceLg
     Repeater {
       id: hintRepeater
       model: root.hints
