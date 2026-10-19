@@ -34,7 +34,10 @@ and stops.
   lapses and two card notes, for Home and the Cards "noted" filter (tst_notes, `bin/shot -a notes`).
 - `out/`: where the fakes record their calls.
 - `tests/fixtures/bin` first on PATH: `claude` (grades 3, or 1 for "wrong", 4 for "perfect",
-  flags a card issue for "flagme"; streams a short answer for Ask), `kitty`, `qmd`, and
+  flags a card issue for "flagme", fails for "failme", takes 2s over "slowly"; as a grader it waits for its
+  stream-json prompt like a spare the deck server boots ahead, records each prompt it grades in
+  `out/grades.jsonl` (`gradeCalls()`) and is findable alive by `graderPids()`; streams a short
+  answer for Ask), `kitty`, `qmd`, and
   `omarchy-shell` (records the overviews handed to the bar, so a test never reaches the real one).
 
 ## Layers
@@ -50,7 +53,7 @@ and stops.
 - `tests/app`: `OmvidaTest.qml` is Omvision's harness adapted: the app loads the test file
   through `OMVIDA_TEST`, and tests click and type into the real screens against the real
   backends. Helpers: `click`, `item`, `type`, `key`, `sql` (read the deck), `sqlWrite`,
-  `kittyCalls`, `claudeCalls`, `gradeCalls`, `barOverviews`, `readFile`, `startSession`, `blockOnLeech`, and `repo`
+  `kittyCalls`, `claudeCalls`, `askCalls`, `gradeCalls`, `graderPids`, `barOverviews`, `readFile`, `startSession`, `blockOnLeech`, and `repo`
   (this checkout, for the fixture scripts). Tests in a file share
   one app; a file whose tests change the deck resets what it needs in `init()` (tst_study makes
   every card due again), or gets a file of its own (tst_delete deletes cards, from Study and

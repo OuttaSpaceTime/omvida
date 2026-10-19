@@ -3,8 +3,15 @@
 # cost, the same output shapes. Every call is recorded in
 # $OMVIDA_TEST_OUT/claude-calls.jsonl.
 #
-#   grading (--json-schema): rates 1 when the answer has "wrong" in it, 4 for
-#     "perfect", else 3; FAKE_CLAUDE_DELAY seconds first (default 0.3)
+#   grading (--json-schema): waits for its one stream-json message, as the
+#     real grader does (a spare the deck server boots ahead); a spare ended
+#     without one exits. Each prompt it grades goes to grades.jsonl. Rates 1
+#     when the answer has "wrong" in it, 4 for "perfect", else 3, flags a
+#     card issue for "flagme", and fails (an error result) for "failme"; FAKE_CLAUDE_DELAY seconds first (default 0.3),
+#     2 for an answer with "slowly". It runs as one python process whose last
+#     argument is fake-grader:$OMVIDA_TEST_OUT, so the tests can see which are
+#     alive and a kill really ends it. (Not `exec -a`: mise's python3 shim
+#     picks its tool by that name.)
 #   asking (stream-json): a short streamed answer with a wikilink, one tool
 #     call, and a result carrying a session id
 set -euo pipefail
@@ -12,17 +19,29 @@ out="${OMVIDA_TEST_OUT:-/tmp}"
 python3 -c 'import json,sys; print(json.dumps(sys.argv[1:]))' "$@" >>"$out/claude-calls.jsonl"
 case " $* " in
   *" --json-schema "*)
-    input="$(cat)"
-    sleep "${FAKE_CLAUDE_DELAY:-0.3}"
-    answer="$(printf '%s' "$input" | sed -n '/<developer_answer>/,/<\/developer_answer>/p')"
-    rating=3; reason="Fixture grader: right idea, reasonable detail."
-    case "$answer" in
-      *wrong*) rating=1; reason="Fixture grader: that misses the concept. The back says what was needed." ;;
-      *perfect*) rating=4; reason="Fixture grader: complete and precise." ;;
-    esac
-    issue=none
-    case "$answer" in *flagme*) issue=two_questions ;; esac
-    printf '{"type":"result","subtype":"success","is_error":false,"structured_output":{"rating":%s,"reason":"%s","quality_issue":"%s","quality_detail":"Asks two things."}}\n' "$rating" "$reason" "$issue"
+    exec python3 -c '
+import json, os, sys, time
+line = sys.stdin.readline()
+if not line.strip():
+    sys.exit(0)
+prompt = json.loads(line)["message"]["content"]
+with open(os.path.join(sys.argv[1], "grades.jsonl"), "a") as f:
+    f.write(json.dumps([prompt]) + "\n")
+answer = prompt.split("<developer_answer>\n", 1)[1].rsplit("\n</developer_answer>", 1)[0]
+time.sleep(2 if "slowly" in answer else float(os.environ.get("FAKE_CLAUDE_DELAY", "0.3")))
+rating, reason = 3, "Fixture grader: right idea, reasonable detail."
+if "wrong" in answer:
+    rating, reason = 1, "Fixture grader: that misses the concept. The back says what was needed."
+elif "perfect" in answer:
+    rating, reason = 4, "Fixture grader: complete and precise."
+issue = "two_questions" if "flagme" in answer else "none"
+print(json.dumps({"type": "system", "subtype": "init", "session_id": "fake-grade"}))
+if "failme" in answer:
+    print(json.dumps({"type": "result", "subtype": "error_during_execution", "is_error": True, "result": "Fixture grader failed"}))
+    sys.exit(1)
+print(json.dumps({"type": "result", "subtype": "success", "is_error": False,
+                  "structured_output": {"rating": rating, "reason": reason, "quality_issue": issue, "quality_detail": "Asks two things."}}))
+' "$out" "fake-grader:$out"
     ;;
   *" stream-json "*)
     printf '%s\n' '{"type":"system","subtype":"init","session_id":"fake-session-1"}'

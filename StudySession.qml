@@ -14,6 +14,14 @@ import "Format.js" as Format
 //                                            suggested rating with its reason
 //   then: submit the suggestion, Good, or any rating
 //
+// The grade starts before the reveal: whenever typing pauses (gradePauseMs),
+// the answer so far is graded in the background, and a reveal with the answer
+// unchanged takes that grade, often already in. A changed answer is graded
+// afresh, never sent on to the earlier grade's conversation, so a draft and
+// its verdict cannot sway the rating. The deck server runs the claudes:
+// nextCard ends the last card's grade, so a rating given without Claude's
+// leaves none running, and one spare claude stays booted for the session.
+//
 // StudyKeys.js decides what a key means; handleKey() carries it out. The
 // session itself is flashcard-mcp's: the queue, the scheduling, the leech
 // block and the new-card cap live in the deck server, and what is shown
@@ -54,6 +62,13 @@ QtObject {
   property string gradeError: ""
   property bool acceptPending: false
   property int gradeSeq: 0
+  // The latest grade asked for, { text, done, err, res }: reveal() takes it
+  // when the answer is still that text (trimmed, for the comparison only),
+  // done or on its way. A failed one is asked for again.
+  property var early: null
+  // A pause long enough to read as "done for now" rather than between words;
+  // each pause that changes the answer costs one grade.
+  readonly property int gradePauseMs: 1200
   property var rec: Session.empty()
   property double shownAt: 0
   property double revealedAt: 0
@@ -79,6 +94,12 @@ QtObject {
   signal keysWanted()
 
   property AnkiSync sync: AnkiSync {}
+
+  property Timer pauseTimer: Timer {
+    interval: root.gradePauseMs
+    onTriggered: root.gradeEarly()
+  }
+  onAnswerChanged: if (phase === "answering") pauseTimer.restart()
 
   // ---- the session ----------------------------------------------------------------
   function startIfIdle() {
@@ -140,7 +161,15 @@ QtObject {
     root.suggestion = null
     root.gradeError = ""
     root.acceptPending = false
+    root.forgetGrade()
+  }
+
+  // A grade still running (or one to come on a pause) is no longer wanted:
+  // gradeSeq drops its reply.
+  function forgetGrade() {
     root.gradeSeq++
+    root.early = null
+    pauseTimer.stop()
   }
 
   function fail(msg) {
@@ -152,26 +181,49 @@ QtObject {
   function reveal(thenAccept) {
     if (root.phase !== "answering") return
     root.revealedAt = Date.now()
-    var text = root.answer
-    if (text.trim() === "") {
+    if (root.answer.trim() === "") {
       root.phase = "revealed"
       return
     }
     root.phase = "grading"
     root.acceptPending = !!thenAccept
+    // Graded on a pause: take it now, or as it comes in (requestGrade).
+    var e = root.early
+    if (!e || e.text !== root.answer.trim() || (e.done && e.err)) root.requestGrade()
+    else if (e.done) root.takeGrade(null, e.res)
+  }
+
+  // Typing paused: grade the answer so far, unless it was graded as it is.
+  function gradeEarly() {
+    var text = root.answer.trim()
+    if (root.phase !== "answering" || text === "" || (root.early && root.early.text === text)) return
+    root.requestGrade()
+  }
+
+  // Grades the answer as typed. A newer grade ends the one still running on
+  // the server, and gradeSeq drops its reply.
+  function requestGrade() {
     var seq = ++root.gradeSeq
-    var cardId = root.card.id
-    deck.call("grade", { cardId: cardId, answer: text }, function(err, res) {
-      if (seq !== root.gradeSeq || !root.card || root.card.id !== cardId) return
-      if (err) {
-        root.gradeError = err
-        root.acceptPending = false
-      } else {
-        root.suggestion = res
-      }
-      if (root.phase === "grading") root.phase = "revealed"
-      if (root.acceptPending && root.suggestion) root.submit(root.suggestion.rating)
+    var early = { text: root.answer.trim(), done: false, err: null, res: null }
+    root.early = early
+    deck.call("grade", { cardId: root.card.id, answer: root.answer }, function(err, res) {
+      if (seq !== root.gradeSeq) return
+      early.done = true
+      early.err = err
+      early.res = res
+      if (root.phase === "grading") root.takeGrade(err, res)
     })
+  }
+
+  function takeGrade(err, res) {
+    if (err) {
+      root.gradeError = err
+      root.acceptPending = false
+    } else {
+      root.suggestion = res
+    }
+    if (root.phase === "grading") root.phase = "revealed"
+    if (root.acceptPending && root.suggestion) root.submit(root.suggestion.rating)
   }
 
   function submit(rating) {
@@ -180,7 +232,7 @@ QtObject {
     var repeat = root.next.repeat
     var suggested = root.suggestion ? root.suggestion.rating : 0
     var responseMs = (root.revealedAt || Date.now()) - root.shownAt
-    root.gradeSeq++   // a grade still running for this card is no longer wanted
+    root.forgetGrade()
     root.phase = "submitting"
     deck.call("review", { sessionId: root.sessionId, cardId: c.id, rating: rating, responseMs: responseMs }, function(err) {
       if (err) { root.fail(err); return }
@@ -225,6 +277,8 @@ QtObject {
     root.next = Object.assign({}, root.next, { card: c })
     root.dropGrade()
     if (root.phase === "grading") root.phase = "revealed"
+    // An answer already typed is graded against the card as it now is.
+    if (root.phase === "answering") pauseTimer.restart()
     root.app.toast("Card updated in Claude Code")
   }
 
@@ -271,7 +325,7 @@ QtObject {
 
   function deleteCard(c) {
     if (!root.card || root.card.id !== c.id || root.phase === "submitting") return
-    root.gradeSeq++   // a grade still running for this card is no longer wanted
+    root.forgetGrade()
     root.phase = "submitting"
     deck.call("deleteCard", { cardId: c.id }, function(err) {
       if (err) { root.fail(err); return }
@@ -343,7 +397,7 @@ QtObject {
   // End early: what was reviewed still counts, and the session is closed.
   function endNow() {
     if (root.phase === "idle" || root.phase === "done") return
-    root.gradeSeq++
+    root.forgetGrade()
     root.finish()
   }
 

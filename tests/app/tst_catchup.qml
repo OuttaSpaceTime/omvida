@@ -47,6 +47,20 @@ OmvidaTest {
     compare(gradeCalls().filter(function(a) { return a.join(" ").indexOf("A sharper front") !== -1 }).length, 0, "nothing graded")
   }
 
+  // An answer typed before the card changed is graded against the new card,
+  // with no more typing.
+  function test_b_an_answer_typed_before_an_edit_is_graded_again() {
+    startSession()
+    var id = study.card.id
+    type("an answer")
+    tryVerify(function() { return study.early && study.early.done }, 5000, "graded on the pause")
+    var before = gradeCalls().length
+    sqlWrite("UPDATE Card SET back = 'A new back', updatedAt = " + sqlNow + " WHERE id = '" + id + "'")
+    tryVerify(function() { return study.card.back === "A new back" }, 10000, "the new back is in")
+    tryVerify(function() { return gradeCalls().length === before + 1 }, 5000, "graded again")
+    verify(gradeCalls()[before][0].indexOf("A new back") !== -1, "against the new back")
+  }
+
   // A split deletes the original (its parts inherit its schedule, so they
   // are not this session's): the session goes on to the next card.
   function test_c_a_card_deleted_mid_card_moves_the_session_on() {

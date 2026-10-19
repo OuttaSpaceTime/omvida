@@ -30,7 +30,7 @@ OmvidaTest {
     verify(searchPalette.askText.indexOf("scheme, host and port") !== -1)
     tryVerify(function() { return searchPalette.askBlocks !== null }, 5000, "rendered like a page")
     verify(JSON.stringify(searchPalette.askBlocks).indexOf("wiki:security/csrf") !== -1, "the wikilink resolved")
-    var ask = claudeCalls().filter(function(a) { return a.indexOf("stream-json") !== -1 }).slice(-1)[0]
+    var ask = askCalls().slice(-1)[0]
     verify(ask[ask.indexOf("--allowedTools") + 1].indexOf("Bash") === -1, "no Bash for a headless ask")
     var before = kittyCalls().length
     click("askContinue")

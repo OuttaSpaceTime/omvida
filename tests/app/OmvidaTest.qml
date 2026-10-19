@@ -18,6 +18,8 @@ import Quickshell.Io
 //   readFile(path), sandbox       files in the sandbox
 //   sql(query)                    rows from the fixture deck, as arrays
 //   kittyCalls(), claudeCalls()   what the fake kitty and claude were run with
+//   askCalls()                    the claude calls that were Ask runs
+//   gradeCalls(), graderPids()    what the fake grader was sent; the graders alive
 //   barOverviews()                what was handed to the bar (fake omarchy-shell)
 //   waitReady()                   both backends up and the data loaded
 //   startSession()                Study, a session started, a card up
@@ -228,7 +230,16 @@ TestCase {
       .map(function(a) { return JSON.parse(a[3]) })
   }
   function claudeCalls() { return jsonLines(base.outDir + "/claude-calls.jsonl") }
-  function gradeCalls() { return claudeCalls().filter(function(a) { return a.indexOf("--json-schema") !== -1 }) }
+  // The Ask runs: every claude call but the graders (the fake tells them apart the same way).
+  function askCalls() { return claudeCalls().filter(function(a) { return a.indexOf("--json-schema") === -1 && a.indexOf("-p") !== -1 }) }
+  // The prompts the fake grader was sent, one [prompt] each: a spare the deck
+  // server boots ahead and ends unused is in claudeCalls() but not here.
+  function gradeCalls() { return jsonLines(base.outDir + "/grades.jsonl") }
+  // The fake graders alive now, by pid.
+  function graderPids() {
+    var r = run(["pgrep", "-f", " fake-grader:" + base.outDir.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$"])
+    return (r.out || "").split("\n").filter(function(l) { return l !== "" })
+  }
 
   // ---- the app ----------------------------------------------------------------------------
   function waitReady() {
