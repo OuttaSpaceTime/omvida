@@ -6,13 +6,19 @@
 //
 // The bindings:
 //   Shift+Enter   reveal: show the back and send a typed answer to the grader.
-//                 Pressed again once revealed: submit Good.
+//                 Pressed again once revealed: submit the picked rating, else
+//                 Good.
 //   Alt+Enter     accept the suggested rating. Before the reveal it reveals
 //                 and accepts the suggestion the moment it arrives, so one
 //                 key goes from answer to next card.
-//   Shift+1..4    rate Again/Hard/Good/Easy at any point, overriding the
-//                 suggestion. Before the reveal this rates without grading:
-//                 "I knew it" or "no idea" needs no typing.
+//   Shift+1..4    pick Again/Hard/Good/Easy, overriding the suggestion. A
+//                 pick never moves on: before the reveal it reveals too (and
+//                 grades a typed answer), so the back is always seen before
+//                 the card goes. The same digit again, or Shift+Enter, submits
+//                 the pick; another digit changes it. Rating on the first
+//                 press lost cards to a stray key: one shifted character
+//                 matched by mistake (see below) rated eleven cards Hard in
+//                 nine seconds.
 //   Ctrl+D        discuss the card in Claude Code.
 //   Ctrl+S        skip the card. It stays due.
 //   Ctrl+N        note the card (NoteDialog.qml): an edit to make or a thing
@@ -42,7 +48,11 @@
 // shifted character's key code, so matching Qt.Key_1 alone would never fire.
 // The scan code is layout-free: under xkb it is the evdev code plus 8, which
 // puts the digit row's 1..4 at 10..13. Tests synthesize key events with no
-// scan code, so the shifted characters of the common layouts are a fallback.
+// scan code, so the shifted characters of the common layouts are a fallback,
+// and only then: a real key event always has a scan code, and the characters
+// collide across layouts. '"' is Shift+2 on German but Shift+' on US, so with
+// the fallback open to real keys, every quote typed into a US answer rated
+// the card Hard and moved on.
 
 var KEY = {
   Return: 0x01000004, Enter: 0x01000005, Escape: 0x01000000, Delete: 0x01000007,
@@ -65,13 +75,14 @@ SHIFTED[KEY.Dollar] = 4
 function shiftDigit(key, modifiers, scanCode) {
   if (!(modifiers & MOD.Shift)) return 0
   if (modifiers & (MOD.Control | MOD.Alt | MOD.Meta)) return 0
-  if (scanCode && SCAN_DIGITS[scanCode] !== undefined) return SCAN_DIGITS[scanCode]
+  if (scanCode) return SCAN_DIGITS[scanCode] || 0
   return SHIFTED[key] || 0
 }
 
 function isEnter(key) { return key === KEY.Return || key === KEY.Enter }
 
-// state: { phase, hasSuggestion, answerEmpty }
+// state: { phase, hasSuggestion, answerEmpty, picked }
+//   picked: the rating Shift+digit picked on this card, 1..4, else 0
 //   phase: "idle" | "loading" | "answering" | "grading" | "revealed" | "submitting" |
 //          "blocked" | "done" | "error"
 // Returns { action, rating? } or null when the key is not ours (it then types
@@ -80,6 +91,7 @@ function isEnter(key) { return key === KEY.Return || key === KEY.Enter }
 //   revealAccept   reveal, then submit the suggestion when it arrives
 //   accept         submit the suggestion now
 //   acceptLater    the grader is still running: submit its rating on arrival
+//   pick           reveal if need be, and pick `rating` without submitting
 //   submit         submit `rating`
 //   discuss, skip, note, end, delete
 //   help           show the keys (Alt+?, in every phase)
@@ -99,7 +111,10 @@ function action(state, key, modifiers, scanCode) {
   if (!active) return null
 
   var digit = shiftDigit(key, modifiers, scanCode)
-  if (digit) return { action: "submit", rating: digit }
+  if (digit) {
+    if (phase !== "answering" && state.picked === digit) return { action: "submit", rating: digit }
+    return { action: "pick", rating: digit }
+  }
 
   var ctrl = !!(modifiers & MOD.Control), alt = !!(modifiers & MOD.Alt), shift = !!(modifiers & MOD.Shift)
   if (ctrl && !alt && !shift && key === KEY.D) return { action: "discuss" }
@@ -116,7 +131,7 @@ function action(state, key, modifiers, scanCode) {
 
   if (!isEnter(key)) return null
   if (shift && !ctrl && !alt) {
-    return phase === "answering" ? { action: "reveal" } : { action: "submit", rating: 3 }
+    return phase === "answering" ? { action: "reveal" } : { action: "submit", rating: state.picked || 3 }
   }
   if (alt && !ctrl && !shift) {
     if (phase === "answering") return state.answerEmpty ? { action: "reveal" } : { action: "revealAccept" }

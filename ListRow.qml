@@ -28,16 +28,16 @@ Rectangle {
   }
 
   Row {
-    id: left
+    id: titleRow
     anchors.left: parent.left
     anchors.leftMargin: root.inset
-    anchors.right: right.left
+    anchors.right: metaRow.left
     anchors.rightMargin: Theme.spaceMd
     anchors.verticalCenter: parent.verticalCenter
     spacing: Theme.spaceSm
     clip: true
     UiText {
-      width: Math.min(implicitWidth, left.width - (chip.visible ? chip.width + Theme.spaceSm : 0))
+      width: Math.min(implicitWidth, titleRow.width - (chip.visible ? chip.width + Theme.spaceSm : 0))
       text: root.title
       elide: Text.ElideRight
       anchors.verticalCenter: parent.verticalCenter
@@ -52,7 +52,7 @@ Rectangle {
     }
   }
   Row {
-    id: right
+    id: metaRow
     anchors.right: parent.right
     anchors.rightMargin: root.inset
     anchors.verticalCenter: parent.verticalCenter

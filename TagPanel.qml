@@ -25,8 +25,8 @@ import "Format.js" as Format
 // A centred dialog (Modal.qml) was the obvious frame, and rejected: the user
 // asked for a sidebar, and a sheet on the right leaves the stage and the
 // grid in view beside it, so each pick shows its effect at once. For the
-// same reason nothing dims them, as a modal's scrim would: the hairline on
-// the sheet's edge is frame enough.
+// same reason nothing dims them (nor anything else: no dialog darkens the
+// window): the hairline on the sheet's edge is frame enough.
 Item {
   id: root
   objectName: "tagPanel"
@@ -80,7 +80,7 @@ Item {
 
   readonly property var statusHints: [
     { keys: "↑↓", label: "choose", run: function() { root.move(1) } },
-    { keys: "↵", label: "pick", run: function() { root.pickHighlighted() } },
+    { keys: "enter", label: "pick", run: function() { root.pickHighlighted() } },
     { keys: "⌫", label: "drop last", run: function() { root.dropLast() } },
     { keys: "esc", label: "close", run: function() { root.close() } }
   ]
@@ -95,7 +95,7 @@ Item {
   visible: shown > 0
   z: 30
 
-  // Clear, not a scrim: a click beside the sheet closes it rather than
+  // Clear: a click beside the sheet closes it rather than
   // reaching the grid under it, as Esc would.
   MouseArea { anchors.fill: parent; onClicked: root.close() }
 

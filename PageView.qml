@@ -12,8 +12,8 @@ Column {
 
   // The y of the heading with this anchor, or -1.
   function anchorY(anchor) {
-    for (var i = 0; i < rep.count; i++) {
-      var it = rep.itemAt(i)
+    for (let i = 0; i < rep.count; i++) {
+      let it = rep.itemAt(i)
       if (it && it.anchorName === anchor) return it.y
     }
     return -1

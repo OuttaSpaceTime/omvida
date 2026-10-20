@@ -1,12 +1,13 @@
 import QtQuick
 
-// A modal card over a scrim, as Omvision's dialogs: square, dialogWidth wide.
-// Esc and a click on the scrim close it. Children go in its column
-// (`content`).
+// A modal card, as Omvision's dialogs: square, dialogWidth wide. Esc and a
+// click outside the card close it. Children go in its column (`content`).
 //
-// Its frame is a 1px line, as the Glance overlay's: the scrim already sets it
-// apart, and the 2px border Omvision's dialogs carry made it the heaviest
-// line in the window.
+// Nothing dims the window behind it: the user never wants a darkened
+// background under a dialog (bin/check's noscrim step keeps it so). The area
+// around the card is clear and only catches clicks. Its frame is a 1px line,
+// as the Glance overlay's and the tag panel's: the 2px border Omvision's
+// dialogs carry made it the heaviest line in the window.
 Item {
   id: root
 
@@ -27,11 +28,9 @@ Item {
   // dialogs one by one and missed the key list; a new dialog is covered too.
   Keys.onPressed: function(event) { event.accepted = true }
 
-  Rectangle {
-    anchors.fill: parent
-    color: Theme.scrim
-    MouseArea { anchors.fill: parent; onClicked: root.close() }
-  }
+  // Clear: a click outside the card closes it rather than reaching the
+  // screen under it.
+  MouseArea { anchors.fill: parent; onClicked: root.close() }
 
   Rectangle {
     id: card

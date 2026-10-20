@@ -28,11 +28,47 @@ Column {
 
   readonly property bool showCard: root.session.inCard || root.session.phase === "loading"
 
-  Binding { target: root.session; property: "answer"; value: answer.text }
+  // ---- a rating taken ---------------------------------------------------------------
+  // The chosen keycap fills while the others fade (below), then the whole
+  // card fades out and drifts up, ending as the session's settleMs do, when
+  // it shows the next card (StudySession.settleTimer), which fades in from
+  // below. The session owns the length: two clocks kept equal only by
+  // sharing Theme tokens would drift apart on the first change to one. Only after a rating: a skip, a delete or a leech's
+  // continue cut to the next card as before, there being nothing to show
+  // taken. A cut between cards was the old way for ratings too; the same
+  // layout swapping in under a keypress read as a jump, not as an answer
+  // accepted.
+  transform: Translate { id: drift }
+  SequentialAnimation {
+    id: leave
+    PauseAnimation { duration: Math.max(0, root.session.settleMs - Theme.acceptFadeDuration) }
+    ParallelAnimation {
+      NumberAnimation { target: root; property: "opacity"; to: 0; duration: Theme.acceptFadeDuration; easing.type: Easing.InCubic }
+      NumberAnimation { target: drift; property: "y"; to: -Theme.spaceMd; duration: Theme.acceptFadeDuration; easing.type: Easing.InCubic }
+    }
+  }
+  ParallelAnimation {
+    id: enter
+    NumberAnimation { target: root; property: "opacity"; to: 1; duration: Theme.cardEnterDuration; easing.type: Easing.OutCubic }
+    NumberAnimation { target: drift; property: "y"; from: Theme.spaceMd; to: 0; duration: Theme.cardEnterDuration; easing.type: Easing.OutCubic }
+  }
   Connections {
     target: root.session
+    function onChosenChanged() { if (root.session.chosen > 0) { enter.stop(); leave.start() } }
+    // Faded out by a rating (or caught mid-fade by the session ending): the
+    // next card comes in. A first card, or one after a skip, is already
+    // there at full opacity. A card that arrives while `leave` is still in
+    // its pause (opacity 1 yet) comes in too, or the fade would run on and
+    // leave it invisible.
+    function onPhaseChanged() {
+      if (root.session.phase !== "answering" || (root.opacity === 1 && !leave.running)) return
+      leave.stop()
+      enter.start()
+    }
     function onAnswerReset() { answer.text = "" }
   }
+
+  Binding { target: root.session; property: "answer"; value: answer.text }
 
   UiText {
     visible: root.showCard && root.session.next !== null && !!root.session.next.leech
@@ -247,6 +283,13 @@ Column {
   // went: told before the choice, it can inform it. The suggestion is
   // outlined in its colour and marked ◂, not filled: filled, it would be
   // louder than the card.
+  //
+  // A rating picked (Shift+1-4, waiting for the same digit again or
+  // Shift+Enter) or taken fills its keycap, in its colour: only a choice is
+  // ever filled, so it reads as "this one". Taken, the other three also fade
+  // away in place; picked, they stay, since the pick can still change.
+  // Every rating follows a reveal (a first Shift+digit reveals and picks), so
+  // the row is always up when one is taken.
   Row {
     visible: root.session.backShown
     spacing: Theme.spaceSm
@@ -257,14 +300,21 @@ Column {
         required property int modelData
         objectName: "rate:" + keycap.modelData
         readonly property bool suggested: root.session.suggestion !== null && root.session.suggestion.rating === keycap.modelData
+        readonly property bool chosen: root.session.chosen === keycap.modelData
+        readonly property bool marked: keycap.chosen || root.session.picked === keycap.modelData
+        // Suggested or marked: drawn in its colour, with the heavier edge.
+        readonly property bool outlined: keycap.suggested || keycap.marked
         readonly property color tint: Theme.ratingColor(keycap.modelData)
         enabled: root.session.phase !== "submitting"
-        opacity: enabled ? 1 : 0.45
+        opacity: root.session.chosen > 0 ? (keycap.chosen ? 1 : 0) : (enabled ? 1 : 0.45)
         height: Theme.keycapHeight
         width: capRow.implicitWidth + Theme.spaceMd * 2
-        color: capArea.containsMouse && enabled ? Theme.hoverFill : "transparent"
-        border.color: keycap.suggested ? keycap.tint : Theme.border
-        border.width: keycap.suggested ? Theme.keycapSuggestedBorder : Theme.borderWidth
+        color: keycap.marked ? Theme.ratingFill(keycap.modelData)
+             : capArea.containsMouse && enabled ? Theme.hoverFill : "transparent"
+        border.color: keycap.outlined ? keycap.tint : Theme.border
+        border.width: keycap.outlined ? Theme.keycapSuggestedBorder : Theme.borderWidth
+        Behavior on opacity { NumberAnimation { duration: Theme.fadeDuration } }
+        Behavior on color { ColorAnimation { duration: Theme.fadeDuration } }
         Row {
           id: capRow
           anchors.centerIn: parent
@@ -273,7 +323,7 @@ Column {
           UiText {
             text: Format.ratingName(keycap.modelData).toLowerCase() + (keycap.suggested ? " ◂" : "")
             font.pixelSize: Theme.bodySmallSize
-            font.bold: keycap.suggested
+            font.bold: keycap.outlined
             color: keycap.tint
           }
           UiText {

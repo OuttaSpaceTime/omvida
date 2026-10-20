@@ -14,7 +14,7 @@ OmvidaTest {
     startSession()
     compare(study.card.id, "fixturecard0003")
     verify(study.next.leech !== null && study.next.leech !== undefined, "served with the leech flag")
-    key(Qt.Key_NumberSign, Qt.ShiftModifier)
+    rate(3)
     tryCompare(study, "phase", "blocked", 8000)
     verify(item("leechRewrite").visible)
 

@@ -84,8 +84,8 @@ Item {
     ? (root.askDone ? [{ keys: "⌫", label: "back to search", run: root.backToSearch }] : [])
         .concat([{ keys: "esc", label: "close", run: root.close }])
     : [{ keys: "↑↓", label: "choose" },
-       { keys: "↵", label: "open", run: function() { root.activate(root.selected) } },
-       { keys: "⌃↵", label: "ask Claude", run: root.ask },
+       { keys: "enter", label: "open", run: function() { root.activate(root.selected) } },
+       { keys: "ctrl+enter", label: "ask Claude", run: root.ask },
        { keys: "esc", label: "close", run: root.close }]
 
   function close() {
@@ -143,7 +143,7 @@ Item {
     if (r.kind === "page" || r.kind === "text") root.app.openPage(r.path, "")
     else if (r.kind === "ask") root.ask()
     else if (r.kind === "card") {
-      var item = resultsRep.itemAt(i)
+      let item = resultsRep.itemAt(i)
       if (item) item.revealed = !item.revealed
     }
   }
@@ -197,11 +197,9 @@ Item {
   }
 
   // ---- layout ------------------------------------------------------------------------
-  Rectangle {
-    anchors.fill: parent
-    color: Theme.scrim
-    MouseArea { anchors.fill: parent; onClicked: root.close() }
-  }
+  // Clear, as a dialog's surround (Modal.qml): nothing dims the window, and
+  // a click beside the palette closes it.
+  MouseArea { anchors.fill: parent; onClicked: root.close() }
 
   Rectangle {
     id: panel
@@ -215,8 +213,8 @@ Item {
                                  : Math.min(Theme.paletteMaxHeight, field.height + modeRow.height + results.implicitHeight + Theme.space2xl + Theme.spaceSm)
                                    + foot.height)
     color: Theme.paper
-    // A 1px line, as the Glance overlay's frame: the scrim already parts the
-    // palette from the window, so a heavier edge only added weight.
+    // A 1px line, as the Glance overlay's frame and a dialog's: a heavier
+    // edge only added weight.
     border.color: Theme.border
     border.width: Theme.borderWidth
     MouseArea { anchors.fill: parent }

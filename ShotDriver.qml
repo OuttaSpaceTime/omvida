@@ -27,6 +27,8 @@ Rectangle {
                                   .split(",").map(function(s) { return parseInt(s) })
                                   .filter(function(n) { return n >= 0 })
   property int frameIndex: 0
+  // The answer the study actions type (answer, accept); answer:<text> types its own.
+  readonly property string sampleAnswer: "It stays fresh for sixty seconds"
 
   color: Theme.paper
 
@@ -54,15 +56,21 @@ Rectangle {
     else if (a === "add") driver.app.openAdd(arg || "flashcard", "", "")
     else if (a === "addmenu") driver.addMenu.opened = true
     else if (a === "study") study.start()
-    else if (a === "answer") {
-      var text = arg || "It stays fresh for sixty seconds"
+    // An answer typed and revealed; with accept, then rated `arg` (default
+    // Good) once Claude's verdict is in, to catch the rating's moment with -f.
+    else if (a === "answer" || a === "accept") {
+      let text = a === "answer" && arg || driver.sampleAnswer
       study.start()
-      whenCardUp.run(function() { driver.studyView.answerField.text = text; driver.study.reveal(false) })
+      whenPhase.run("answering", function() {
+        driver.studyView.answerField.text = text
+        driver.study.reveal(false)
+        if (a === "accept") whenPhase.run("revealed", function() { driver.study.submit(parseInt(arg || "3")) })
+      })
     }
     else if (a === "pagecards") driver.wiki.openPageCards()
     // On Cards: page the stage forward n cards (default 3) as → would, or
     // flip its card as Space would.
-    else if (a === "cardsnext") { for (var n = parseInt(arg || "3"); n > 0; n--) driver.cardsScreen.page(1) }
+    else if (a === "cardsnext") { for (let n = parseInt(arg || "3"); n > 0; n--) driver.cardsScreen.page(1) }
     else if (a === "cardsflip") driver.cardsScreen.flipStage()
     // On Cards: pick tags (comma-separated) as a click on each would; or
     // open the tag panel, picking any tags given first. Filters only read.
@@ -73,24 +81,24 @@ Rectangle {
     // Del's dialog on Cards or on a study card, open; the shot never answers
     // it, so nothing is deleted.
     else if (a === "cardsdelete") driver.cardsScreen.askDelete()
-    else if (a === "studydelete") { study.start(); whenCardUp.run(function() { driver.study.askDelete() }) }
+    else if (a === "studydelete") { study.start(); whenPhase.run("answering", function() { driver.study.askDelete() }) }
     else if (a === "done") { study.start(); rateAll.start() }
-    else if (a === "keys") { study.start(); whenCardUp.run(function() { driver.study.keysWanted() }) }
+    else if (a === "keys") { study.start(); whenPhase.run("answering", function() { driver.study.keysWanted() }) }
     else if (a === "graphlocal") driver.app.openGraph(true)
     // On a wiki page: fold the side panel, open the graph rail, or both
     // (panels:side, panels:graph, panels:side,graph), as `[` and `]` would.
     else if (a === "panels") {
-      var which = (arg || "side,graph").split(",")
+      let which = (arg || "side,graph").split(",")
       if (which.indexOf("side") !== -1) driver.wiki.sideOpen = false
       if (which.indexOf("graph") !== -1) driver.wiki.graphOpen = true
     }
-    else if (a === "syncfail") { study.start(); whenCardUp.run(function() { driver.study.syncNote = "Anki sync failed: offline (fixture)" }) }
+    else if (a === "syncfail") { study.start(); whenPhase.run("answering", function() { driver.study.syncNote = "Anki sync failed: offline (fixture)" }) }
     else if (a === "leech") leechDeck.running = (Quickshell.env("OMVIDA_SANDBOX") || "") !== ""
     // The note dialog over a study card, with `arg` (or a sample) typed in;
     // the shot never saves it.
     else if (a === "note") {
       study.start()
-      whenCardUp.run(function() {
+      whenPhase.run("answering", function() {
         driver.studyView.answerField.text = "half an answer"
         driver.app.openNote(driver.study.card, arg || "Split it:\n- what **max-age** counts from\n- what happens after\n\nAnd why not `Expires`?")
       })
@@ -102,7 +110,7 @@ Rectangle {
     // The wiki panel's "From study" list: the first three pages, as a
     // finished session would leave them, and the first one open. Memory only.
     else if (a === "studypages") {
-      var pages = driver.app.store.wikiIndex.pages.slice(0, 3).map(function(p) { return { path: p.path, title: p.title, lapsed: 0 } })
+      let pages = driver.app.store.wikiIndex.pages.slice(0, 3).map(function(p) { return { path: p.path, title: p.title, lapsed: 0 } })
       pages[1].lapsed = 1
       driver.app.addStudyPages(pages)
       driver.app.openPage(pages[0].path, "")
@@ -143,20 +151,24 @@ Rectangle {
       Quickshell.env("FLASHCARD_DB") || ""]
     // Not onExited: its QProcess::ExitStatus parameter is a type qmllint
     // cannot see (the baselined warnings elsewhere).
-    onRunningChanged: if (!running) { driver.study.start(); whenCardUp.run(function() { driver.study.submit(3) }) }
+    onRunningChanged: if (!running) { driver.study.start(); whenPhase.run("answering", function() { driver.study.submit(3) }) }
   }
 
-  // Once the session has a card up, `then` runs: typing and revealing an
-  // answer, a failed sync's note (the fixtures have no sync script, so a
-  // real failure cannot happen here), or the rating that blocks on a leech.
+  // Once the session reaches `phase`, `then` runs: with a card up
+  // ("answering"), typing and revealing an answer, a failed sync's note (the
+  // fixtures have no sync script, so a real failure cannot happen here) or
+  // the rating that blocks on a leech; with the back up ("revealed"), a
+  // rating. `then` may wait for the next phase in turn: the timer has
+  // stopped before it runs.
   Timer {
-    id: whenCardUp
+    id: whenPhase
+    property string phase: ""
     property var then: null
-    function run(fn) { then = fn; start() }
-    interval: 200
+    function run(p, fn) { phase = p; then = fn; start() }
+    interval: 50
     repeat: true
     onTriggered: {
-      if (driver.study.phase !== "answering") return
+      if (driver.study.phase !== phase) return
       stop()
       then()
     }

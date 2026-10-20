@@ -8,11 +8,11 @@
 // they do.
 
 function search(app) {
-  return { keys: "⌃K", label: "search", run: function() { app.openSearch("") } }
+  return { keys: "ctrl+K", label: "search", run: function() { app.openSearch("") } }
 }
 
 function add(app) {
-  return { keys: "⌃N", label: "add", run: function() { app.toggleAdd() } }
+  return { keys: "ctrl+N", label: "add", run: function() { app.toggleAdd() } }
 }
 
 function back(app) {
@@ -21,7 +21,7 @@ function back(app) {
 }
 
 function study(app) {
-  return { keys: "⌃2", label: "study", run: function() { app.startStudy() } }
+  return { keys: "ctrl+2", label: "study", run: function() { app.startStudy() } }
 }
 
 // The hints every reading screen shares, after its own.

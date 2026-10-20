@@ -8,11 +8,11 @@ import QtQuick
 // the thing rather than "this"; `note` says what else goes, kept apart so a
 // long quote cannot push it out of the dialog. The action is the one filled button, in red;
 // Cancel is quiet text after it, as in the topic dialog. Enter or y takes the
-// action, Esc or n cancels, and so does a click on the scrim. Every other
+// action, Esc or n cancels, and so does a click outside it. Every other
 // unmodified key is swallowed while it is open, so a stray arrow cannot move
 // the screen under it.
 //
-// The status line asking (a red DELETE mode, ↵ delete, esc keep) came first
+// The status line asking (a red DELETE mode, enter delete, esc keep) came first
 // and was rejected: easy to miss for a step that loses a card's history.
 Modal {
   id: root

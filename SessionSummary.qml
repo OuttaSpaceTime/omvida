@@ -146,7 +146,7 @@ Column {
     spacing: Theme.spaceXl
     PlainButton {
       objectName: "studyAgainButton"
-      keys: "↵"
+      keys: "enter"
       label: "start another session"
       tint: Theme.accentColor
       onActivated: root.session.start()

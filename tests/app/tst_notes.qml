@@ -89,7 +89,7 @@ OmvidaTest {
     type("Why 60?")
     key(Qt.Key_Return, Qt.ControlModifier)
     tryVerify(function() { return !app.noteOpen }, 5000)
-    for (var i = 0; i < 12 && study.phase !== "done"; i++) {
+    for (let i = 0; i < 12 && study.phase !== "done"; i++) {
       tryVerify(function() { return study.phase === "answering" || study.phase === "done" }, 8000)
       if (study.phase === "done") break
       if (i === 1) {
@@ -105,7 +105,7 @@ OmvidaTest {
         tryVerify(function() { return !app.noteOpen && app.store.noteCount === 1 }, 5000)
         tryVerify(function() { return item("answerField").activeFocus }, 3000)
       }
-      key(Qt.Key_NumberSign, Qt.ShiftModifier)
+      rate(3)
       tryVerify(function() { return study.phase !== "submitting" && study.phase !== "loading" }, 8000)
     }
     tryCompare(study, "phase", "done", 8000)

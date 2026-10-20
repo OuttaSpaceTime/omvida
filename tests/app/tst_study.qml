@@ -36,7 +36,7 @@ OmvidaTest {
       if (!it || !it.visible) return
       if (typeof it.text === "string" && study.card.tags.some(function(t) { return it.text.indexOf("#" + t) !== -1 }))
         shown.push(it.text)
-      for (var i = 0; i < it.children.length; i++) walk(it.children[i])
+      for (let i = 0; i < it.children.length; i++) walk(it.children[i])
     }
     walk(studyView)
     compare(shown, [], "no tag on screen while answering")
@@ -58,7 +58,7 @@ OmvidaTest {
     verify(!item("rate:1").suggested && !item("rate:2").suggested && !item("rate:4").suggested, "and only that one")
     // Each key says where it sends the card, from the deck server's preview.
     var label = function(n) { return findNamed(item("rate:" + n), "interval").text }
-    for (var n = 1; n <= 4; n++)
+    for (let n = 1; n <= 4; n++)
       verify(/^(<1m|\d+m|\d+h|\d+d|[\d.]+mo|[\d.]+y)$/.test(label(n)), "rate:" + n + " shows an interval: " + label(n))
     verify(/m$/.test(label(1)), "again repeats within minutes: " + label(1))
     verify(/d$|mo$|y$/.test(label(4)), "easy waits days: " + label(4))
@@ -92,16 +92,40 @@ OmvidaTest {
   }
 
   // Shift+digit arrives as the shifted character; a German layout's Shift+3 is §.
-  function test_shift_digits_rate_without_typing_or_grading() {
+  // The first press reveals and picks, never moves on: the back is seen
+  // before the card goes. The same digit again rates.
+  function test_shift_digit_reveals_and_picks_then_rates_on_the_second_press() {
     startSession()
     var before = gradeCalls().length
     var cardId = study.card.id
+    var reviewed = reviews().length
+    key(Qt.Key_section, Qt.ShiftModifier)
+    tryCompare(study, "phase", "revealed", 3000)
+    compare(study.picked, 3)
+    compare(study.card.id, cardId, "still on the card")
+    compare(reviews().length, reviewed, "nothing rated yet")
+    compare(gradeCalls().length, before, "an empty answer is not graded")
     key(Qt.Key_section, Qt.ShiftModifier)
     tryVerify(function() { return study.card && study.card.id !== cardId }, 8000, "moved on")
     var r = reviews()
     compare(r[r.length - 1], [cardId, 3])
-    compare(gradeCalls().length, before, "nothing was graded")
+    compare(study.picked, 0, "the next card starts unpicked")
     compare(item("answerField").text, "", "no § typed into the next answer")
+  }
+
+  // Shift+Enter submits the pick; another digit changes it first.
+  function test_shift_enter_submits_the_pick() {
+    startSession()
+    var cardId = study.card.id
+    key(Qt.Key_Exclam, Qt.ShiftModifier)
+    tryCompare(study, "picked", 1, 3000)
+    key(Qt.Key_Dollar, Qt.ShiftModifier)
+    compare(study.picked, 4, "a second digit changes the pick")
+    compare(study.card.id, cardId)
+    key(Qt.Key_Return, Qt.ShiftModifier)
+    tryVerify(function() { return study.card && study.card.id !== cardId }, 8000)
+    var r = reviews()
+    compare(r[r.length - 1], [cardId, 4])
   }
 
   function test_a_rating_overrides_the_suggestion() {
@@ -110,7 +134,7 @@ OmvidaTest {
     type("a perfect answer")
     key(Qt.Key_Return, Qt.ShiftModifier)
     tryVerify(function() { return study.suggestion !== null }, 8000)
-    key(Qt.Key_At, Qt.ShiftModifier)    // Shift+2 on a US layout
+    rate(2)
     tryVerify(function() { return study.card && study.card.id !== cardId }, 8000)
     var r = reviews()
     compare(r[r.length - 1], [cardId, 2], "Hard, not the suggested Easy")
@@ -207,6 +231,47 @@ OmvidaTest {
     tryVerify(function() { return graderPids().length === 0 }, 3000, "none left after the session")
   }
 
+  // A rating is shown taken before the card goes: its keycap filled, the
+  // others faded, then the card fades out and the next fades in. The review
+  // is written at once; only the next card waits for the moment.
+  function test_a_rating_is_shown_taken_then_the_next_card_fades_in() {
+    startSession()
+    var cardId = study.card.id
+    key(Qt.Key_Return, Qt.ShiftModifier)
+    tryCompare(study, "phase", "revealed", 3000)
+    key(Qt.Key_2, Qt.ShiftModifier)
+    compare(study.chosen, 0, "the first press only picks")
+    key(Qt.Key_2, Qt.ShiftModifier)
+    compare(study.chosen, 2)
+    verify(item("rate:2").chosen && !item("rate:3").chosen, "the chosen keycap is marked")
+    compare(item("rate:2").opacity, 1, "and stays")
+    tryVerify(function() { return item("rate:1").opacity === 0 && item("rate:3").opacity === 0 }, 1000, "the others fade")
+    compare(study.card.id, cardId, "the card is still up while it shows")
+    tryVerify(function() { return item("studyCard").opacity < 1 }, 2000, "the card fades out")
+    tryVerify(function() { return study.card && study.card.id !== cardId && study.phase === "answering" }, 3000, "next card")
+    compare(study.chosen, 0)
+    var r = reviews()
+    compare(r[r.length - 1], [cardId, 2], "Hard was written")
+    tryCompare(item("studyCard"), "opacity", 1, 2000, "and it fades in")
+  }
+
+  // A pick from the answer reveals the back with its keycap marked, the
+  // others still up beside it (the pick can change); nothing is taken yet.
+  function test_a_pick_marks_its_keycap_and_keeps_the_others() {
+    startSession()
+    var cardId = study.card.id
+    key(Qt.Key_4, Qt.ShiftModifier)
+    tryCompare(study, "phase", "revealed", 3000)
+    compare(study.picked, 4)
+    compare(study.chosen, 0, "not taken")
+    verify(item("rate:4").marked && !item("rate:4").chosen, "the picked keycap is marked")
+    verify(!item("rate:2").marked)
+    compare(item("rate:2").opacity, 1, "the others stay")
+    key(Qt.Key_2, Qt.ShiftModifier)
+    verify(item("rate:2").marked && !item("rate:4").marked, "the mark follows the pick")
+    compare(study.card.id, cardId, "still on the card")
+  }
+
   function test_an_empty_answer_reveals_without_grading() {
     startSession()
     var before = gradeCalls().length
@@ -286,7 +351,7 @@ OmvidaTest {
   function test_escape_ends_the_session_and_what_was_rated_counts() {
     startSession()
     var cardId = study.card.id
-    key(Qt.Key_Exclam, Qt.ShiftModifier)   // Shift+1: Again
+    rate(1)   // Again
     tryVerify(function() { return study.phase === "answering" && study.card.id !== cardId }, 8000)
     key(Qt.Key_Escape)
     tryCompare(study, "phase", "done", 3000)
@@ -322,7 +387,7 @@ OmvidaTest {
     startSession()
     study.syncNote = "Anki sync failed: offline"
     var alerts = []
-    for (var i = 0; findNamed(target, "statusAlert:" + i) !== null; i++) alerts.push(findNamed(target, "statusAlert:" + i).text)
+    for (let i = 0; findNamed(target, "statusAlert:" + i) !== null; i++) alerts.push(findNamed(target, "statusAlert:" + i).text)
     verify(alerts.indexOf("sync ✕") !== -1, "alerts: " + JSON.stringify(alerts))
   }
 
@@ -363,10 +428,10 @@ OmvidaTest {
   function test_z_a_finished_session_logs_offers_pages_and_closes() {
     startSession()
     // Rate every card Good until the queue is empty (a new card repeats once).
-    for (var i = 0; i < 12 && study.phase !== "done"; i++) {
+    for (let i = 0; i < 12 && study.phase !== "done"; i++) {
       tryVerify(function() { return study.phase === "answering" || study.phase === "done" }, 8000)
       if (study.phase === "done") break
-      key(Qt.Key_NumberSign, Qt.ShiftModifier)   // Shift+3: Good
+      rate(3)   // Good
       tryVerify(function() { return study.phase !== "submitting" && study.phase !== "loading" }, 8000)
     }
     tryCompare(study, "phase", "done", 8000)

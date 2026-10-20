@@ -38,7 +38,13 @@ if [ "$cmd" = open ] || [ "$cmd" = search ]; then arg="${1:-}"; shift || true; f
 # always its own instance: it must never reach, or focus, the Omvida you have
 # open.
 if [ -z "${OMVIDA_TEST:-}${OMVIDA_SHOT_DIR:-}${OMVIDA_SANDBOX:-}" ]; then
-  pid="$(qs list -p "$CONFIG" -j 2>/dev/null | jq -r '.[0].pid // empty' 2>/dev/null || true)"
+  # The other way round too: a test, screenshot or sandbox instance runs this
+  # same config, so `qs list` names it alongside yours. Taking the first one
+  # handed a launch during bin/check to an offscreen test, and no window came.
+  pid=""
+  for p in $(qs list -p "$CONFIG" -j 2>/dev/null | jq -r '.[].pid' 2>/dev/null || true); do
+    if ! tr '\0' '\n' <"/proc/$p/environ" 2>/dev/null | grep -qE '^OMVIDA_(TEST|SHOT_DIR|SANDBOX)=.'; then pid="$p"; break; fi
+  done
   if [ -n "$pid" ]; then
     case "$cmd" in
       open|search) qs ipc --pid "$pid" call omvida "$cmd" "$arg" >/dev/null ;;

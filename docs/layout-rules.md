@@ -114,6 +114,16 @@ labels touched their borders). A control must not be the loudest
 thing on its screen: `+ task` at twice its height and a solid accent checkbox both
 had to be pulled back. Square corners, 1px hairlines, no shadows.
 
+## 10. Nothing dims the window
+
+(Omvida.) A dialog, the search palette or a sheet sits on the window as it is:
+no scrim, no darkened or translucent layer behind it. The user never wants one.
+Omvision's dialogs had a 45% black scrim, and Omvida copied it into `Modal.qml`
+and `SearchPalette.qml`; both apps took it out. The surround is a bare
+`MouseArea` that closes on a click; the card's 1px frame sets it apart.
+`bin/check noscrim` (qs-kit's, shared with Omvision) fails on a colour named scrim and
+on translucent black.
+
 ## Screenshotting
 
 Use `bin/shot`. It runs the real app with real data from `~/Notes/Omvision/`, but

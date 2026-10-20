@@ -3,7 +3,7 @@ import QtQuick.Controls
 
 // The app's quiet button: only its words (and an optional icon), with a
 // hover fill and no border. The key that does the same thing, if given, comes
-// first in bold ("⇧↵ reveal"), so a status-line hint and the click target it
+// first in bold ("shift+enter reveal"), so a status-line hint and the click target it
 // stands for read alike. Bordered and filled buttons are ActionButton's.
 //
 // The button is as wide as its words, so a quiet button lines up with the
@@ -26,7 +26,7 @@ Item {
   property bool large: false
   property int size: large ? Theme.bodySize : Theme.bodySmallSize
   // False makes it a legend: the same words, no hover and no click. The
-  // status line uses it for a key the mouse has no use for (⇧1-4 once the
+  // status line uses it for a key the mouse has no use for (shift+1-4 once the
   // keycaps are on screen).
   property bool interactive: true
   readonly property int inset: Theme.spaceSm
@@ -49,7 +49,7 @@ Item {
   Row {
     id: row
     anchors.verticalCenter: parent.verticalCenter
-    // A key sits close to its label ("⇧↵ reveal"); an icon needs more air.
+    // A key sits close to its label ("shift+enter reveal"); an icon needs more air.
     spacing: root.icon !== "" ? Theme.spaceSm : Theme.spaceXs
     Glyph {
       visible: root.icon !== ""

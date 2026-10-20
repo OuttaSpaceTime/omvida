@@ -61,6 +61,12 @@ QtObject {
   property var suggestion: null
   property string gradeError: ""
   property bool acceptPending: false
+  // The rating Shift+digit picked on this card, 1..4, else 0: the same
+  // digit again or Shift+Enter submits it (StudyKeys.js).
+  property int picked: 0
+  // The rating on its way to the deck, 1..4, else 0: the view shows it taken
+  // (StudyCard.qml) before the card fades out.
+  property int chosen: 0
   property int gradeSeq: 0
   // The latest grade asked for, { text, done, err, res }: reveal() takes it
   // when the answer is still that text (trimmed, for the comparison only),
@@ -83,9 +89,9 @@ QtObject {
   // A card is up and nothing is on its way to the deck: it can still change
   // under the session (catchUp) or be deleted (askDelete).
   readonly property bool cardOpen: phase === "answering" || phase === "grading" || phase === "revealed"
-  // The back is on screen: grading, revealed, and a rating on its way after
-  // a reveal. A rating given straight from the answer (Shift+1-4) keeps the
-  // answering layout until the next card.
+  // The back is on screen: grading, revealed, and a rating on its way (every
+  // rating follows a reveal: a first Shift+digit reveals and picks). A
+  // delete from the answer keeps the answering layout until the next card.
   readonly property bool backShown: phase === "grading" || phase === "revealed" || (phase === "submitting" && revealedAt > 0)
 
   // The view empties the answer box: a new card is on its way.
@@ -100,6 +106,22 @@ QtObject {
     onTriggered: root.gradeEarly()
   }
   onAnswerChanged: if (phase === "answering") pauseTimer.restart()
+
+  // A rating is written at once and the next card asked for right after,
+  // but shown only once settleMs have passed: the view shows the rating
+  // taken and fades the card out within them (StudyCard.qml fits its fade
+  // into this one number), and a card shown sooner would swap the layout
+  // under the fade. Asking only after the wait, as at first, added a round
+  // trip to every rating. Ended or failed meanwhile (or ended and started
+  // again before the reply), the session is past that card: the phase and
+  // cardSeq drop the reply.
+  property int settleMs: Theme.acceptShowDuration + Theme.acceptFadeDuration
+  property int cardSeq: 0
+  property var held: null        // { seq, err, res }: nextCard's reply, waiting out settleMs
+  property Timer settleTimer: Timer {
+    interval: root.settleMs
+    onTriggered: root.showHeld()
+  }
 
   // ---- the session ----------------------------------------------------------------
   function startIfIdle() {
@@ -135,25 +157,47 @@ QtObject {
   }
 
   function loadNext() {
+    root.clearCard()
+    deck.call("nextCard", { sessionId: root.sessionId }, root.showNext)
+  }
+
+  // The card that was up goes, with its pick, its rating, its grade and its
+  // answer, and any next card still held for it.
+  function clearCard() {
     root.phase = "loading"
+    root.picked = 0
+    root.chosen = 0
+    root.cardSeq++
+    root.held = null
+    settleTimer.stop()
     root.dropGrade()
     root.answerReset()
-    deck.call("nextCard", { sessionId: root.sessionId }, function(err, res) {
-      if (err) { root.fail(err); return }
-      if (res.blocked) {
-        root.blocked = res.blocked
-        root.next = null
-        root.phase = "blocked"
-        return
-      }
-      if (res.done) { root.finish(); return }
-      root.blocked = null
-      root.next = res
-      root.shownAt = Date.now()
-      root.revealedAt = 0
-      root.rec = Session.shown(root.rec, root.shownAt)
-      root.phase = "answering"
-    })
+  }
+
+  // nextCard's reply: a card, a leech's block, or the end.
+  function showNext(err, res) {
+    if (err) { root.fail(err); return }
+    if (res.blocked) {
+      root.blocked = res.blocked
+      root.next = null
+      root.phase = "blocked"
+      return
+    }
+    if (res.done) { root.finish(); return }
+    root.blocked = null
+    root.next = res
+    root.shownAt = Date.now()
+    root.revealedAt = 0
+    root.rec = Session.shown(root.rec, root.shownAt)
+    root.phase = "answering"
+  }
+
+  // The next card after a rating, once it is in and settleMs are over.
+  function showHeld() {
+    var h = root.held
+    if (!h || settleTimer.running || h.seq !== root.cardSeq || root.phase !== "submitting") return
+    root.clearCard()
+    root.showNext(h.err, h.res)
   }
 
   // Forget the suggestion, and any grade still running.
@@ -226,18 +270,35 @@ QtObject {
     if (root.acceptPending && root.suggestion) root.submit(root.suggestion.rating)
   }
 
+  // Shift+digit: reveal if need be and hold the rating for a second press.
+  // A pick overrides the suggestion, so an Alt+Enter still pending from the
+  // reveal no longer takes it.
+  function pick(rating) {
+    if (!root.card || root.phase === "submitting") return
+    root.picked = rating
+    root.acceptPending = false
+    root.reveal(false)
+  }
+
   function submit(rating) {
     if (!root.card || root.phase === "submitting") return
     var c = root.card
     var repeat = root.next.repeat
     var suggested = root.suggestion ? root.suggestion.rating : 0
     var responseMs = (root.revealedAt || Date.now()) - root.shownAt
+    var seq = root.cardSeq
     root.forgetGrade()
+    root.chosen = rating
     root.phase = "submitting"
+    settleTimer.restart()
     deck.call("review", { sessionId: root.sessionId, cardId: c.id, rating: rating, responseMs: responseMs }, function(err) {
       if (err) { root.fail(err); return }
       root.rec = Session.rated(root.rec, c, rating, suggested, repeat, Date.now())
-      root.loadNext()
+      if (seq !== root.cardSeq || root.phase !== "submitting") return
+      deck.call("nextCard", { sessionId: root.sessionId }, function(err, res) {
+        root.held = { seq: seq, err: err, res: res }
+        root.showHeld()
+      })
     })
   }
 
@@ -260,7 +321,7 @@ QtObject {
     var byId = root.app.store.cardsById
     var find = function(id) { return byId[id] || null }
     if (root.phase === "blocked") {
-      var b = find(root.blocked.card.id)
+      let b = find(root.blocked.card.id)
       if (b && JSON.stringify(b) === JSON.stringify(root.blocked.card)) return
       root.app.toast(b ? "The leech changed in Claude Code" : "The leech is gone from the deck")
       root.loadNext()
@@ -282,8 +343,11 @@ QtObject {
     root.app.toast("Card updated in Claude Code")
   }
 
+  // Only while the card is open: once a rating is on its way (and the view
+  // shows it taken), the server's queue has moved on, so a skip would pass
+  // over the next card unseen.
   function skip() {
-    if (!root.inCard) return
+    if (!root.cardOpen) return
     deck.call("skip", { sessionId: root.sessionId }, function() { root.loadNext() })
   }
 
@@ -337,7 +401,7 @@ QtObject {
   // A key from the answer box (or, with no card up, the screen): true when
   // it was a study key, which the box then doesn't type.
   function handleKey(event) {
-    var a = StudyKeys.action({ phase: root.phase, hasSuggestion: !!root.suggestion, answerEmpty: root.answer.trim() === "" },
+    var a = StudyKeys.action({ phase: root.phase, hasSuggestion: !!root.suggestion, answerEmpty: root.answer.trim() === "", picked: root.picked },
                              event.key, event.modifiers, event.nativeScanCode)
     if (!a) return false
     switch (a.action) {
@@ -345,6 +409,7 @@ QtObject {
     case "revealAccept": root.reveal(true); break
     case "accept": root.submit(root.suggestion.rating); break
     case "acceptLater": root.acceptPending = true; break
+    case "pick": root.pick(a.rating); break
     case "submit": root.submit(a.rating); break
     case "discuss": root.discuss(); break
     case "skip": root.skip(); break

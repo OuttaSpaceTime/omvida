@@ -25,7 +25,7 @@ TestCase {
   function test_common_hints_run_what_their_keys_run() {
     var app = fakeApp("ok", [{ screen: "home" }])
     var hints = S.common(app, [S.study(app)])
-    compare(hints.map(function(h) { return h.keys }), ["⌃2", "⌃K", "⌃N", "alt+←"])
+    compare(hints.map(function(h) { return h.keys }), ["ctrl+2", "ctrl+K", "ctrl+N", "alt+←"])
     hints.forEach(function(h) { h.run() })
     compare(app.calls, ["study", "search:", "add", "back"])
   }

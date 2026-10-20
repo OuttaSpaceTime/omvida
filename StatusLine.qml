@@ -24,7 +24,7 @@ import "bar/Model.js" as Overview
 // A hint without `run` is drawn as a legend, not a button. A screen that
 // declares none of these gets its name only (HOME, WIKI, CARDS, GRAPH).
 // After a screen's own hints and alerts the line adds what every screen
-// shares: ⌃K search, ⌃N add, alt+← back, and the pressure verdict while it
+// shares: ctrl+K search, ctrl+N add, alt+← back, and the pressure verdict while it
 // is not ok (StatusBits.js). Study, whose keys and pressure are its
 // session's, sets statusShared to false.
 //
@@ -68,8 +68,8 @@ Rectangle {
   readonly property int hintsShown: {
     var room = root.width - modeBlock.width - segBox.width - alertRow.width - Theme.spaceSm * 2
     var used = 0
-    for (var i = 0; i < hintRepeater.count; i++) {
-      var it = hintRepeater.itemAt(i)
+    for (let i = 0; i < hintRepeater.count; i++) {
+      let it = hintRepeater.itemAt(i)
       if (!it) return i
       used += it.implicitWidth
       if (used > room) return i

@@ -16,7 +16,7 @@ TestCase {
       week: [{ day: "2026-10-05", reviews: 4, again: 1 }, { day: "2026-10-06", reviews: 12, again: 0 }],
       pending: []
     }
-    for (var k in extra) o[k] = extra[k]
+    for (let k in extra) o[k] = extra[k]
     return o
   }
 

@@ -98,7 +98,7 @@ Item {
     // of the cost, and the layout rests in a third of the frames.
     onTriggered: {
       var a = 1
-      for (var i = 0; i < 3; i++) a = Graph.step(root.layout)
+      for (let i = 0; i < 3; i++) a = Graph.step(root.layout)
       canvas.requestPaint()
       if (a < Graph.REST_ALPHA && !root.dragNode) root.settling = false
     }
@@ -131,7 +131,7 @@ Item {
       // a few hundred more, and the clustering already shows the topics.
       var centre = root.local ? L.nodes[L.index[root.focusPath]] : null
       if (centre) {
-        var kin = root.tagKin
+        let kin = root.tagKin
         ctx.setLineDash([Theme.spaceXs, Theme.spaceXs])
         L.nodes.forEach(function(n) { if (kin[n.id]) edge(centre, n) })
         ctx.setLineDash([])
@@ -162,7 +162,7 @@ Item {
           ctx.font = (n.id === hv ? "bold " : "") + Theme.captionSize + "px monospace"
           // To the right of the node, slid left as far as it must to stay on
           // the canvas (a node at the rail's right edge).
-          var w = ctx.measureText(n.title).width
+          let w = ctx.measureText(n.title).width
           ctx.fillText(n.title, Math.max(0, Math.min(x + r + 3, width - w)), y + 4)
         }
         ctx.globalAlpha = 1

@@ -63,8 +63,8 @@ QtObject {
   function inked(base, target) {
     if (contrastRatio(base, background) >= target) return base
     var lo = 0, hi = 1
-    for (var i = 0; i < 12; i++) {
-      var mid = (lo + hi) / 2
+    for (let i = 0; i < 12; i++) {
+      let mid = (lo + hi) / 2
       if (contrastRatio(blend(foreground, base, mid), background) >= target) hi = mid
       else lo = mid
     }
@@ -89,12 +89,14 @@ QtObject {
   readonly property color redText: readable(red)
   readonly property color greenText: readable(green)
   readonly property color orangeText: readable(orange)
-  readonly property color scrim: Qt.rgba(0, 0, 0, 0.45)
 
   // ---- meaning-bearing colours ---------------------------------------------
   // The four ratings, in the order of the keys that give them.
   readonly property var ratingColors: [faint, redText, orangeText, greenText, readable(blue)]
   function ratingColor(n) { return ratingColors[n] || ink }
+  // A rating taken (Study's chosen keycap): its colour as a fill, faint
+  // enough that the word on it keeps its contrast.
+  function ratingFill(n) { return alpha(ratingColor(n), 0.16) }
 
   // Card states: the viewer's five, from theme hues.
   function stateColor(state) {
@@ -128,7 +130,7 @@ QtObject {
     var cached = topicCache[topic]
     if (cached !== undefined) return cached
     var hash = 0
-    for (var i = 0; i < topic.length; i++) hash = (hash * 31 + topic.charCodeAt(i)) >>> 0
+    for (let i = 0; i < topic.length; i++) hash = (hash * 31 + topic.charCodeAt(i)) >>> 0
     var n = topicHues.length, k = hash % (n * 2)
     var hue = topicHues[k % n]
     var c = readable(k < n ? hue : blend(foreground, hue, 0.35))
@@ -338,6 +340,13 @@ QtObject {
   // a card turning, not a cut.
   readonly property int flipDuration: 560
   readonly property int fadeDuration: 120
+  // A rating taken on Study: the chosen keycap alone, filled, long enough to
+  // read which one went; then the card fades out, and the next one fades in
+  // as it drifts up into place. Short on purpose: the answer box takes no
+  // typing until the next card is in, and a fast hand starts typing at once.
+  readonly property int acceptShowDuration: 260
+  readonly property int acceptFadeDuration: 140
+  readonly property int cardEnterDuration: 180
   // A sheet sliding in from the edge: quick, but long enough to be seen
   // arriving from somewhere.
   readonly property int sheetDuration: 180
@@ -356,8 +365,8 @@ QtObject {
   function parseToml(text) {
     var out = {}
     var lines = String(text || "").replace(/\r\n/g, "\n").split("\n")
-    for (var i = 0; i < lines.length; i++) {
-      var m = lines[i].replace(/\s+$/, "").match(/^([A-Za-z0-9_-]+)\s*=\s*"([^"]*)"\s*$/)
+    for (let i = 0; i < lines.length; i++) {
+      let m = lines[i].replace(/\s+$/, "").match(/^([A-Za-z0-9_-]+)\s*=\s*"([^"]*)"\s*$/)
       if (m) out[m[1]] = m[2]
     }
     return out
@@ -372,7 +381,7 @@ QtObject {
     foreground = t.foreground
     accent = t.accent
     var names = ["red", "yellow", "orange", "green", "cyan", "blue", "magenta"]
-    for (var i = 0; i < names.length; i++) root[names[i]] = t[names[i]] || fallback[names[i]]
+    for (let i = 0; i < names.length; i++) root[names[i]] = t[names[i]] || fallback[names[i]]
     mode = t.mode || "light"
     topicCache = ({})
   }

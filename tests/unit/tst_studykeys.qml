@@ -8,7 +8,7 @@ TestCase {
 
   function st(phase, extra) {
     var s = { phase: phase, hasSuggestion: false, answerEmpty: false }
-    for (var k in extra) s[k] = extra[k]
+    for (let k in extra) s[k] = extra[k]
     return s
   }
 
@@ -32,16 +32,32 @@ TestCase {
   }
 
   // Shift+digit arrives as the shifted character; the scan code wins when present.
-  function test_shift_digits_rate_on_any_layout() {
-    compare(K.action(st("answering"), Qt.Key_Exclam, Qt.ShiftModifier, 0), { action: "submit", rating: 1 })
-    compare(K.action(st("answering"), Qt.Key_At, Qt.ShiftModifier, 0), { action: "submit", rating: 2 })
-    compare(K.action(st("answering"), Qt.Key_QuoteDbl, Qt.ShiftModifier, 0), { action: "submit", rating: 2 })
-    compare(K.action(st("revealed"), Qt.Key_NumberSign, Qt.ShiftModifier, 0), { action: "submit", rating: 3 })
-    compare(K.action(st("revealed"), Qt.Key_section, Qt.ShiftModifier, 0), { action: "submit", rating: 3 })
-    compare(K.action(st("grading"), Qt.Key_Dollar, Qt.ShiftModifier, 0), { action: "submit", rating: 4 })
-    compare(K.action(st("answering"), Qt.Key_4, Qt.ShiftModifier, 0), { action: "submit", rating: 4 })
-    // A layout where Shift+2 gives some other character still rates by scan code.
-    compare(K.action(st("answering"), Qt.Key_Ampersand, Qt.ShiftModifier, 11), { action: "submit", rating: 2 })
+  function test_shift_digits_pick_on_any_layout() {
+    compare(K.action(st("answering"), Qt.Key_Exclam, Qt.ShiftModifier, 0), { action: "pick", rating: 1 })
+    compare(K.action(st("answering"), Qt.Key_At, Qt.ShiftModifier, 0), { action: "pick", rating: 2 })
+    compare(K.action(st("answering"), Qt.Key_QuoteDbl, Qt.ShiftModifier, 0), { action: "pick", rating: 2 })
+    compare(K.action(st("revealed"), Qt.Key_NumberSign, Qt.ShiftModifier, 0), { action: "pick", rating: 3 })
+    compare(K.action(st("revealed"), Qt.Key_section, Qt.ShiftModifier, 0), { action: "pick", rating: 3 })
+    compare(K.action(st("grading"), Qt.Key_Dollar, Qt.ShiftModifier, 0), { action: "pick", rating: 4 })
+    compare(K.action(st("answering"), Qt.Key_4, Qt.ShiftModifier, 0), { action: "pick", rating: 4 })
+    // A layout where Shift+2 gives some other character still picks by scan code.
+    compare(K.action(st("answering"), Qt.Key_Ampersand, Qt.ShiftModifier, 11), { action: "pick", rating: 2 })
+    // A shifted character off the digit row types, even when another layout
+    // puts it on a digit: '"' is Shift+' on US (scan code 48).
+    compare(K.action(st("answering"), Qt.Key_QuoteDbl, Qt.ShiftModifier, 48), null)
+    compare(K.action(st("revealed"), Qt.Key_NumberSign, Qt.ShiftModifier, 51), null)
+  }
+
+  // The first press never rates: before the reveal, not even the same digit
+  // twice (the reveal comes first). Once the back shows, the picked digit
+  // again or Shift+Enter submits the pick.
+  function test_a_pick_rates_on_the_second_press() {
+    compare(K.action(st("answering", { picked: 2 }), Qt.Key_2, Qt.ShiftModifier, 11), { action: "pick", rating: 2 })
+    compare(K.action(st("revealed", { picked: 2 }), Qt.Key_2, Qt.ShiftModifier, 11), { action: "submit", rating: 2 })
+    compare(K.action(st("grading", { picked: 2 }), Qt.Key_2, Qt.ShiftModifier, 11), { action: "submit", rating: 2 })
+    compare(K.action(st("revealed", { picked: 2 }), Qt.Key_4, Qt.ShiftModifier, 13), { action: "pick", rating: 4 })
+    compare(K.action(st("revealed", { picked: 1 }), Qt.Key_Return, Qt.ShiftModifier, 0), { action: "submit", rating: 1 })
+    compare(K.action(st("revealed", { picked: 0 }), Qt.Key_Return, Qt.ShiftModifier, 0), { action: "submit", rating: 3 })
   }
 
   function test_unshifted_digits_and_other_modifiers_type() {

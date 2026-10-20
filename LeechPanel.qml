@@ -47,7 +47,7 @@ Column {
   }
   Row {
     spacing: Theme.spaceLg
-    PlainButton { objectName: "leechContinue"; keys: "↵"; label: "continue"; anchors.verticalCenter: parent.verticalCenter; onActivated: root.session.loadNext() }
+    PlainButton { objectName: "leechContinue"; keys: "enter"; label: "continue"; anchors.verticalCenter: parent.verticalCenter; onActivated: root.session.loadNext() }
     UiText {
       text: "after fixing it in Claude Code"
       font.pixelSize: Theme.captionSize

@@ -25,7 +25,7 @@ Modal {
     root.kind = k
     var t = topic, c = context
     if (t === "" && c === "" && app) {
-      var s = app.currentScreen
+      let s = app.currentScreen
       if (s === "wiki" && app.wikiPath !== "" && app.store.pagesByPath[app.wikiPath]) {
         t = app.store.pagesByPath[app.wikiPath].title
         c = "wiki page [[" + app.wikiPath + "]]"

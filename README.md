@@ -18,9 +18,9 @@ A card's front, and the answer box already focused. Type an answer, or don't.
 | Key | Does |
 |---|---|
 | **Shift+Enter** | reveal the back; a typed answer goes to `claude -p`, which suggests a rating with a one-sentence reason (~3s) |
-| **Shift+Enter** again | submit **Good** |
+| **Shift+Enter** again | submit the rating Shift+1–4 picked, else **Good** |
 | **Alt+Enter** | accept the suggestion. Before the reveal: reveal, and accept it the moment it arrives |
-| **Shift+1–4** | Again / Hard / Good / Easy, any time, overriding the suggestion. Before the reveal it rates without grading |
+| **Shift+1–4** | pick Again / Hard / Good / Easy, overriding the suggestion; before the reveal it reveals too. The same digit again (or Shift+Enter) submits the pick, another digit changes it |
 | **Ctrl+D** | discuss the card in Claude Code (kitty), Socratic mode, with your answer and the suggestion |
 | **Ctrl+S** | skip; the card stays due |
 | **Esc** | end the session; what was rated counts, and the summary follows |

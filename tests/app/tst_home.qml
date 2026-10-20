@@ -34,9 +34,9 @@ OmvidaTest {
     compare(item("statusMode").text, "HOME")
     verify(home.statusSegments[0].text.indexOf("4 pages") === 0, home.statusSegments[0].text)
     var keys = line.hints.map(function(h) { return h.keys })
-    compare(keys.slice(0, 3), ["⌃2", "⌃K", "⌃N"])
+    compare(keys.slice(0, 3), ["ctrl+2", "ctrl+K", "ctrl+N"])
     // The search hint is Ctrl+K: it opens the palette.
-    line.hints.filter(function(h) { return h.keys === "⌃K" })[0].run()
+    line.hints.filter(function(h) { return h.keys === "ctrl+K" })[0].run()
     tryVerify(function() { return searchPalette.opened })
   }
 

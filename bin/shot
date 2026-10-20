@@ -15,6 +15,7 @@
 #       cardsdelete | studydelete (Del's dialog, left open) |
 #       done (rate all Good: the summary) | leech (a blocked session) |
 #       syncfail (a card up, the sync's failure note) | keys (the key list)
+#       accept[:1-4] (an answer revealed, then rated: catch it with -f) |
 #       graphlocal (the graph screen around the page -s opened) |
 #       panels[:side,graph] (on a wiki page: fold the side panel, open the graph) |
 #       note[:text] (the note dialog over a card, never saved) |
@@ -35,7 +36,7 @@ while getopts "s:w:h:a:f:t:o:R" opt; do
     R) real=1 ;;
     s) screen=$OPTARG ;; w) width=$OPTARG ;; h) height=$OPTARG ;; a) action=$OPTARG ;;
     f) frames=$OPTARG ;; t) settle=$OPTARG ;; o) out=$OPTARG ;;
-    *) sed -n '2,27p' "$0"; exit 2 ;;
+    *) sed -n '2,/^[^#]/{/^#/p}' "$0"; exit 2 ;;
   esac
 done
 mkdir -p "$out"

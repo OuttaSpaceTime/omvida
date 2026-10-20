@@ -31,7 +31,7 @@ backend failures, a quiet Add), the screen, and a 36px status line along the bot
 the rail. Content sits in a reading column of 82 body characters, centred.
 
 Keys everywhere: Ctrl+1–5 screens, Ctrl+K or `/` search (not on Study, where `/` is typed),
-Ctrl+N Add (on a study card, Ctrl+N notes the card instead), Alt+←/→ history. Esc closes an overlay. The reading screens name ⌃K, ⌃N (once the
+Ctrl+N Add (on a study card, Ctrl+N notes the card instead), Alt+←/→ history. Esc closes an overlay. The reading screens name ctrl+K, ctrl+N (once the
 window offers `toggleAdd()`) and alt+← (when there is history) in the status line.
 
 ### The status line
@@ -50,7 +50,7 @@ readonly property var statusAlerts       // [{ text, color?, tip?, run? }] right
 readonly property bool statusShared      // default true; Study sets false
 ```
 
-After a screen's own hints and alerts the line adds what every screen shares: ⌃K search, ⌃N
+After a screen's own hints and alerts the line adds what every screen shares: ctrl+K search, ctrl+N
 add, alt+← back (with history), and the pressure verdict while it is not ok, its clearance as
 the tip and a click into Study. Study's keys and pressure are its session's, so it opts out.
 
@@ -72,7 +72,7 @@ it exposed, `lapsed` in red or `noted` in the accent with the note's first line,
 opening its note; `fix all · N notes` on the caption's right, in the accent), last
 studied pages (latest review first, then coverage), recently updated, topic tiles (equal
 height, a hairline in the topic's colour over the name and three pages). Status line: HOME,
-the wiki's counts, ⌃2 study, the shared hints, the pressure verdict while it is not ok.
+the wiki's counts, ctrl+2 study, the shared hints, the pressure verdict while it is not ok.
 
 ## Study
 
@@ -94,9 +94,12 @@ while it fits.
   colour, SYNC, LEECH (orange), DONE, ERROR (red). Segments: the position from the server
   (`3/12`), the deck, `repeat`. One hint, `alt+? keys`: Alt+? (or a click) opens the key list
   (KeyHelp.qml), a modal of the keys that work now, each row clickable; Esc or Alt+? closes it.
-  Answering it lists `⇧↵ reveal`, `⌥↵ reveal+accept`, `⇧1-4 rate`, `⌃D discuss`, `⌃N note`,
-  `⌃S skip`, `esc end`, `del delete`; revealed `⌥↵ take <rating>` (or `⇧↵ good` with no
-  suggestion), `⇧1-4 rate` as a legend, discuss, note, skip, end, delete. A noted card says
+  Keys are spelled out (`ctrl+`, `shift+`, `alt+`, `enter`), not as Mac glyphs.
+  Answering it lists `shift+enter reveal`, `alt+enter reveal+accept`, `shift+1-4 reveal and pick`,
+  `ctrl+D discuss`, `ctrl+N note`, `ctrl+S skip`, `esc end`, `del delete`; revealed
+  `shift+enter <picked rating>` once Shift+digit picked one, `alt+enter take <rating>` (or
+  `shift+enter good` with no suggestion and no pick), `shift+1-4 pick, twice to rate` as a legend,
+  discuss, note, skip, end, delete. Shift+digit never moves on at the first press. A noted card says
   `noted` (accent) among the segments. Del asks in the
   confirm dialog, then deletes the card and the session goes on; with an answer typed and not
   yet revealed, Del edits the answer instead. Alerts: the pressure verdict when
@@ -105,9 +108,9 @@ while it fits.
 
 States: syncing (skip the sync), starting, answering, grading, revealed, submitting, blocked
 (a leech: why, its card between hairlines, rewrite/split in claude, keep as is, delete with a
-confirm, `↵ continue`), done (the summary with an honest duration, accuracy, lapses, leeches;
-related pages; a walkthrough offer per lapse; `↵ start another session`, browse the wiki,
-home; the cards noted, with "fix them in claude"), error (`↵ try again`). The leech and the summary set their actions as plain words
+confirm, `enter continue`), done (the summary with an honest duration, accuracy, lapses, leeches;
+related pages; a walkthrough offer per lapse; `enter start another session`, browse the wiki,
+home; the cards noted, with "fix them in claude"), error (`enter try again`). The leech and the summary set their actions as plain words
 (`PlainButton.qml`), never a row of boxes. Keys: README's table; Enter and Esc also work on a
 leech, Enter on the summary.
 
@@ -177,11 +180,11 @@ chips), with "dashed: shares a tag" around a page.
 
 Search palette (as tall as its results; Keyword or Deep; Ask streams, then renders like a page,
 with Continue in Claude filled and Copy/Stop quiet; a foot line of clickable key hints: ↑↓
-choose, ↵ open, ⌃↵ ask Claude, esc close, and ⌫ back to search once an answer is in), Add menu,
+choose, enter open, ctrl+enter ask Claude, esc close, and ⌫ back to search once an answer is in), Add menu,
 the topic dialog (the topic typed on a line; Open in Claude Code filled, Cancel quiet), the
 note dialog (the card's front dim, the markdown source on the code fill, its rendered preview
-under a PREVIEW caption, Save filled, Cancel and a red Delete note quiet, `markdown · ⌃↵ save ·
-esc cancel` faint on the right; Enter continues a list, ⌃B and ⌃I mark the selection), the
+under a PREVIEW caption, Save filled, Cancel and a red Delete note quiet, `markdown · ctrl+enter save ·
+esc cancel` faint on the right; Enter continues a list, ctrl+B and ctrl+I mark the selection), the
 confirm dialog (what goes quoted, what else goes in dim text, the action filled in red, Cancel
-quiet; ↵ or y takes it, esc, n or the scrim cancels), a
-page's cards (overview grid or flip-through), toasts. Dialogs and the palette have a 1px frame.
+quiet; enter or y takes it, esc, n or a click outside cancels), a
+page's cards (overview grid or flip-through), toasts. Dialogs and the palette have a 1px frame, and nothing dims the window behind them.

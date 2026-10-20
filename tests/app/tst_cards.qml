@@ -233,7 +233,7 @@ OmvidaTest {
   function test_the_walk_stops_at_the_ends() {
     key(Qt.Key_Left)
     compare(cardsScreen.current, 0)
-    for (var i = 0; i < 6; i++) key(Qt.Key_Right)
+    for (let i = 0; i < 6; i++) key(Qt.Key_Right)
     compare(cardsScreen.current, 4)
     compare(cardsScreen.upNextCount, 0)
     compare(item("upNext").text, "That was the last card")
@@ -301,7 +301,7 @@ OmvidaTest {
   function test_status_line_contract() {
     compare(item("statusMode").text, "CARDS")
     // Cards gets the shared hints after its own, like every reading screen.
-    verify(item("statusLine").hints.some(function(h) { return h.keys === "⌃K" }), "shared hints")
+    verify(item("statusLine").hints.some(function(h) { return h.keys === "ctrl+K" }), "shared hints")
     compare(cardsScreen.statusSegments[0].text, "1/5")
     var next = cardsScreen.statusHints.filter(function(h) { return h.label === "next" })[0]
     next.run()

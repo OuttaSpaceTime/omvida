@@ -19,6 +19,14 @@ import "Format.js" as Format
 ShellRoot {
   id: root
 
+  // A test, screenshot or sandbox run never reloads itself when a file
+  // changes. Quickshell's reload replaces the whole object tree while a test
+  // is still running inside it, and Qt aborts ("destroyed while one of its
+  // QML signal handlers is in progress"): editing during bin/check crashed
+  // test instances, and Quickshell restarted them offscreen. Your own Omvida
+  // still reloads on save.
+  settings.watchFiles: (Quickshell.env("OMVIDA_TEST") || Quickshell.env("OMVIDA_SHOT_DIR") || Quickshell.env("OMVIDA_SANDBOX") || "") === ""
+
   property string currentScreen: "home" // home | study | wiki | cards | graph
   property string wikiPath: ""          // the open page, or "" for a folder
   property string wikiFolder: ""        // the open folder when no page is
@@ -46,7 +54,7 @@ ShellRoot {
     var s = screens.current
     if (!s || typeof s.takeFocus !== "function" || !s.takeFocus()) contentRoot.forceActiveFocus()
   }
-  // The Add menu: toggleAdd for the status line's ⌃N hint (StatusBits.js);
+  // The Add menu: toggleAdd for the status line's ctrl+N hint (StatusBits.js);
   // addMenuOpen for the tests.
   readonly property bool addMenuOpen: addMenu.opened
   function toggleAdd() { addMenu.toggle() }
@@ -295,7 +303,7 @@ ShellRoot {
       function inject(item) {
         var parts = { app: root, study: study, studyView: studyScreen, wiki: wikiScreen, cardsScreen: cardsScreen,
                       searchPalette: palette, addMenu: addMenu, target: contentRoot, window: window }
-        for (var k in parts) if (k in item) item[k] = parts[k]
+        for (let k in parts) if (k in item) item[k] = parts[k]
       }
 
       // The paper behind every screen: the window's own colour is not in a

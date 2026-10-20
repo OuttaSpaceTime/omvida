@@ -76,14 +76,14 @@ OmvidaTest {
     compare(cardsScreen.all.length, n)
   }
 
-  // Cancel, and a click on the scrim, keep the card too.
-  function test_b_cancel_and_the_scrim_keep_the_card() {
+  // Cancel, and a click outside the card, keep the card too.
+  function test_b_cancel_and_a_click_outside_keep_the_card() {
     var here = stage().card.id
     key(Qt.Key_Delete)
     click("confirmCancel")
     verify(!app.confirmOpen)
     key(Qt.Key_Delete)
-    mouseClick(item("confirmDialog"), 5, 5)   // check: allow-px a point on the scrim, off the card
+    mouseClick(item("confirmDialog"), 5, 5)   // check: allow-px a point outside the card
     verify(!app.confirmOpen, "a click outside the card closes it")
     tryVerify(function() { return stage().activeFocus }, timeout)
     key(Qt.Key_Return)

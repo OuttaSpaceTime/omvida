@@ -174,7 +174,7 @@ Modal {
       anchors.bottom: parent.bottom
       height: Theme.controlHeight
       verticalAlignment: Text.AlignVCenter
-      text: "markdown · ⌃↵ save · esc cancel"
+      text: "markdown · ctrl+enter save · esc cancel"
       font.pixelSize: Theme.captionSize
       color: Theme.faint
     }

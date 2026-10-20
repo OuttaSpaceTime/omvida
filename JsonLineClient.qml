@@ -47,9 +47,9 @@ Item {
     if (msg.ready === true) {
       root.ready = true
       root.failure = ""
-      var q = root.queue
+      let q = root.queue
       root.queue = []
-      for (var i = 0; i < q.length; i++) proc.write(q[i] + "\n")
+      for (let i = 0; i < q.length; i++) proc.write(q[i] + "\n")
       return
     }
     var cb = root.pending[msg.id]
@@ -63,7 +63,7 @@ Item {
     var p = root.pending
     root.pending = ({})
     root.queue = []
-    for (var id in p) if (typeof p[id] === "function") p[id](reason, null)
+    for (let id in p) if (typeof p[id] === "function") p[id](reason, null)
   }
 
   Process {

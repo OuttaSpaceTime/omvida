@@ -1,7 +1,7 @@
 # What ~/Code/qs-kit/bin/qs-check (run by bin/check) needs to know about
 # Omvida. Sourced by bash.
 APP=omvida
-STEPS=(lint px load bar test)
+STEPS=(lint px noscrim load bar test)
 # The bar plugin imports omarchy-shell's qs.* modules, which neither qmllint
 # nor the px rule can see; the bar step checks it instead.
 SKIP_DIRS=(bar)
@@ -19,3 +19,4 @@ run_bar() {
   if omarchy plugin validate "$ROOT/bar" >"$scratch/bar.log" 2>&1; then note bar "ok: omarchy plugin validate"
   else cat "$scratch/bar.log"; failed=1; note bar "FAILED: omarchy plugin validate"; fi
 }
+

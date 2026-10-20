@@ -78,7 +78,7 @@ TestCase {
     function where(file, line) { return file ? " (" + String(file).replace(/^.*\//, "") + ":" + line + ")" : "" }
     function outcome(ok, detail) {
       if (pendingXfail !== "") {
-        var why = pendingXfail, aborts = pendingXfailAborts
+        let why = pendingXfail, aborts = pendingXfailAborts
         pendingXfail = ""
         if (ok) { failures = failures.concat(["XPASS (expected to fail: " + why + "): " + detail]); return true }
         xfails = xfails.concat([why])
@@ -113,7 +113,7 @@ TestCase {
 
   function testFunctions() {
     var names = []
-    for (var p in base) if (p.indexOf("test_") === 0 && typeof base[p] === "function") names.push(p)
+    for (let p in base) if (p.indexOf("test_") === 0 && typeof base[p] === "function") names.push(p)
     names.sort()
     if (base.only !== "") names = names.filter(function(n) { return n === base.only })
     return names
@@ -130,14 +130,14 @@ TestCase {
       return
     }
     var names = testFunctions()
-    for (var i = 0; i < names.length; i++) counts[runOne(names[i])]++
+    for (let i = 0; i < names.length; i++) counts[runOne(names[i])]++
     say("DONE " + base.fileName + " " + counts.pass + " passed, " + counts.fail + " failed, " + counts.xfail + " xfail, " + counts.skip + " skipped")
     Qt.exit(counts.fail > 0 || names.length === 0 ? 1 : 0)
   }
 
   function runStep(fn) {
     try { fn() } catch (e) {
-      var m = String(e && e.message !== undefined ? e.message : e)
+      let m = String(e && e.message !== undefined ? e.message : e)
       if (m.indexOf("QtQuickTest::") !== 0)
         results.failures = results.failures.concat(["uncaught exception: " + m
           + (e && e.fileName ? " (" + String(e.fileName).replace(/^.*\//, "") + ":" + e.lineNumber + ")" : "")])
@@ -163,7 +163,7 @@ TestCase {
     var path = base.outDir + "/" + base.fileName + "-" + name + ".png"
     var done = false
     base.target.grabToImage(function(result) { if (result.saveToFile(path)) say("SHOT " + path); done = true })
-    for (var t = 0; t < 3000 && !done; t += 50) wait(50)
+    for (let t = 0; t < 3000 && !done; t += 50) wait(50)
   }
 
   // ---- processes and files ------------------------------------------------------
@@ -184,8 +184,8 @@ TestCase {
     var p = processComponent.createObject(base, { command: argv })
     p.running = true
     var limit = ms || 10000
-    for (var t = 0; t < limit && !p.finished; t += 10) wait(10)
-    for (var s = 0; s < 500 && !p.streamDone; s += 10) wait(10)
+    for (let t = 0; t < limit && !p.finished; t += 10) wait(10)
+    for (let s = 0; s < 500 && !p.streamDone; s += 10) wait(10)
     var r = { code: p.finished ? p.code : -1, out: p.out }
     p.destroy()
     return r
@@ -258,6 +258,16 @@ TestCase {
     tryVerify(function() { return field.activeFocus }, base.timeout, "the answer box has the keyboard")
   }
 
+  // Rate the card up by its keys, as a hand would: Shift+n picks it (and
+  // reveals), Shift+n again takes it. The shifted characters are a US
+  // layout's; the tests about the keys themselves press them one by one.
+  function rate(n) {
+    var shifted = [0, Qt.Key_Exclam, Qt.Key_At, Qt.Key_NumberSign, Qt.Key_Dollar]
+    key(shifted[n], Qt.ShiftModifier)
+    tryCompare(base.study, "picked", n, 3000)
+    key(shifted[n], Qt.ShiftModifier)
+  }
+
   // A session blocked on a leech: `cardId` at six lapses and the only card
   // due. The server may block at once (a card it flagged before) or serve the
   // card first; either way one Again gets to the block.
@@ -269,19 +279,19 @@ TestCase {
     tryVerify(function() { return base.study.phase === "answering" || base.study.phase === "blocked" }, 15000)
     if (base.study.phase === "answering") {
       tryVerify(function() { return item("answerField").activeFocus }, 3000)
-      key(Qt.Key_NumberSign, Qt.ShiftModifier)
+      rate(3)
     }
     tryCompare(base.study, "phase", "blocked", 8000)
   }
 
   // ---- finding and clicking -----------------------------------------------------------------
-  function effectiveOpacity(it) { var o = 1; for (var p = it; p; p = p.parent) o *= p.opacity; return o }
+  function effectiveOpacity(it) { var o = 1; for (let p = it; p; p = p.parent) o *= p.opacity; return o }
 
   function findNamed(root, name) {
     if (!root) return null
     if (root.objectName === name && root.visible) return root
     var kids = root.children
-    for (var i = 0; kids && i < kids.length; i++) { var r = findNamed(kids[i], name); if (r) return r }
+    for (let i = 0; kids && i < kids.length; i++) { let r = findNamed(kids[i], name); if (r) return r }
     return null
   }
 
@@ -293,9 +303,9 @@ TestCase {
 
   function settle(it) {
     var last = null
-    for (var t = 0; t < 2000; t += 50) {
-      var p = it.mapToItem(base.target, 0, 0)
-      var here = p.x + "," + p.y + "," + it.width + "," + it.height
+    for (let t = 0; t < 2000; t += 50) {
+      let p = it.mapToItem(base.target, 0, 0)
+      let here = p.x + "," + p.y + "," + it.width + "," + it.height
       if (here === last) return
       last = here
       wait(50)
@@ -313,8 +323,8 @@ TestCase {
   }
 
   function type(text) {
-    for (var i = 0; i < text.length; i++) {
-      var c = text.charAt(i)
+    for (let i = 0; i < text.length; i++) {
+      let c = text.charAt(i)
       if (c === "\n") keyClick(Qt.Key_Return)
       else keyClick(c)
     }

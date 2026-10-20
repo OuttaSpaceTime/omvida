@@ -51,7 +51,7 @@ Item {
   readonly property bool answeringKeys: phase === "answering" || phase === "loading" || (phase === "submitting" && !root.session.backShown)
 
   // Study's keys and pressure are its session's, not the reading screens'
-  // ⌃K, ⌃N and back (StatusLine.qml).
+  // ctrl+K, ctrl+N and back (StatusLine.qml).
   readonly property bool statusShared: false
   readonly property string statusMode: {
     switch (phase) {
@@ -72,8 +72,8 @@ Item {
   readonly property var statusSegments: {
     var s = root.session
     if ((s.inCard || phase === "loading") && s.next && s.card) {
-      var out = []
-      var pos = Format.position(s.next)
+      let out = []
+      let pos = Format.position(s.next)
       if (pos !== "") out.push({ text: pos, color: Theme.ink })
       out.push({ text: s.card.deck })
       if (s.next.repeat) out.push({ text: "repeat" })
@@ -82,16 +82,16 @@ Item {
     }
     switch (phase) {
     case "idle":
-      var due = s.app.store.overview ? s.app.store.overview.pressure.flashcardsDue : 0
+      let due = s.app.store.overview ? s.app.store.overview.pressure.flashcardsDue : 0
       return [{ text: Format.plural(due, "card") + " due" }]
     case "syncing": return [{ text: "syncing with anki…" }]
     case "starting": case "loading": return [{ text: "starting…" }]
     case "blocked": return s.blocked ? [{ text: "lapsed " + s.blocked.lapses + " times", color: Theme.orangeText }, { text: s.blocked.card.deck }] : []
     case "error": return [{ text: "something went wrong", color: Theme.redText }]
     case "done":
-      var d = s.summaryData
+      let d = s.summaryData
       if (!d || d.reviews === 0) return [{ text: "nothing reviewed" }]
-      var done = [{ text: Format.plural(d.cards, "card"), color: Theme.ink }]
+      let done = [{ text: Format.plural(d.cards, "card"), color: Theme.ink }]
       if (d.minutes !== null) done.push({ text: Format.durationText(d.minutes) })
       done.push({ text: "accuracy " + Format.pct(d.accuracy) })
       return done
@@ -106,33 +106,38 @@ Item {
   readonly property var statusHints: [{ keys: "alt+?", label: "keys", run: function() { keysHelp.open() } }]
   readonly property var keyList: {
     var s = root.session
-    var discuss = { keys: "⌃D", label: "discuss", run: function() { s.discuss() } }
-    var skip = { keys: "⌃S", label: "skip", run: function() { s.skip() } }
-    var note = { keys: "⌃N", label: "note", run: function() { s.note() } }
+    var discuss = { keys: "ctrl+D", label: "discuss", run: function() { s.discuss() } }
+    var skip = { keys: "ctrl+S", label: "skip", run: function() { s.skip() } }
+    var note = { keys: "ctrl+N", label: "note", run: function() { s.note() } }
     var end = { keys: "esc", label: "end", run: function() { s.endNow() } }
     var del = { keys: "del", label: "delete", run: function() { s.askDelete() } }
     if (answeringKeys) return [
-      { keys: "⇧↵", label: "reveal", run: function() { s.reveal(false) } },
-      { keys: "⌥↵", label: "reveal+accept", run: function() { s.reveal(true) } },
+      { keys: "shift+enter", label: "reveal", run: function() { s.reveal(false) } },
+      { keys: "alt+enter", label: "reveal+accept", run: function() { s.reveal(true) } },
       // The mouse has no Shift: a click reveals, where the keycaps are.
-      { keys: "⇧1-4", label: "rate", run: function() { s.reveal(false) } },
+      { keys: "shift+1-4", label: "reveal and pick", run: function() { s.reveal(false) } },
       discuss, note, skip, end, del
     ]
     if (root.session.backShown) {
-      var first
-      if (phase === "grading") first = { keys: "⌥↵", label: s.acceptPending ? "taking claude's rating" : "take claude's rating", run: function() { s.acceptPending = true } }
-      else if (s.suggestion) first = { keys: "⌥↵", label: "take " + Format.ratingName(s.suggestion.rating).toLowerCase(), run: function() { s.submit(s.suggestion.rating) } }
-      else first = { keys: "⇧↵", label: "good", run: function() { s.submit(3) } }
-      // ⇧1-4 is a legend here: the keycaps above are its buttons.
-      return [first, { keys: "⇧1-4", label: "rate" }, discuss, note, skip, end, del]
+      // A picked rating goes first: shift+enter submits it, and claude's
+      // rating stays a key away.
+      let rows = []
+      let picked = s.picked
+      if (picked) rows.push({ keys: "shift+enter", label: Format.ratingName(picked).toLowerCase(), run: function() { s.submit(picked) } })
+      if (phase === "grading") rows.push({ keys: "alt+enter", label: s.acceptPending ? "taking claude's rating" : "take claude's rating", run: function() { s.acceptPending = true } })
+      else if (s.suggestion) rows.push({ keys: "alt+enter", label: "take " + Format.ratingName(s.suggestion.rating).toLowerCase(), run: function() { s.submit(s.suggestion.rating) } })
+      else if (!picked) rows.push({ keys: "shift+enter", label: "good", run: function() { s.submit(3) } })
+      // shift+1-4 is a legend here: the keycaps above are its buttons. The
+      // first press picks, the second submits.
+      return rows.concat([{ keys: "shift+1-4", label: "pick, twice to rate" }, discuss, note, skip, end, del])
     }
     switch (phase) {
-    case "idle": return [{ keys: "↵", label: "start", run: function() { s.start() } }]
+    case "idle": return [{ keys: "enter", label: "start", run: function() { s.start() } }]
     case "syncing": return [{ keys: "", label: "skip the sync", run: function() { s.skipSync() } }]
-    case "blocked": return [{ keys: "↵", label: "continue", run: function() { s.loadNext() } }, end]
-    case "error": return [{ keys: "↵", label: "try again", run: function() { s.start() } }]
+    case "blocked": return [{ keys: "enter", label: "continue", run: function() { s.loadNext() } }, end]
+    case "error": return [{ keys: "enter", label: "try again", run: function() { s.start() } }]
     case "done": return [
-      { keys: "↵", label: "study again", run: function() { s.start() } },
+      { keys: "enter", label: "study again", run: function() { s.start() } },
       { keys: "", label: "wiki", run: function() { s.app.setScreen("wiki") } },
       { keys: "", label: "home", run: function() { s.app.setScreen("home") } }
     ]
@@ -152,7 +157,7 @@ Item {
       out.push({ text: s.info.newHeldBack + " new held back", tip: "new cards held back while pressure is " + pressure.verdict })
     var note = s.syncNote
     if (note !== "") {
-      var failed = note.indexOf("Anki sync failed") === 0
+      let failed = note.indexOf("Anki sync failed") === 0
       out.push({ text: failed ? "sync ✕" : "synced", color: failed ? Theme.redText : Theme.dim, tip: note,
                  run: function() { s.app.toast(note) } })
     }
@@ -203,7 +208,7 @@ Item {
         PlainButton {
           objectName: "startSessionButton"
           visible: root.phase === "idle" || root.phase === "error"
-          keys: "↵"
+          keys: "enter"
           label: root.phase === "error" ? "try again" : "start a session"
           size: Theme.bodySize
           tint: Theme.accentColor
@@ -213,6 +218,7 @@ Item {
 
       StudyCard {
         id: card
+        objectName: "studyCard"
         width: parent.width
         session: root.session
       }

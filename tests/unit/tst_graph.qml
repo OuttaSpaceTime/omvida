@@ -37,14 +37,14 @@ TestCase {
   // nearer each other than to the other tag's (1.1 with no springs).
   function test_pages_sharing_a_tag_settle_together() {
     var nodes = []
-    for (var i = 0; i < 12; i++) nodes.push({ id: "n" + i, tags: [i % 2 ? "odd" : "even"], linkCount: 0 })
+    for (let i = 0; i < 12; i++) nodes.push({ id: "n" + i, tags: [i % 2 ? "odd" : "even"], linkCount: 0 })
     var l = G.initLayout({ nodes: nodes, links: [] })
     var steps = 0
     while (G.step(l) >= G.REST_ALPHA && steps < 3000) steps++
     function dist(p, q) { return Math.hypot(p.x - q.x, p.y - q.y) }
     var same = 0, other = 0, ns = 0, no = 0
-    for (var a = 0; a < 12; a++) {
-      for (var b = a + 1; b < 12; b++) {
+    for (let a = 0; a < 12; a++) {
+      for (let b = a + 1; b < 12; b++) {
         if (a % 2 === b % 2) { same += dist(l.nodes[a], l.nodes[b]); ns++ }
         else { other += dist(l.nodes[a], l.nodes[b]); no++ }
       }

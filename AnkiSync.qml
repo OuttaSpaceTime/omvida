@@ -45,7 +45,7 @@ Item {
       var last = root.lastLine(root.output)
       var m = /^sync: done \((.*)\)$/.exec(last)
       if (code === 0 && m) {
-        var idle = m[1] === "nothing to do"
+        let idle = m[1] === "nothing to do"
         cb({ ran: true, moved: !idle, note: idle ? "" : "Anki sync: " + m[1] })
         return
       }

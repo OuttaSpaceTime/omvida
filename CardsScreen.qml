@@ -256,7 +256,7 @@ Item {
       // stays next to the grid it walks through. Placed by x and y, never by
       // switching anchors (layout rule 6).
       Item {
-        id: top
+        id: topRow
         width: parent.width
         readonly property bool sideBySide: width >= Theme.cardStageMinWidth + Theme.space3xl + Theme.cardsAsideWidth
         readonly property real stageWidth: sideBySide ? width - Theme.cardsAsideWidth - Theme.space3xl : width
@@ -265,8 +265,8 @@ Item {
 
         Column {
           id: stageColumn
-          y: top.sideBySide ? 0 : aside.implicitHeight + Theme.space2xl
-          width: top.stageWidth
+          y: topRow.sideBySide ? 0 : aside.implicitHeight + Theme.space2xl
+          width: topRow.stageWidth
           spacing: Theme.spaceSm
 
           FlipThrough {
@@ -279,7 +279,7 @@ Item {
             // As tall as the column beside it, or its own least height
             // (FlipThrough's) if the column is shorter, so the column never
             // runs past the card.
-            stageHeight: top.sideBySide ? aside.implicitHeight : 0
+            stageHeight: topRow.sideBySide ? aside.implicitHeight : 0
           }
 
           // The stage card's note, its first line; a click opens it.
@@ -303,10 +303,10 @@ Item {
         }
 
         Rectangle {
-          visible: top.sideBySide
-          x: top.stageWidth + Theme.space3xl / 2
+          visible: topRow.sideBySide
+          x: topRow.stageWidth + Theme.space3xl / 2
           width: Theme.hairlineWidth
-          height: top.height
+          height: topRow.height
           color: Theme.hairline
         }
 
@@ -317,8 +317,8 @@ Item {
         Column {
           id: aside
           objectName: "cardsAside"
-          x: top.sideBySide ? top.stageWidth + Theme.space3xl : 0
-          width: top.sideBySide ? Theme.cardsAsideWidth : top.width
+          x: topRow.sideBySide ? topRow.stageWidth + Theme.space3xl : 0
+          width: topRow.sideBySide ? Theme.cardsAsideWidth : topRow.width
           spacing: Theme.spaceXl
 
           // ---- retention ----------------------------------------------------------

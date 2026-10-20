@@ -13,7 +13,7 @@ and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
   fixture deck built from flashcard-mcp's own schema, and fake `claude`, `kitty`, `qmd` and
   `omarchy-shell` first on PATH.
 - `bin/check` runs everything a change should pass: lint (against `.qmllint-baseline`), the
-  no-pixel-numbers rule, an offscreen load, `omarchy plugin validate` on `bar/`, and `bin/test`.
+  no-pixel-numbers rule, the no-scrim rule, an offscreen load, `omarchy plugin validate` on `bar/`, and `bin/test`.
   Run it before you stop.
 - `bin/test` has three layers: `py` (the wiki service, pytest), `unit` (the pure JS modules,
   qmltestrunner) and `app` (the real app driven from inside `qs`). `bin/test app study` runs
@@ -39,6 +39,8 @@ and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
   server, and the study log entry through the wiki service. Fixing a noted card is a skill's
   job too: "fix all" hands the noted cards to one Claude Code session, the study repo's
   `/study-fix-notes` (`Launch.fixNotesArgv`).
+- No modal, palette or sheet dims the window behind it: no scrim, no translucent layer.
+  `docs/layout-rules.md` rule 10; `bin/check noscrim` enforces it.
 - Don't name a QML file after a QtQuick.Controls type (`Button`, `Dialog`...): in a file that
   imports Controls, the Controls type wins. That is why ours are `ActionButton` and `Modal`.
 - Don't import a JS module as `Keys` (or any attached-property name): it shadows
