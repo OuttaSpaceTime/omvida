@@ -1,7 +1,7 @@
 .pragma library
 
 // What the panel says, from the deck's overview (flashcard-mcp's
-// src/app/overview.ts, through `master overview`). Pure: tests/unit in the
+// src/core/overview.ts, through `master overview`). Pure: tests/unit in the
 // Omvida repo runs it under qmltestrunner. The verdicts are the deck's own,
 // shown verbatim, never re-derived here.
 

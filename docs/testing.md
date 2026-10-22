@@ -28,7 +28,7 @@ and stops.
   nothing links it, but it shares a tag), with a broken link, links in code, an embed, a
   callout, a table, a task list and highlighted code.
 - `master.db`: the fixture deck, built by `tests/fixtures/make-deck.sh` with flashcard-mcp's
-  own `db-sync` (its start-up `prisma db push`, so its schema can never drift) and seeded by `seed_deck.py`: three
+  own `db:sync` (its start-up `prisma db push`, so its schema can never drift) and seeded by `seed_deck.py`: three
   review cards due, one new, one suspended, a few days of history. The card ids are the
   fixture wiki's `flashcard_ids`. `seed_deck.py <db> --notes` adds a past session with two
   lapses and two card notes, for Home and the Cards "noted" filter (tst_notes, `bin/shot -a notes`).

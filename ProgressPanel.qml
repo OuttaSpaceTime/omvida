@@ -5,7 +5,7 @@ import "Format.js" as Format
 import "bar/Model.js" as Overview
 
 // Where studying stands, from the deck's overview (flashcard-mcp
-// src/app/overview.ts), laid out as the bar overlay's "Glance": the reviews
+// src/core/overview.ts), laid out as the bar overlay's "Glance": the reviews
 // due as one big figure with its word, the pressure
 // verdict in a small outlined chip, one dim sentence (what clears the
 // pressure, today's reviews), how the deck has matured as a thin segmented bar
