@@ -14,8 +14,8 @@
 #                  record their calls
 # and the command runs with HOME, OMVIDA_STUDY_DIR, FLASHCARD_DB and
 # OMVIDA_TEST_OUT pointing there, and tests/fixtures/bin (fake claude, kitty,
-# qmd, omarchy-shell, omarchy-launch-webapp) first on PATH. Nothing here can reach the real deck,
-# wiki, logs or bar.
+# qmd, omarchy-shell, omarchy-launch-webapp) first on PATH. Nothing here can
+# reach the real deck, wiki, logs, bar or browser.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 dir="${1:?sandbox dir}"; shift

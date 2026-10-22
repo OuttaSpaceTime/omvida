@@ -19,11 +19,16 @@
 
 **QML** (repo root, one Quickshell config, as Omvision). `omvida.qml` owns navigation and the
 data screens share (the wiki index, the deck overview, all cards). Screens are files of their
-own. Pure logic is in `.js` modules, unit-tested without a window: `StudyKeys.js` (what a key
-means), `Session.js` (a session's record), `Format.js` (wording, and card HTML as plain text),
-`Cards.js` (explorer filters, the viewer's), `Graph.js` (force layout), `Launch.js`
-(every argv and prompt handed to Claude), `StatusBits.js` (the status line's shared hints
-and alert).
+own. Every one reaches the data and both backends as `app.store` (`Store.qml`); none is
+handed a client of its own. What runs over time sits apart from the view that shows it:
+`StudySession.qml` (a study session, drawn by `StudyScreen`) and `AskSession.qml` (one Ask,
+drawn by `SearchPalette`). Pure logic is in `.js` modules, unit-tested without a window:
+`StudyKeys.js` (what a key means), `Session.js` (a session's record), `Format.js` (wording,
+and card HTML as plain text), `Cards.js` (explorer filters, the viewer's, and a tile's
+caption), `Graph.js` (force layout), `WikiTree.js` (lookups in the wiki service's tree), `NoteEdit.js`
+(markdown editing in the note dialog), `Launch.js` (every argv the app launches, and
+every prompt handed to Claude), `StatusBits.js` (the status line's shared hints and alert),
+`Icons.js` (the Nerd Font glyphs, by name).
 
 **The deck server** is flashcard-mcp's `src/app/server.ts`, started by `bin/omvida-deck`.
 It runs for the app's whole life rather than per call: a tsx start costs about a second, and
@@ -115,7 +120,8 @@ markdown todo, Okomart's storefront). What was taken:
 ## Data and safety
 
 - The real deck is written only through flashcard-mcp's own code (reviews, leech keep, card
-  delete on a confirmed leech drop, card notes). Everything else that changes a card is a skill.
+  delete after a confirm: a leech drop, or Del in Study or on Cards, card notes). Everything
+  else that changes a card is a skill.
 - The wiki is never written by the app. The study log is appended (never rewritten), with the
   session number read just before.
 - Tests and screenshots run in `bin/sandbox`, which refuses a target outside the temp dir.

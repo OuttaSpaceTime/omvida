@@ -30,7 +30,6 @@ Item {
   id: root
 
   property var app: null
-  property var wikiService: null
   property var page: null        // { meta, blocks } from the wiki service
   property string loadedPath: ""
   property string loadError: ""
@@ -143,9 +142,9 @@ Item {
   function reloadPage() { if (root.path !== "") load(root.path, true) }
 
   function load(p, quiet) {
-    if (!wikiService) return
+    if (!root.app) return
     if (!quiet) { root.page = null; root.loadError = "" }
-    wikiService.call("page", { path: p }, function(err, res) {
+    root.app.store.wiki.call("page", { path: p }, function(err, res) {
       if (p !== root.path) return
       if (err) { root.loadError = err; return }
       if (!res) { root.loadError = "No page at " + p; root.page = null; return }
@@ -171,8 +170,8 @@ Item {
 
   onPathChanged: if (path !== "") load(path, false)
   Connections {
-    target: root.wikiService
-    function onReadyChanged() { if (root.wikiService.ready && root.path !== "" && !root.page) root.load(root.path, false) }
+    target: root.app ? root.app.store.wiki : null
+    function onReadyChanged() { if (root.app.store.wiki.ready && root.path !== "" && !root.page) root.load(root.path, false) }
   }
 
   WikiSidePanel {
@@ -317,7 +316,7 @@ Item {
                 id: exploreButton
                 required property string modelData
                 required property int index
-                objectName: "pageExplore" + exploreButton.index
+                objectName: "pageExplore:" + exploreButton.index
                 icon: "explore"
                 label: exploreButton.index === 0 ? "Explore" : "Explore " + (exploreButton.index + 1)
                 onActivated: root.app.launch(Launch.exploreArgv(exploreButton.modelData), "Opened the explorable")

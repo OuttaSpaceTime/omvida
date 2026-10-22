@@ -22,8 +22,8 @@ Item {
   height: Theme.smallControlHeight
 
   Rectangle {
-    x: -Theme.spaceSm
-    width: parent.width + Theme.spaceSm * 2
+    x: -Theme.hoverBleed
+    width: parent.width + Theme.hoverBleed * 2
     height: parent.height
     color: area.containsMouse && root.clickable ? Theme.hoverFill : "transparent"
   }

@@ -8,7 +8,7 @@ import Quickshell.Io
 // omvida.qml's test hook (OMVIDA_TEST=<file>), so it clicks and types into
 // the real screens, against real backends: the deck server on the fixture
 // deck, the wiki service on the fixture wiki. bin/test runs each file in its
-// own sandbox (bin/sandbox), with fake claude, kitty and qmd first on PATH.
+// own sandbox (bin/sandbox), with its fakes first on PATH (docs/testing.md).
 //
 // What a test file gets:
 //   app, study, studyView, wiki, cardsScreen, searchPalette, target, window   set by the hook
@@ -19,6 +19,7 @@ import Quickshell.Io
 //   sql(query)                    rows from the fixture deck, as arrays
 //   kittyCalls(), claudeCalls()   what the fake kitty and claude were run with
 //   askCalls()                    the claude calls that were Ask runs
+//   webappCalls()                 the explorables opened (fake omarchy-launch-webapp)
 //   gradeCalls(), graderPids()    what the fake grader was sent; the graders alive
 //   barOverviews()                what was handed to the bar (fake omarchy-shell)
 //   waitReady()                   both backends up and the data loaded

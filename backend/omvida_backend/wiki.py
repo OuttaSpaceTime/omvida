@@ -52,7 +52,7 @@ class PageMeta:
     outbound: list[str] = field(default_factory=list)
     inbound: list[str] = field(default_factory=list)
     # The page's explorables: claude.ai artifact URLs that /study-walkthrough
-    # built for it (the study repo's explorable-design.md). Opened as given.
+    # built for it (the global explorable skill). Opened as given.
     explorables: list[str] = field(default_factory=list)
 
 

@@ -235,6 +235,10 @@ QtObject {
   readonly property int menuWidth: sidePanelWidth
   // How far a chip's fill and outline reach past its words, either side.
   readonly property int chipInset: spaceSm
+  // How far a row's or tile's hover fill bleeds past its text, either side
+  // (layout rule 3; MarkedRow, CardTile), and so how much room a clipping
+  // scroller around them leaves.
+  readonly property int hoverBleed: spaceSm
 
   // ---- study screen / status line ----
   // The window's bottom line, as an editor's (StatusLine.qml): tall enough

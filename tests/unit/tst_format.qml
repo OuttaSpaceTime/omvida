@@ -33,6 +33,18 @@ TestCase {
   function test_html_to_text() {
     compare(F.stripHtml("What is <code>&lt;br&gt;</code>?<br>Two&amp;three"), "What is <br>? Two&three")
     compare(F.htmlToText("<ul><li>a</li><li>b</li></ul>One<br>two"), "- a\n- b\nOne\ntwo")
+    // The same entities as stripHtml, for the prompts Claude reads.
+    compare(F.htmlToText("&amp;lt; &apos;s&apos; &#65;"), "&lt; 's' A")
+    // Hex, and code points past 16 bits (an emoji), whole.
+    compare(F.stripHtml("&#x27;s &#128512;"), "'s \u{1F600}")
+  }
+
+  function test_only_http_links_are_external() {
+    verify(F.isExternalUrl("https://example.com"))
+    verify(F.isExternalUrl("http://example.com"))
+    verify(!F.isExternalUrl("file:///etc/passwd"))
+    verify(!F.isExternalUrl("wiki:security/csrf"))
+    verify(!F.isExternalUrl(""))
   }
 
   function test_durations_are_honest() {

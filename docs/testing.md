@@ -37,8 +37,9 @@ and stops.
   flags a card issue for "flagme", fails for "failme", takes 2s over "slowly"; as a grader it waits for its
   stream-json prompt like a spare the deck server boots ahead, records each prompt it grades in
   `out/grades.jsonl` (`gradeCalls()`) and is findable alive by `graderPids()`; streams a short
-  answer for Ask), `kitty`, `qmd`, and
-  `omarchy-shell` (records the overviews handed to the bar, so a test never reaches the real one).
+  answer for Ask), `kitty`, `qmd`,
+  `omarchy-shell` (records the overviews handed to the bar, so a test never reaches the real one) and
+  `omarchy-launch-webapp` (records the explorables opened, `webappCalls()`).
 
 ## Layers
 
@@ -77,10 +78,10 @@ and stops.
 | `rate:<1-4>` (`suggested`, `marked` (picked or taken), `chosen`; its `interval` label), `startSessionButton`, `studyAgainButton` | the study controls |
 | `leechRewrite`, `leechSplit`, `leechDrop`, `leechDropConfirm`, `leechKeep`, `leechContinue` | a leech |
 | `summary`, `summaryLine`, `related:<path>` | the session summary |
-| `pageTitle`, `wikiFlick`, `pageCardsButton`, `pageAddCards`, `pageExplore<n>`, `pageDeeper`, `heading:<anchor>` | a wiki page |
+| `pageTitle`, `wikiFlick`, `pageCardsButton`, `pageAddCards`, `pageExplore:<n>`, `pageDeeper`, `heading:<anchor>` | a wiki page |
 | `panelMode:context`, `panelMode:tree`, `tree:<path>`, `sibling:<path>`, `section:<anchor>` | the wiki side panel |
 | `folderTitle`, `folder:<path>`, `folderPage:<path>` | a folder |
-| `pageCardsFlip`, `flipCard`, `pageCardTile:<n>` | a page's cards |
+| `pageCardsFlip`, `flipCard`, `pageCardTile:<card id>` | a page's cards |
 | `searchField`, `result:<kind>:<i>`, `deepSearch`, `askView`, `askAnswer`, `askAnswerBlocks`, `askContinue`, `paletteHint:<label>` | search and Ask |
 | `stateChip:<state>`, `stateBar:<state>`, `tagChip:<tag>`, `cardFilter`, `filteredCount`, `clearFilters`, `retentionPanel`, `retentionReviews`, `retentionVerdict`, `ratingMix`, `filtersToggle`, `selectedFilters`, `selected:<state|deck|tag>:<value>`, `moreTags`, `cardsAside` | the deck explorer's filters |
 | `tagPanel` (`cardsScreen.tagPanelOpen` says whether it is up), `tagPanelField`, `tagPanelList`, `tagRow:<tag>`, `tagPanelSelected:<tag>`, `tagPanelClose` | the deck explorer's tag panel |

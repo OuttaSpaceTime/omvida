@@ -13,6 +13,11 @@ TestCase {
 
   function ids(cards) { return cards.map(function(c) { return c.id }) }
 
+  function test_tile_caption() {
+    compare(C.tileCaption({ deck: "Web", tags: ["a", "b", "c"], lapses: 2 }, true, true), "Web · #a #b · 2 lapses · noted")
+    compare(C.tileCaption({ deck: "Web", tags: [], lapses: 0 }, false, false), "")
+  }
+
   function test_filters_combine() {
     compare(ids(C.filterCards(deck, { query: "hsts", state: null, tags: [], deck: null })), ["a"])
     compare(ids(C.filterCards(deck, { query: "", state: "suspended", tags: [], deck: null })), ["c"])

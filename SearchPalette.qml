@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import Quickshell
-import Quickshell.Io
 
 import "Format.js" as Format
 import "Launch.js" as Launch
@@ -13,8 +12,8 @@ import "Launch.js" as Launch
 //   - the deck's cards through flashcard-mcp's search
 //   - "Ask Claude": the question goes to `claude -p` in the study repo under
 //     the Query Protocol (answer from memory first, then the wiki, the cards
-//     and a web check, then the log entry), streamed in here. "Continue in
-//     Claude" resumes that session in kitty.
+//     and a web check, then the log entry), streamed in here (AskSession.qml).
+//     "Continue in Claude" resumes that session in kitty.
 // ↑/↓ choose, Enter opens, Ctrl+Enter asks, Esc closes.
 //
 // Those keys are named once, in a line of hints along the palette's foot, the
@@ -24,8 +23,6 @@ Item {
   id: root
 
   property var app: null
-  property var deck: null
-  property var wikiService: null
 
   property bool opened: false
   property string query: ""
@@ -37,15 +34,9 @@ Item {
   property bool deep: false
   property string searchError: ""
 
-  // ---- asking ----
+  // Asking: the palette shows askRun's question and answer.
   property bool asking: false
-  property string askQuestion: ""
-  property string askText: ""
-  property string askStatus: ""
-  property string askSession: ""
-  property bool askDone: false
-  property string askError: ""
-  property var askBlocks: null   // the finished answer, rendered like a page
+  property AskSession askRun: AskSession { app: root.app }
 
   visible: opened
   z: 40
@@ -81,7 +72,7 @@ Item {
   // The foot line's hints, for what the palette is doing now. A hint with no
   // run() is only a reminder (↑↓ has nothing to click).
   readonly property var hints: root.asking
-    ? (root.askDone ? [{ keys: "⌫", label: "back to search", run: root.backToSearch }] : [])
+    ? (root.askRun.done ? [{ keys: "⌫", label: "back to search", run: root.backToSearch }] : [])
         .concat([{ keys: "esc", label: "close", run: root.close }])
     : [{ keys: "↑↓", label: "choose" },
        { keys: "enter", label: "open", run: function() { root.activate(root.selected) } },
@@ -90,7 +81,7 @@ Item {
 
   function close() {
     root.opened = false
-    if (askProc.running) askProc.running = false
+    root.askRun.stop()
     if (root.app) root.app.focusScreen()
   }
 
@@ -123,13 +114,13 @@ Item {
     var seq = ++root.searchSeq
     root.searchError = ""
     if (q === "") { root.textHits = []; root.cardHits = []; return }
-    wikiService.call("search", { query: q, mode: root.deep ? "deep" : "fast", limit: 6 }, function(err, res) {
+    root.app.store.wiki.call("search", { query: q, mode: root.deep ? "deep" : "fast", limit: 6 }, function(err, res) {
       if (seq !== root.searchSeq) return
       if (err) { root.searchError = err; return }
       root.textHits = res.results
       if (res.error) root.searchError = res.error
     })
-    deck.call("searchCards", { query: q, limit: 5 }, function(err, cards) {
+    root.app.store.deck.call("searchCards", { query: q, limit: 5 }, function(err, cards) {
       if (seq !== root.searchSeq || err) return
       root.cardHits = cards
     })
@@ -153,47 +144,8 @@ Item {
     var q = root.query.trim()
     if (q === "") return
     root.asking = true
-    root.askQuestion = q
-    root.askText = ""
-    root.askStatus = "thinking"
-    root.askSession = ""
-    root.askDone = false
-    root.askError = ""
-    root.askBlocks = null
-    askProc.command = Launch.askArgv(q)
-    askProc.running = true
+    root.askRun.start(q)
     keyHolder.forceActiveFocus()
-  }
-
-  // While it streams the answer is shown as markdown; once complete it goes
-  // through the wiki service's renderer, so its [[links]] resolve the way a
-  // page's do and it takes the theme's colours.
-  function finishAsk() {
-    if (root.askDone) return
-    root.askDone = true
-    root.askStatus = ""
-    if (root.askText === "") return
-    wikiService.call("markdown", { text: root.askText }, function(err, res) { if (!err) root.askBlocks = res.blocks })
-  }
-
-  Process {
-    id: askProc
-    workingDirectory: Paths.studyDir
-    stdout: SplitParser {
-      onRead: function(line) {
-        var ev = Launch.parseAskLine(line)
-        if (ev.sessionId) root.askSession = ev.sessionId
-        if (ev.blockStart && root.askText !== "" && !/\n\n$/.test(root.askText)) root.askText += "\n\n"
-        if (ev.text) { root.askText += ev.text; root.askStatus = "" }
-        if (ev.tool) root.askStatus = Launch.toolLabel(ev.tool)
-        if (ev.done) { root.finishAsk(); if (ev.error) root.askError = ev.error }
-      }
-    }
-    stderr: SplitParser { onRead: function(line) { if (line.trim() !== "") root.askError = line } }
-    onExited: function(code) {
-      root.finishAsk()
-      if (code !== 0 && root.askError === "") root.askError = "claude exited " + code
-    }
   }
 
   // ---- layout ------------------------------------------------------------------------
@@ -369,7 +321,7 @@ Item {
         id: keyHolder
         Keys.onEscapePressed: root.close()
         Keys.onPressed: function(event) {
-          if (event.key === Qt.Key_Backspace && root.askDone) { root.backToSearch(); event.accepted = true }
+          if (event.key === Qt.Key_Backspace && root.askRun.done) { root.backToSearch(); event.accepted = true }
         }
       }
 
@@ -377,7 +329,7 @@ Item {
         id: qText
         width: parent.width
         wrapMode: Text.Wrap
-        text: root.askQuestion
+        text: root.askRun.question
         font.pixelSize: Theme.titleSize
         font.bold: true
       }
@@ -385,9 +337,9 @@ Item {
         id: statusText
         anchors.top: qText.bottom
         anchors.topMargin: Theme.spaceSm
-        text: root.askError !== "" ? root.askError : (root.askStatus !== "" ? root.askStatus + "…" : (root.askDone ? "done · logged to today's study log" : ""))
+        text: root.askRun.error !== "" ? root.askRun.error : (root.askRun.status !== "" ? root.askRun.status + "…" : (root.askRun.done ? "done · logged to today's study log" : ""))
         font.pixelSize: Theme.captionSize
-        color: root.askError !== "" ? Theme.redText : Theme.faint
+        color: root.askRun.error !== "" ? Theme.redText : Theme.faint
       }
 
       GlideFlickable {
@@ -397,24 +349,24 @@ Item {
         anchors.bottom: askButtons.top
         anchors.bottomMargin: Theme.spaceMd
         width: parent.width
-        contentHeight: root.askBlocks !== null ? answerBlocks.implicitHeight : answerText.implicitHeight
+        contentHeight: root.askRun.blocks !== null ? answerBlocks.implicitHeight : answerText.implicitHeight
         ScrollBar.vertical: ScrollBar {}
         PageView {
           id: answerBlocks
           objectName: "askAnswerBlocks"
-          visible: root.askBlocks !== null
+          visible: root.askRun.blocks !== null
           width: answerFlick.width - Theme.spaceMd
           app: root.app
-          blocks: root.askBlocks || []
+          blocks: root.askRun.blocks || []
         }
         // While it streams: the markdown as it arrives.
         UiText {
           id: answerText
           objectName: "askAnswer"
-          visible: root.askBlocks === null
+          visible: root.askRun.blocks === null
           width: answerFlick.width - Theme.spaceMd
           textFormat: Text.MarkdownText
-          text: root.askText
+          text: root.askRun.text
           wrapMode: Text.Wrap
           linkColor: Theme.accentColor
           lineHeight: Theme.proseLineHeight
@@ -432,10 +384,10 @@ Item {
         ActionButton {
           objectName: "askContinue"
           filled: true
-          enabled: root.askSession !== "" && root.askDone
+          enabled: root.askRun.sessionId !== "" && root.askRun.done
           icon: "discuss"
           label: "Continue in Claude"
-          onActivated: { root.app.launch(Launch.resumeArgv(Paths.studyDir, root.askSession), "Opened Claude Code"); root.close() }
+          onActivated: { root.app.launch(Launch.resumeArgv(Paths.studyDir, root.askRun.sessionId), "Opened Claude Code"); root.close() }
         }
         Row {
           spacing: Theme.spaceXl
@@ -443,14 +395,14 @@ Item {
             large: true
             label: "Copy"
             icon: "copy"
-            enabled: root.askText !== ""
-            onActivated: Quickshell.clipboardText = root.askText
+            enabled: root.askRun.text !== ""
+            onActivated: Quickshell.clipboardText = root.askRun.text
           }
           PlainButton {
             large: true
-            visible: !root.askDone
+            visible: !root.askRun.done
             label: "Stop"
-            onActivated: askProc.running = false
+            onActivated: root.askRun.stop()
           }
         }
       }

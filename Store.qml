@@ -5,7 +5,9 @@ import Quickshell
 // (flashcard-mcp's app server for the deck, backend/omvida_backend for the
 // wiki, both JSON lines through JsonLineClient.qml) and what has been loaded
 // from them. It holds no business rules: the deck's live in flashcard-mcp,
-// the wiki's in the study repo's scripts/wiki. Screens read it as app.store.
+// the wiki's in the study repo's scripts/wiki. Screens, dialogs and the
+// sessions read it as app.store, backends included (app.store.deck,
+// app.store.wiki): none is handed a client of its own, so there is one way in.
 Item {
   id: root
 

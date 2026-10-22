@@ -35,8 +35,8 @@ QtObject {
   id: root
 
   property var app: null
-  property var deck: null
-  property var wikiService: null
+  readonly property var deck: app ? app.store.deck : null
+  readonly property var wikiService: app ? app.store.wiki : null
   // The answer as typed, bound from the view's answer box.
   property string answer: ""
 

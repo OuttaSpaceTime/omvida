@@ -119,10 +119,11 @@ ShellRoot {
     var m
     if ((m = /^wiki:([^#]+)(?:#(.*))?$/.exec(href))) openPage(m[1], m[2] || "")
     else if ((m = /^anchor:(.*)$/.exec(href))) wikiScreen.scrollTo(m[1])
-    else if (/^https?:/.test(href)) Qt.openUrlExternally(href)
+    else if (Format.isExternalUrl(href)) Qt.openUrlExternally(href)
   }
 
-  // Claude Code in kitty, detached: closing Omvida must not close it.
+  // Another program, detached, closing Omvida must not close it: Claude Code
+  // in kitty (Launch.js has every argv) or an explorable's web app window.
   function launch(argv, note) {
     Quickshell.execDetached(argv)
     if (note) toastItem.show(note)
@@ -136,6 +137,10 @@ ShellRoot {
   }
   function openPageCards(title, cards) { pageCardsDialog.open(title, cards) }
   function openAdd(kind, topic, context) { topicDialog.open(kind, topic, context) }
+  // Ask before something that cannot be undone (ConfirmDialog.qml);
+  // confirmOpen for the tests.
+  readonly property bool confirmOpen: confirmDialog.opened
+  function confirm(title, quote, note, action, accept) { confirmDialog.open(title, quote, note, action, accept) }
 
   // ---- card notes ---------------------------------------------------------------
   // A card's note (NoteDialog.qml), new or as it is; `prefill` starts a new
@@ -163,12 +168,6 @@ ShellRoot {
   }
   function dropStudyPage(path) { root.studyPages = root.studyPages.filter(function(p) { return p.path !== path }) }
   function clearStudyPages() { root.studyPages = [] }
-  // Ask before something that cannot be undone (ConfirmDialog.qml);
-  // confirmOpen for the tests.
-  readonly property bool confirmOpen: confirmDialog.opened
-  // The IPC handler, for the tests: they call it as `qs ipc` would.
-  readonly property alias ipc: ipc
-  function confirm(title, quote, note, action, accept) { confirmDialog.open(title, quote, note, action, accept) }
 
   Store {
     id: dataStore
@@ -182,11 +181,11 @@ ShellRoot {
   StudySession {
     id: study
     app: root
-    deck: dataStore.deck
-    wikiService: dataStore.wiki
   }
 
   // ---- IPC: bin/omvida and the bar widget ----------------------------------------
+  // The handler, for the tests: they call it as `qs ipc` would.
+  readonly property alias ipc: ipc
   IpcHandler {
     id: ipc
     target: "omvida"
@@ -361,7 +360,6 @@ ShellRoot {
           anchors.fill: parent
           visible: root.currentScreen === "wiki"
           app: root
-          wikiService: dataStore.wiki
         }
         CardsScreen {
           id: cardsScreen
@@ -403,13 +401,12 @@ ShellRoot {
         id: palette
         anchors.fill: parent
         app: root
-        deck: dataStore.deck
-        wikiService: dataStore.wiki
       }
 
       PageCardsDialog {
         id: pageCardsDialog
         anchors.fill: parent
+        app: root
         onClosed: root.focusScreen()
       }
 

@@ -59,31 +59,41 @@ function escapeHtml(s) {
 }
 
 // Card HTML to one line of plain text (lists, search rows, prompts).
-// Line and block ends become spaces, so "a</li><li>b" stays two words, and
-// &amp; is decoded last, so "&amp;lt;" stays the literal text "&lt;". The
-// Cards grid draws this, not the HTML, because Qt only elides plain text
-// (rich text runs on past maximumLineCount).
+// Line and block ends become spaces, so "a</li><li>b" stays two words. A
+// card tile draws this, not the HTML (CardTile.qml says why).
 function stripHtml(html) {
-  return String(html || "")
+  return decodeEntities(String(html || "")
     .replace(/<br\s*\/?>|<\/(p|div|li|pre|tr|h[1-6])>/gi, " ")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&quot;/g, "\"").replace(/&#39;|&apos;/g, "'")
-    .replace(/&#(\d+);/g, function(m, n) { return String.fromCharCode(parseInt(n, 10)) })
-    .replace(/&amp;/g, "&")
+    .replace(/<[^>]*>/g, ""))
     .replace(/\s+/g, " ").trim()
 }
 
 // Card HTML to text with line breaks kept, for a prompt Claude reads.
 function htmlToText(html) {
-  return String(html || "")
+  return decodeEntities(String(html || "")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(p|li|pre|div)>/gi, "\n")
     .replace(/<li>/gi, "- ")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"")
-    .replace(/&#39;/g, "'").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
+    .replace(/<[^>]*>/g, ""))
     .replace(/\n{3,}/g, "\n\n").trim()
+}
+
+// The entities card HTML uses, once the tags are gone, shared by both of the
+// above so they cannot drift apart. &amp; goes last, so "&amp;lt;" stays the
+// literal text "&lt;".
+function decodeEntities(s) {
+  return s
+    .replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"").replace(/&#39;|&apos;/g, "'")
+    .replace(/&#(\d+);/g, function(m, n) { return String.fromCodePoint(parseInt(n, 10)) })
+    .replace(/&#x([0-9a-f]+);/gi, function(m, n) { return String.fromCodePoint(parseInt(n, 16)) })
+    .replace(/&amp;/g, "&")
+}
+
+// A link the browser should open: an outside http(s) URL, and nothing else
+// (no file:, no desktop handler). app.followLink and CardFace both ask this.
+function isExternalUrl(href) {
+  return /^https?:/.test(String(href || ""))
 }
 
 // Minutes from ms, for the honest-duration rule: measured from the first card

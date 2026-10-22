@@ -120,8 +120,9 @@ Left (280px, its right edge drags it from 200px up to where the page would drop 
 its measure): over either mode, while a session has left any, "From study" (its related pages,
 the open one marked, ✕ on hover, "clear all"); then Context (You are here, the folder's pages with the open page's sections under
 it, subfolders, Outgoing, Linked from, each section under a hairline) or Tree. Centre:
-breadcrumb, title, tags, updated and aliases (wrapped to the column), the cards button and
-Claude actions as quiet text buttons, the page's blocks (code on a fill with no border), then
+breadcrumb, title, tags, updated and aliases (wrapped to the column), the cards button,
+Claude actions and an Explore per explorable (`Explore`, `Explore 2`..., each the page's
+`explorables` URL opened as an Omarchy web app window) as quiet text buttons, the page's blocks (code on a fill with no border), then
 Linked from / Links to under hairlines. Status line: WIKI and the page's or folder's path.
 Right (280px, wide windows only): the page's neighbourhood graph. Its left edge drags it wider
 (kept while the app runs, never past the page's reading column), and a full-screen icon in its
@@ -187,5 +188,5 @@ under a PREVIEW caption, Save filled, Cancel and a red Delete note quiet, `markd
 esc cancel` faint on the right; Enter continues a list, ctrl+B and ctrl+I mark the selection), the
 confirm dialog (what goes quoted, what else goes in dim text, the action filled in red, Cancel
 quiet; enter or y takes it, esc, n or a click outside cancels), a
-page's cards (an overview grid of equal tiles, each five lines of its front as plain text, a
-click showing the back in the front's place, or flip-through), toasts. Dialogs and the palette have a 1px frame, and nothing dims the window behind them.
+page's cards (an overview grid of the Cards screen's tiles, `CardTile.qml`, a click showing the
+back in the front's place under an accent rule, or flip-through), toasts. Dialogs and the palette have a 1px frame, and nothing dims the window behind them.

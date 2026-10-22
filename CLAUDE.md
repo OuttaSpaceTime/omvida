@@ -10,8 +10,8 @@ and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
 
 - **Never open the app on the user's desktop to test a change**, and never point a test at
   real data. Everything runs offscreen in a sandbox (`bin/sandbox`): a fixture study repo, a
-  fixture deck built from flashcard-mcp's own schema, and fake `claude`, `kitty`, `qmd` and
-  `omarchy-shell` first on PATH.
+  fixture deck built from flashcard-mcp's own schema, and fake `claude`, `kitty`, `qmd`,
+  `omarchy-shell` and `omarchy-launch-webapp` first on PATH.
 - `bin/check` runs everything a change should pass: lint (against `.qmllint-baseline`), the
   no-pixel-numbers rule, the no-scrim rule, an offscreen load, `omarchy plugin validate` on `bar/`, and `bin/test`.
   Run it before you stop.

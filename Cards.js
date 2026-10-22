@@ -1,4 +1,5 @@
 .pragma library
+.import "Format.js" as Format
 
 // The deck explorer's filters and counts, ported from the Next.js viewer's
 // components/flashcards/lib.ts so both surfaces filter the same way.
@@ -7,6 +8,19 @@ var STATE_ORDER = ["new", "learning", "review", "relearning", "suspended"]
 
 function stateOf(card) {
   return card.suspended ? "suspended" : card.state
+}
+
+// A card tile's caption (CardTile.qml): its deck when `withDeck` (one
+// deck's name on every tile says nothing), its first two tags, its lapses,
+// and "noted" when `noted`.
+function tileCaption(card, withDeck, noted) {
+  var parts = []
+  if (withDeck) parts.push(card.deck)
+  var tags = (card.tags || []).slice(0, 2).map(function(t) { return "#" + t }).join(" ")
+  if (tags !== "") parts.push(tags)
+  if (card.lapses > 0) parts.push(Format.plural(card.lapses, "lapse"))
+  if (noted) parts.push("noted")
+  return parts.join(" · ")
 }
 
 function searchableText(card) {

@@ -176,18 +176,6 @@ Item {
     return m
   }
 
-  // A tile's caption: the deck only when there are several (one deck's
-  // name on every tile says nothing), then the card's first tags and lapses.
-  function tileCaption(card) {
-    var parts = []
-    if (decks.length > 1) parts.push(card.deck)
-    var tags = (card.tags || []).slice(0, 2).map(function(t) { return "#" + t }).join(" ")
-    if (tags !== "") parts.push(tags)
-    if (card.lapses > 0) parts.push(Format.plural(card.lapses, "lapse"))
-    if (notes[card.id]) parts.push("noted")
-    return parts.join(" · ")
-  }
-
   // A tile was clicked: its card goes on the stage, front up, and the page
   // scrolls back up to the stage if it was scrolled past it.
   function showCard(i) {
@@ -601,30 +589,9 @@ Item {
           }
         }
 
-        // Every tile as tall as a full one (its caption and cardTileLines
-        // lines of front), measured off this unseen copy as Home's topic
-        // tiles are, so it follows the theme's type without a typed height.
-        // Positioners skip an invisible item, so it takes no room.
-        Column {
-          id: fullTile
-          visible: false
-          spacing: Theme.spaceXs
-          UiText { text: "X"; font.pixelSize: Theme.captionSize }
-          UiText {
-            textFormat: Text.PlainText
-            text: new Array(Theme.cardTileLines).fill("X").join("\n")
-            font.pixelSize: Theme.bodySmallSize
-            lineHeight: Theme.proseLineHeight
-          }
-        }
-
-        Grid {
+        CardGrid {
           id: grid
           width: parent.width
-          columnSpacing: Theme.spaceXl
-          rowSpacing: Theme.spaceSm
-          columns: Math.max(1, Math.min(Theme.cardTileMaxColumns, Math.floor((width + columnSpacing) / (Theme.cardTileMinWidth + columnSpacing))))
-          readonly property real cellWidth: (width - columnSpacing * (columns - 1)) / columns
 
           // One delegate per filtered card, built once per list; a passed
           // card's tile is hidden, not removed, and the Grid closes the gap.
@@ -635,74 +602,19 @@ Item {
           // the whole deck at once cheap enough.
           Repeater {
             model: root.visible ? root.filtered : []
-            delegate: Item {
+            delegate: CardTile {
               id: tile
               required property var modelData
               required property int index
               objectName: "cardTile:" + tile.modelData.id
               visible: tile.index > root.current
               width: grid.cellWidth
-              height: fullTile.implicitHeight + Theme.spaceMd * 2
-
-              // The hover fill bleeds into the column gap; the text keeps to
-              // the column's edge (layout rule 3).
-              Rectangle {
-                x: -Theme.spaceSm
-                width: parent.width + Theme.spaceSm * 2
-                height: parent.height
-                color: tileArea.containsMouse ? Theme.hoverFill : "transparent"
-              }
-              Rectangle { width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
-
-              Column {
-                y: Theme.spaceMd
-                width: parent.width
-                spacing: Theme.spaceXs
-                Item {
-                  width: parent.width
-                  height: tileCaption.implicitHeight
-                  Rectangle {
-                    id: tileDot
-                    width: Theme.dotSize; height: Theme.dotSize; radius: Theme.dotSize / 2
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: Theme.stateColor(Cards.stateOf(tile.modelData))
-                  }
-                  UiText {
-                    id: tileCaption
-                    x: tileDot.width + Theme.spaceSm
-                    width: parent.width - x - tileNumber.implicitWidth - Theme.spaceSm
-                    elide: Text.ElideRight
-                    text: root.tileCaption(tile.modelData)
-                    font.pixelSize: Theme.captionSize
-                    color: Theme.faint
-                  }
-                  UiText {
-                    id: tileNumber
-                    anchors.right: parent.right
-                    text: tile.index + 1
-                    font.pixelSize: Theme.captionSize
-                    color: Theme.faint
-                  }
-                }
-                UiText {
-                  width: parent.width
-                  textFormat: Text.PlainText
-                  text: root.tileTexts[tile.modelData.id] || ""
-                  font.pixelSize: Theme.bodySmallSize
-                  lineHeight: Theme.proseLineHeight
-                  wrapMode: Text.Wrap
-                  maximumLineCount: Theme.cardTileLines
-                  elide: Text.ElideRight
-                }
-              }
-
-              MouseArea {
-                id: tileArea
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.showCard(tile.index)
-              }
+              height: grid.tileHeight
+              card: tile.modelData
+              caption: Cards.tileCaption(tile.modelData, root.decks.length > 1, !!root.notes[tile.modelData.id])
+              number: tile.index + 1
+              text: root.tileTexts[tile.modelData.id] || ""
+              onClicked: root.showCard(tile.index)
             }
           }
         }

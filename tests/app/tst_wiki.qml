@@ -61,10 +61,10 @@ OmvidaTest {
   function test_explore_opens_the_pages_explorable() {
     app.openPage("web/http-caching", "")
     tryVerify(function() { return wiki.loadedPath === "web/http-caching" }, 8000)
-    compare(findNamed(target, "pageExplore0"), null)
+    compare(findNamed(target, "pageExplore:0"), null)
     app.openPage("security/csrf", "")
     tryVerify(function() { return wiki.loadedPath === "security/csrf" }, 8000)
-    click("pageExplore0")
+    click("pageExplore:0")
     tryVerify(function() { return webappCalls().length === 1 }, 4000)
     compare(webappCalls()[0], ["https://claude.ai/artifact/fixture-csrf"])
   }
@@ -160,11 +160,11 @@ OmvidaTest {
     click("pageCardsButton")
     // The overview is a grid of equal tiles, and a click shows the back in
     // the front's place without the tile growing.
-    var first = item("pageCardTile:0"), second = item("pageCardTile:1")
+    var first = item("pageCardTile:fixturecard0001"), second = item("pageCardTile:fixturecard0002")
     compare(first.width, second.width)
     compare(first.height, second.height)
     var front = first.faceText, height = first.height
-    click("pageCardTile:0")
+    click("pageCardTile:fixturecard0001")
     verify(first.faceText !== front, "the back in its place")
     compare(first.height, height, "and the tile no taller")
     click("pageCardsFlip")

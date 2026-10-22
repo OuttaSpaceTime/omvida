@@ -26,10 +26,10 @@ OmvidaTest {
   function test_ctrl_enter_asks_claude_and_continue_resumes_in_kitty() {
     app.openSearch("What is an origin?")
     key(Qt.Key_Return, Qt.ControlModifier)
-    tryVerify(function() { return searchPalette.askDone }, 8000)
-    verify(searchPalette.askText.indexOf("scheme, host and port") !== -1)
-    tryVerify(function() { return searchPalette.askBlocks !== null }, 5000, "rendered like a page")
-    verify(JSON.stringify(searchPalette.askBlocks).indexOf("wiki:security/csrf") !== -1, "the wikilink resolved")
+    tryVerify(function() { return searchPalette.askRun.done }, 8000)
+    verify(searchPalette.askRun.text.indexOf("scheme, host and port") !== -1)
+    tryVerify(function() { return searchPalette.askRun.blocks !== null }, 5000, "rendered like a page")
+    verify(JSON.stringify(searchPalette.askRun.blocks).indexOf("wiki:security/csrf") !== -1, "the wikilink resolved")
     var ask = askCalls().slice(-1)[0]
     verify(ask[ask.indexOf("--allowedTools") + 1].indexOf("Bash") === -1, "no Bash for a headless ask")
     var before = kittyCalls().length
@@ -51,13 +51,30 @@ OmvidaTest {
 
     app.openSearch("What is an origin?")
     key(Qt.Key_Return, Qt.ControlModifier)
-    tryVerify(function() { return searchPalette.askDone }, 8000)
+    tryVerify(function() { return searchPalette.askRun.done }, 8000)
     click("paletteHint:back to search")
     tryVerify(function() { return !searchPalette.asking })
     verify(item("searchField").activeFocus, "the field has the keyboard again")
     key(Qt.Key_Return, Qt.ControlModifier)
-    tryVerify(function() { return searchPalette.askDone }, 8000)
+    tryVerify(function() { return searchPalette.askRun.done }, 8000)
     key(Qt.Key_Backspace)
     tryVerify(function() { return !searchPalette.asking }, 3000, "Backspace still goes back")
+  }
+
+  // A new question while the last one's claude is still ending: the new one
+  // runs and is answered, rather than finished empty by the old one's exit.
+  // Close and ask in one go, so the stopped claude has not exited yet.
+  function test_asking_again_while_the_last_ask_ends() {
+    var before = askCalls().length
+    app.openSearch("slowly, what is a nonce?")
+    key(Qt.Key_Return, Qt.ControlModifier)
+    tryVerify(function() { return askCalls().length === before + 1 }, 3000)
+    searchPalette.close()
+    app.openSearch("What is an origin?")
+    searchPalette.ask()
+    tryVerify(function() { return searchPalette.askRun.done }, 8000)
+    compare(searchPalette.askRun.question, "What is an origin?")
+    verify(searchPalette.askRun.text.indexOf("scheme, host and port") !== -1, "the new question's answer")
+    compare(askCalls().length, before + 2)
   }
 }

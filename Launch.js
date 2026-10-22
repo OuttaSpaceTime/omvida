@@ -1,8 +1,10 @@
 .pragma library
 .import "Format.js" as Format
 
-// Commands that hand a topic to Claude Code. Pure argv builders, so the
-// prompts are pinned in tests/unit and the app only runs what comes back.
+// Every command the app launches: mostly ones that hand a topic to Claude
+// Code, and an explorable's web app window (exploreArgv). Pure argv
+// builders, so the prompts are pinned in tests/unit and the app only runs
+// what comes back (app.launch).
 //
 // Interactive work (discussing a card, writing cards or a wiki page, fixing a
 // leech) opens Claude Code in kitty, in the study repo, where the skills, the
