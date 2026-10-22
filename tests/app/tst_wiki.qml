@@ -145,6 +145,15 @@ OmvidaTest {
     tryVerify(function() { return wiki.loadedPath === "web/http-caching" }, 8000)
     compare(item("pageCardsButton").label, "2 cards")
     click("pageCardsButton")
+    // The overview is a grid of equal tiles, and a click shows the back in
+    // the front's place without the tile growing.
+    var first = item("pageCardTile:0"), second = item("pageCardTile:1")
+    compare(first.width, second.width)
+    compare(first.height, second.height)
+    var front = first.faceText, height = first.height
+    click("pageCardTile:0")
+    verify(first.faceText !== front, "the back in its place")
+    compare(first.height, height, "and the tile no taller")
     click("pageCardsFlip")
     item("flipCard")
     key(Qt.Key_Escape)

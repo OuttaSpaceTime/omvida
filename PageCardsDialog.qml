@@ -48,6 +48,8 @@ Modal {
         delegate: CardTile {
           id: cardItem
           required property var modelData
+          required property int index
+          objectName: "pageCardTile:" + cardItem.index
           width: grid.cellWidth
           card: cardItem.modelData
         }

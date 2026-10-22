@@ -187,4 +187,5 @@ under a PREVIEW caption, Save filled, Cancel and a red Delete note quiet, `markd
 esc cancel` faint on the right; Enter continues a list, ctrl+B and ctrl+I mark the selection), the
 confirm dialog (what goes quoted, what else goes in dim text, the action filled in red, Cancel
 quiet; enter or y takes it, esc, n or a click outside cancels), a
-page's cards (overview grid or flip-through), toasts. Dialogs and the palette have a 1px frame, and nothing dims the window behind them.
+page's cards (an overview grid of equal tiles, each five lines of its front as plain text, a
+click showing the back in the front's place, or flip-through), toasts. Dialogs and the palette have a 1px frame, and nothing dims the window behind them.
