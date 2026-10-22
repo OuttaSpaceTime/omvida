@@ -95,6 +95,16 @@ function fixNotesArgv(studyDir, ids) {
   return kittyArgv(studyDir, "Omvida · Fix noted cards", ["/study-fix-notes" + (ids && ids.length ? " " + ids.join(" ") : "")])
 }
 
+// An explorable (an interactive claude.ai page /study-walkthrough built for a
+// wiki page) as a web app window: Omarchy's launcher opens it chrome-less in
+// the default Chromium-family browser, where the developer is signed in to
+// claude.ai. Not inside Omvida: Quickshell crashes loading Qt WebEngine
+// (Chromium needs an argv[0] it does not pass). Qt.openUrlExternally would
+// work too, but lands as one more tab in a browser window.
+function exploreArgv(url) {
+  return ["omarchy-launch-webapp", url]
+}
+
 // Resume an Ask session interactively.
 function resumeArgv(studyDir, sessionId) {
   return kittyArgv(studyDir, "Omvida · Ask", ["--resume", sessionId])

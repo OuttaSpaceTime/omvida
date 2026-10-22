@@ -54,6 +54,11 @@ def test_page_meta_reads_frontmatter(idx):
     assert p["flashcardIds"] == ["fixturecard0001", "fixturecard0002"]
     assert p["created"] == "2026-05-02"
     assert p["aliases"] == ["cache-control"]
+    assert p["explorables"] == []
+
+
+def test_page_meta_reads_explorables(idx):
+    assert page(idx, "security/csrf")["explorables"] == ["https://claude.ai/artifact/fixture-csrf"]
 
 
 def test_tree_puts_folders_and_pages_in_order(idx):

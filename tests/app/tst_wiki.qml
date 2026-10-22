@@ -56,6 +56,19 @@ OmvidaTest {
     tryCompare(app, "wikiPath", "web/http-caching")
   }
 
+  // A page with an explorable gets an Explore button that opens it as a web
+  // app; a page without one shows none.
+  function test_explore_opens_the_pages_explorable() {
+    app.openPage("web/http-caching", "")
+    tryVerify(function() { return wiki.loadedPath === "web/http-caching" }, 8000)
+    compare(findNamed(target, "pageExplore0"), null)
+    app.openPage("security/csrf", "")
+    tryVerify(function() { return wiki.loadedPath === "security/csrf" }, 8000)
+    click("pageExplore0")
+    tryVerify(function() { return webappCalls().length === 1 }, 4000)
+    compare(webappCalls()[0], ["https://claude.ai/artifact/fixture-csrf"])
+  }
+
   function test_a_heading_link_scrolls_to_it() {
     app.openPage("web/http-caching", "")
     tryVerify(function() { return wiki.loadedPath === "web/http-caching" }, 8000)

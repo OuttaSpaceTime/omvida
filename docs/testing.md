@@ -77,7 +77,7 @@ and stops.
 | `rate:<1-4>` (`suggested`, `marked` (picked or taken), `chosen`; its `interval` label), `startSessionButton`, `studyAgainButton` | the study controls |
 | `leechRewrite`, `leechSplit`, `leechDrop`, `leechDropConfirm`, `leechKeep`, `leechContinue` | a leech |
 | `summary`, `summaryLine`, `related:<path>` | the session summary |
-| `pageTitle`, `wikiFlick`, `pageCardsButton`, `pageAddCards`, `pageDeeper`, `heading:<anchor>` | a wiki page |
+| `pageTitle`, `wikiFlick`, `pageCardsButton`, `pageAddCards`, `pageExplore<n>`, `pageDeeper`, `heading:<anchor>` | a wiki page |
 | `panelMode:context`, `panelMode:tree`, `tree:<path>`, `sibling:<path>`, `section:<anchor>` | the wiki side panel |
 | `folderTitle`, `folder:<path>`, `folderPage:<path>` | a folder |
 | `pageCardsFlip`, `flipCard`, `pageCardTile:<n>` | a page's cards |

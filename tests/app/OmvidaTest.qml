@@ -223,6 +223,7 @@ TestCase {
     return t.split("\n").filter(function(l) { return l !== "" }).map(function(l) { return JSON.parse(l) })
   }
   function kittyCalls() { return jsonLines(base.outDir + "/kitty-calls.jsonl") }
+  function webappCalls() { return jsonLines(base.outDir + "/omarchy-launch-webapp-calls.jsonl") }
   // The overviews handed to the bar through the fake omarchy-shell, oldest first.
   function barOverviews() {
     return jsonLines(base.outDir + "/omarchy-shell-calls.jsonl")

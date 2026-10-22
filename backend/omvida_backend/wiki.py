@@ -51,6 +51,9 @@ class PageMeta:
     sections: list[str]
     outbound: list[str] = field(default_factory=list)
     inbound: list[str] = field(default_factory=list)
+    # The page's explorables: claude.ai artifact URLs that /study-walkthrough
+    # built for it (the study repo's explorable-design.md). Opened as given.
+    explorables: list[str] = field(default_factory=list)
 
 
 def read_page(raw: str) -> tuple[dict[str, Any], str]:
@@ -95,6 +98,7 @@ def load_page_meta(root: Path, file: str) -> tuple[PageMeta, list[str], str]:
         updated=str(data.get("updated") or ""),
         flashcardIds=_as_list(data.get("flashcard_ids")),
         sections=extract_h2s(body),
+        explorables=_as_list(data.get("explorables")),
     )
     return meta, link_targets(body), body
 

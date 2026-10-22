@@ -309,6 +309,20 @@ Item {
               label: "Cards on this page"
               onActivated: root.app.openAdd("flashcard", root.meta.title, "wiki page [[" + root.meta.path + "]]")
             }
+            // One per explorable, main one first; "Explore 2" for the rest,
+            // since a page rarely has more than one.
+            Repeater {
+              model: root.meta ? root.meta.explorables : []
+              delegate: PlainButton {
+                id: exploreButton
+                required property string modelData
+                required property int index
+                objectName: "pageExplore" + exploreButton.index
+                icon: "explore"
+                label: exploreButton.index === 0 ? "Explore" : "Explore " + (exploreButton.index + 1)
+                onActivated: root.app.launch(Launch.exploreArgv(exploreButton.modelData), "Opened the explorable")
+              }
+            }
             PlainButton {
               objectName: "pageDeeper"
               icon: "brain"

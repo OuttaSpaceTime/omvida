@@ -9,7 +9,7 @@ var CODES = {
   search: 0xF0349, plus: 0xF0415, chevronRight: 0xF0142, chevronDown: 0xF0140,
   discuss: 0xF028C, close: 0xF0156, copy: 0xF018F, page: 0xF0219,
   ask: 0xF0B79, alert: 0xF0026, check: 0xF012C, pencil: 0xF03EB, brain: 0xF09D1,
-  fullscreen: 0xF0293, collapseLeft: 0xF013D, collapseRight: 0xF013E
+  fullscreen: 0xF0293, collapseLeft: 0xF013D, collapseRight: 0xF013E, explore: 0xF018C
 }
 
 function g(name) {

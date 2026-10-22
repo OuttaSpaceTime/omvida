@@ -24,6 +24,10 @@ TestCase {
     compare(L.skillArgv("/s", "t", "/study-walkthrough --write", "ETags", "wiki page web/http-caching")[8], "/study-walkthrough --write ETags\n\nContext: wiki page web/http-caching")
   }
 
+  function test_explore_opens_the_url_as_a_web_app() {
+    compare(L.exploreArgv("https://claude.ai/artifact/abc"), ["omarchy-launch-webapp", "https://claude.ai/artifact/abc"])
+  }
+
   function test_leech_prompts() {
     verify(L.leechArgv("/s", card, 6, "rewrite")[8].indexOf("update_card") !== -1)
     verify(L.leechArgv("/s", card, 6, "split")[8].indexOf("inheritFrom: \"c1\"") !== -1)

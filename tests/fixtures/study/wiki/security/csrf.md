@@ -7,6 +7,8 @@ updated: '2026-05-07'
 source_skill: study-walkthrough
 flashcard_ids:
 - fixturecard0003
+explorables:
+- https://claude.ai/artifact/fixture-csrf
 ---
 
 # CSRF (Cross-Site Request Forgery)
