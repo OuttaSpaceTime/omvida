@@ -16,7 +16,7 @@ Rectangle {
 
   // Open, it holds the keyboard, so Esc closes it on every screen instead
   // of reaching what is under it (on Study, that ended the session);
-  // closed, it hands the keyboard back (omvida.qml's focusScreen()).
+  // closed, it hands the keyboard back (App.qml's focusScreen()).
   onOpenedChanged: if (opened) forceActiveFocus(); else closed()
   Keys.onEscapePressed: root.opened = false
 

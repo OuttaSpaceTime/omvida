@@ -15,7 +15,7 @@ import "Format.js" as Format
 Modal {
   id: root
 
-  property var app: null
+  required property App app
   property string kind: "flashcard"   // flashcard | wiki
   property string context: ""
 
@@ -24,14 +24,14 @@ Modal {
   function open(k, topic, context) {
     root.kind = k
     var t = topic, c = context
-    if (t === "" && c === "" && app) {
-      let s = app.currentScreen
-      if (s === "wiki" && app.wikiPath !== "" && app.store.pagesByPath[app.wikiPath]) {
-        t = app.store.pagesByPath[app.wikiPath].title
-        c = "wiki page [[" + app.wikiPath + "]]"
-      } else if (s === "study" && app.currentCard) {
+    if (t === "" && c === "") {
+      let s = app.nav.currentScreen
+      if (s === "wiki" && app.nav.wikiPath !== "" && app.store.pagesByPath[app.nav.wikiPath]) {
+        t = app.store.pagesByPath[app.nav.wikiPath].title
+        c = "wiki page [[" + app.nav.wikiPath + "]]"
+      } else if (s === "study" && app.study.inCard) {
         t = ""
-        c = "flashcard " + app.currentCard.id + ": " + Format.stripHtml(app.currentCard.front)
+        c = "flashcard " + app.study.card.id + ": " + Format.stripHtml(app.study.card.front)
       }
     }
     field.text = t
@@ -50,8 +50,6 @@ Modal {
     root.close()
     root.app.launch(argv, "Opened Claude Code in kitty")
   }
-
-  onClosed: if (app) app.focusScreen()
 
   UiText {
     width: parent.width

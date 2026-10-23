@@ -11,13 +11,13 @@ import "WikiTree.js" as WikiTree
 //   tree     the whole wiki, folders collapsible, the open page's ancestors
 //            opened for you
 // Over both, while there are any, the pages a finished study session
-// pointed to (app.studyPages): its summary lists them, but opening one leaves
+// pointed to (app.study.pages): its summary lists them, but opening one leaves
 // the summary behind, and the user wanted to go from one to the next. Each
 // has ✕, and "clear all" drops the lot.
 Rectangle {
   id: root
 
-  property var app: null
+  required property App app
   property string mode: "context"
   property var openFolders: ({})
   // The open page's H2s, with the anchors its rendered headings carry.
@@ -25,9 +25,9 @@ Rectangle {
   signal sectionPicked(string anchor)
   signal collapseRequested()
 
-  readonly property var index: app ? app.store.wikiIndex : null
-  readonly property var meta: app && app.wikiPath !== "" ? app.store.pagesByPath[app.wikiPath] || null : null
-  readonly property string folderPath: meta ? meta.folder : (app ? app.wikiFolder : "")
+  readonly property var index: app.store.wikiIndex
+  readonly property var meta: app.nav.wikiPath !== "" ? app.store.pagesByPath[app.nav.wikiPath] || null : null
+  readonly property string folderPath: meta ? meta.folder : app.nav.wikiFolder
 
   color: Theme.paper
 
@@ -129,7 +129,7 @@ Rectangle {
       Column {
         id: studyCol
         objectName: "studyPages"
-        visible: root.app !== null && root.app.studyPages.length > 0
+        visible: root.app.study.pages.length > 0
         width: parent.width
         spacing: Theme.spaceXs
         Item {
@@ -143,11 +143,11 @@ Rectangle {
             anchors.rightMargin: Theme.spaceLg
             anchors.verticalCenter: parent.verticalCenter
             label: "clear all"
-            onActivated: root.app.clearStudyPages()
+            onActivated: root.app.study.clearPages()
           }
         }
         Repeater {
-          model: root.app ? root.app.studyPages : []
+          model: root.app.study.pages
           delegate: PageRow {
             id: studyRow
             required property var modelData
@@ -155,10 +155,10 @@ Rectangle {
             width: studyCol.width
             path: studyRow.modelData.path
             title: studyRow.modelData.title
-            current: root.app.wikiPath === studyRow.modelData.path
+            current: root.app.nav.wikiPath === studyRow.modelData.path
             tint: studyRow.modelData.lapsed > 0 ? Theme.redText : Theme.dim
             reserve: drop.width + Theme.spaceSm
-            onActivated: root.app.openPage(studyRow.modelData.path, "")
+            onActivated: root.app.nav.openPage(studyRow.modelData.path, "")
             // Shown on the row's hover (and on the open page's row), so a
             // list of ✕ does not stand beside every title.
             PlainButton {
@@ -170,7 +170,7 @@ Rectangle {
               opacity: studyRow.hovered || drop.hovered || studyRow.current ? 1 : 0
               icon: "close"
               tip: "Drop from this list"
-              onActivated: root.app.dropStudyPage(studyRow.modelData.path)
+              onActivated: root.app.study.dropPage(studyRow.modelData.path)
             }
           }
         }
@@ -195,7 +195,7 @@ Rectangle {
             objectName: "tree:" + treeRow.modelData.path
             width: treeCol.width
             height: Theme.listRowHeight - Theme.spaceXs
-            readonly property bool current: treeRow.modelData.kind === "page" && root.app.wikiPath === treeRow.modelData.path
+            readonly property bool current: treeRow.modelData.kind === "page" && root.app.nav.wikiPath === treeRow.modelData.path
             color: current ? Theme.accentFill : (tArea.containsMouse ? Theme.hoverFill : "transparent")
             Row {
               x: Theme.spaceLg + treeRow.modelData.depth * Theme.spaceMd
@@ -229,8 +229,8 @@ Rectangle {
               anchors.fill: parent
               hoverEnabled: true
               cursorShape: Qt.PointingHandCursor
-              onClicked: treeRow.modelData.kind === "folder" ? root.toggleFolder(treeRow.modelData.path) : root.app.openPage(treeRow.modelData.path, "")
-              onDoubleClicked: if (treeRow.modelData.kind === "folder") root.app.openFolder(treeRow.modelData.path)
+              onClicked: treeRow.modelData.kind === "folder" ? root.toggleFolder(treeRow.modelData.path) : root.app.nav.openPage(treeRow.modelData.path, "")
+              onDoubleClicked: if (treeRow.modelData.kind === "folder") root.app.nav.openFolder(treeRow.modelData.path)
             }
           }
         }
@@ -253,7 +253,7 @@ Rectangle {
             text: "wiki"
             font.pixelSize: Theme.bodySmallSize
             color: Theme.dim
-            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.app.openFolder("") }
+            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.app.nav.openFolder("") }
           }
           Repeater {
             model: root.folderPath === "" ? [] : root.folderPath.split("/")
@@ -268,7 +268,7 @@ Rectangle {
               MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.app.openFolder(root.folderPath.split("/").slice(0, crumb.index + 1).join("/"))
+                onClicked: root.app.nav.openFolder(root.folderPath.split("/").slice(0, crumb.index + 1).join("/"))
               }
             }
           }
@@ -300,12 +300,12 @@ Rectangle {
               width: parent.width
               path: siblingItem.modelData.path
               title: siblingItem.modelData.title
-              current: root.app.wikiPath === siblingItem.modelData.path
-              onActivated: root.app.openPage(siblingItem.modelData.path, "")
+              current: root.app.nav.wikiPath === siblingItem.modelData.path
+              onActivated: root.app.nav.openPage(siblingItem.modelData.path, "")
             }
             // The open page's sections, under its own row.
             Repeater {
-              model: root.app.wikiPath === siblingItem.modelData.path ? root.sections : []
+              model: root.app.nav.wikiPath === siblingItem.modelData.path ? root.sections : []
               delegate: UiText {
                 id: sectionItem
                 required property var modelData
@@ -332,7 +332,7 @@ Rectangle {
             inset: Theme.spaceLg
             title: "▸ " + subfolderRow.modelData.name
             note: subfolderRow.modelData.count
-            onActivated: root.app.openFolder(subfolderRow.modelData.path)
+            onActivated: root.app.nav.openFolder(subfolderRow.modelData.path)
           }
         }
 
@@ -346,7 +346,7 @@ Rectangle {
             inset: Theme.spaceLg
             title: root.app.store.pagesByPath[outgoingRow.modelData] ? root.app.store.pagesByPath[outgoingRow.modelData].title : outgoingRow.modelData
             note: outgoingRow.modelData.split("/")[0]
-            onActivated: root.app.openPage(outgoingRow.modelData, "")
+            onActivated: root.app.nav.openPage(outgoingRow.modelData, "")
           }
         }
         SectionLabel { x: Theme.spaceLg; divided: true; ruleGap: Theme.spaceMd; visible: root.meta && root.meta.inbound.length > 0; text: "Linked from" }
@@ -359,7 +359,7 @@ Rectangle {
             inset: Theme.spaceLg
             title: root.app.store.pagesByPath[linkedFromRow.modelData] ? root.app.store.pagesByPath[linkedFromRow.modelData].title : linkedFromRow.modelData
             note: linkedFromRow.modelData.split("/")[0]
-            onActivated: root.app.openPage(linkedFromRow.modelData, "")
+            onActivated: root.app.nav.openPage(linkedFromRow.modelData, "")
           }
         }
       }

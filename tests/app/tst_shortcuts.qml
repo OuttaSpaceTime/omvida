@@ -6,10 +6,10 @@ OmvidaTest {
   name: "shortcuts"
 
   function test_ctrl_digits_switch_screens() {
-    key(Qt.Key_3, Qt.ControlModifier); tryCompare(app, "currentScreen", "wiki")
-    key(Qt.Key_4, Qt.ControlModifier); tryCompare(app, "currentScreen", "cards")
-    key(Qt.Key_5, Qt.ControlModifier); tryCompare(app, "currentScreen", "graph")
-    key(Qt.Key_1, Qt.ControlModifier); tryCompare(app, "currentScreen", "home")
+    key(Qt.Key_3, Qt.ControlModifier); tryCompare(app.nav, "currentScreen", "wiki")
+    key(Qt.Key_4, Qt.ControlModifier); tryCompare(app.nav, "currentScreen", "cards")
+    key(Qt.Key_5, Qt.ControlModifier); tryCompare(app.nav, "currentScreen", "graph")
+    key(Qt.Key_1, Qt.ControlModifier); tryCompare(app.nav, "currentScreen", "home")
   }
 
   function test_out_of_the_answer_box_and_back() {
@@ -19,7 +19,7 @@ OmvidaTest {
     tryVerify(function() { return field.activeFocus }, 3000)
     type("half an answer")
     key(Qt.Key_3, Qt.ControlModifier)
-    tryCompare(app, "currentScreen", "wiki")
+    tryCompare(app.nav, "currentScreen", "wiki")
     compare(field.text, "half an answer", "nothing typed by the shortcut")
     type("x")
     compare(field.text, "half an answer", "the hidden answer box lost the keyboard")

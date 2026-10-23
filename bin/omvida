@@ -8,7 +8,7 @@
 #   omvida search <text>      the search box, prefilled
 #
 # One Omvida at a time: when one is running, the request goes to it over
-# Quickshell IPC (the `omvida` IpcHandler in omvida.qml) instead of a second
+# Quickshell IPC (the `omvida` IpcHandler in App.qml) instead of a second
 # window starting. The bar widget and the skills' "show in Omvida" use this
 # same entry point.
 #

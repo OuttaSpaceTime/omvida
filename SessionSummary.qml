@@ -16,7 +16,8 @@ Column {
   id: root
   objectName: "summary"
 
-  property var session: null
+  required property App app
+  required property StudySession session
   spacing: Theme.spaceXl
 
   UiText {
@@ -42,7 +43,7 @@ Column {
     UiText {
       text: root.session.summaryData
         ? "Accuracy " + Format.pct(root.session.summaryData.accuracy)
-          + (root.session.app && root.session.app.store.overview && root.session.app.store.overview.streak > 0 ? " · " + Format.plural(root.session.app.store.overview.streak, "day") + " streak" : "")
+          + (root.app.store.overview && root.app.store.overview.streak > 0 ? " · " + Format.plural(root.app.store.overview.streak, "day") + " streak" : "")
           + (root.session.summaryData.overrides > 0 ? " · " + Format.plural(root.session.summaryData.overrides, "suggestion") + " overridden" : "")
         : ""
       color: Theme.secondaryInk
@@ -82,7 +83,7 @@ Column {
       label: "fix them in claude"
       tint: Theme.accentColor
       anchors.verticalCenter: parent.verticalCenter
-      onActivated: root.session.app.fixNotes(root.session.noted)
+      onActivated: root.app.fixNotes(root.session.noted)
     }
   }
 
@@ -116,7 +117,7 @@ Column {
         topic: relatedRow.modelData.path.split("/").slice(0, -1).join("/")
         badge: relatedRow.modelData.lapsed > 0 ? "includes a lapse" : ""
         note: relatedRow.modelData.via === "cards" ? Format.plural(relatedRow.modelData.cards, "card") + " from today" : "shares a tag"
-        onActivated: root.session.app.openPage(relatedRow.modelData.path, "")
+        onActivated: root.app.nav.openPage(relatedRow.modelData.path, "")
       }
     }
   }
@@ -135,7 +136,7 @@ Column {
         required property var modelData
         tint: Theme.accentColor
         label: "/study-walkthrough " + (walkthroughButton.modelData.length > 48 ? walkthroughButton.modelData.slice(0, 47) + "…" : walkthroughButton.modelData)
-        onActivated: root.session.app.launch(Launch.skillArgv(Paths.studyDir, "Omvida · Walkthrough", "/study-walkthrough", walkthroughButton.modelData, ""), "Opened Claude Code")
+        onActivated: root.app.launch(Launch.skillArgv(Paths.studyDir, "Omvida · Walkthrough", "/study-walkthrough", walkthroughButton.modelData, ""), "Opened Claude Code")
       }
     }
   }
@@ -151,7 +152,7 @@ Column {
       tint: Theme.accentColor
       onActivated: root.session.start()
     }
-    PlainButton { label: "browse the wiki"; onActivated: root.session.app.setScreen("wiki") }
-    PlainButton { label: "home"; onActivated: root.session.app.setScreen("home") }
+    PlainButton { label: "browse the wiki"; onActivated: root.app.nav.setScreen("wiki") }
+    PlainButton { label: "home"; onActivated: root.app.nav.setScreen("home") }
   }
 }

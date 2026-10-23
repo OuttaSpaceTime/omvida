@@ -5,7 +5,8 @@ import "Graph.js" as Graph
 // The wiki's link graph on a Canvas, laid out by Graph.js's force simulation.
 // Nodes are coloured by topic and sized by degree, and pages that share a tag
 // are drawn towards each other. Hover lights a node and its neighbours; click
-// opens the page; drag pins a node; the wheel zooms.
+// opens the page (pageChosen: the view only says which, the screen opens
+// it); drag pins a node; the wheel zooms.
 //
 // `local` shows the focus page, two hops out, and every page sharing a tag
 // with it; those that are there only for a tag hang off it on dashed lines.
@@ -13,7 +14,8 @@ Item {
   id: root
   clip: true
 
-  property var app: null
+  // The wiki service's graph: { nodes, links }.
+  property var graph: null
   property string focusPath: ""
   property bool local: false
   property bool compact: false
@@ -28,8 +30,9 @@ Item {
   property real panX: 0
   property real panY: 0
   property var dragNode: null
+  // A node was clicked, not dragged: its page.
+  signal pageChosen(string path)
 
-  readonly property var graph: app && app.store.wikiIndex ? app.store.wikiIndex.graph : null
   readonly property var shown: graph ? (local ? Graph.localSubgraph(graph, focusPath, 2) : graph) : null
   // The local view's tag-only pages (the dashed lines), worked out once per
   // layout: paint runs every settling frame and hover asks on every move.
@@ -218,7 +221,7 @@ Item {
       var n = root.dragNode
       root.dragNode = null
       if (n) n.pinned = false
-      if (!moved && n && root.app) root.app.openPage(n.id, "")
+      if (!moved && n) root.pageChosen(n.id)
     }
     onExited: { root.hovered = ""; root.hoverNeighbours = ({}); canvas.requestPaint() }
     onWheel: function(wheel) {

@@ -5,7 +5,7 @@ import Quickshell.Io
 
 // The base type of every whole-app test (tests/app/tst_*.qml), Omvision's
 // OmvisionTest adapted. A test file is loaded *inside the running app* by
-// omvida.qml's test hook (OMVIDA_TEST=<file>), so it clicks and types into
+// App.qml's test hook (OMVIDA_TEST=<file>), so it clicks and types into
 // the real screens, against real backends: the deck server on the fixture
 // deck, the wiki service on the fixture wiki. bin/test runs each file in its
 // own sandbox (bin/sandbox), with its fakes first on PATH (docs/testing.md).
@@ -250,7 +250,7 @@ TestCase {
   }
 
   function startSession() {
-    base.app.setScreen("study")
+    base.app.nav.setScreen("study")
     base.study.start()
     tryCompare(base.study, "phase", "answering", 15000)
     // The answer box takes the keyboard a moment after the phase changes
@@ -276,7 +276,7 @@ TestCase {
   function blockOnLeech(cardId) {
     sqlWrite("UPDATE Card SET lapses = 6, leechDeferredLapses = NULL, due = '2020-01-01T00:00:00.000+00:00' WHERE id = '" + cardId + "'")
     sqlWrite("UPDATE Card SET due = '2099-01-01T00:00:00.000+00:00' WHERE id != '" + cardId + "'")
-    base.app.setScreen("study")
+    base.app.nav.setScreen("study")
     base.study.start()
     tryVerify(function() { return base.study.phase === "answering" || base.study.phase === "blocked" }, 15000)
     if (base.study.phase === "answering") {

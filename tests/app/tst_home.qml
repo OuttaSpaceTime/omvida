@@ -7,7 +7,7 @@ OmvidaTest {
 
   function init() {
     if (searchPalette.opened) searchPalette.close()
-    app.setScreen("home")
+    app.nav.setScreen("home")
   }
 
   function test_the_glance_shows_the_due_figure_and_verdict() {
@@ -21,10 +21,10 @@ OmvidaTest {
   // square icons beside Study now.
   function test_square_icons_open_the_deck_and_the_wiki() {
     click("homeCardsButton")
-    tryCompare(app, "currentScreen", "cards")
-    app.setScreen("home")
+    tryCompare(app.nav, "currentScreen", "cards")
+    app.nav.setScreen("home")
     click("homeWikiButton")
-    tryCompare(app, "currentScreen", "wiki")
+    tryCompare(app.nav, "currentScreen", "wiki")
   }
 
   // The line shows a screen's own hints, then the ones every reading screen
@@ -47,7 +47,7 @@ OmvidaTest {
     verify(app.addMenuOpen)
     key(Qt.Key_Escape)
     tryVerify(function() { return !app.addMenuOpen }, 2000)
-    compare(app.currentScreen, "home")
+    compare(app.nav.currentScreen, "home")
   }
 
   // Ctrl+K and Ctrl+N no longer print in the top bar; the keys still work.
@@ -59,16 +59,16 @@ OmvidaTest {
   }
 
   function test_wiki_and_graph_hand_their_own_status() {
-    app.openPage("web/http-caching", "")
+    app.nav.openPage("web/http-caching", "")
     tryVerify(function() { return wiki.loadedPath === "web/http-caching" }, 8000)
     compare(item("statusMode").text, "WIKI")
     compare(wiki.statusSegments[0].text, "web/http-caching")
     var back = item("statusLine").hints.filter(function(h) { return h.keys === "alt+←" })
     compare(back.length, 1, "history behind the page, so a back hint")
     back[0].run()
-    tryCompare(app, "currentScreen", "home")
+    tryCompare(app.nav, "currentScreen", "home")
 
-    app.setScreen("graph")
+    app.nav.setScreen("graph")
     var graph = item("graphScreen")
     compare(item("statusMode").text, "GRAPH")
     verify(graph.statusSegments[0].text.indexOf("page") !== -1, graph.statusSegments[0].text)

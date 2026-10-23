@@ -18,6 +18,7 @@ Item {
 
   property var wikiIndex: null          // {pages, tree, graph, stamp}
   property var pagesByPath: ({})
+  readonly property var graph: wikiIndex ? wikiIndex.graph : null
   property var allCards: []
   property bool cardsLoaded: false
   property var overview: null
@@ -30,7 +31,7 @@ Item {
   property string deckStamp: ""
   property string reviewsStamp: ""
   property string notesStamp: ""
-  // A study session is open (omvida.qml binds it). Its ratings then reload
+  // A study session is open (App.qml binds it). Its ratings then reload
   // only the overview, for the due count and the bar; the cards' scheduling
   // waits for the session's end (scheduleStale), as nothing on screen shows
   // it, where a reload per rating cost a whole-deck read each time.
@@ -104,8 +105,19 @@ Item {
   }
 
   function loadSessions() {
-    deckClient.call("sessions", { limit: Theme.homeSessions }, function(err, list) {
+    deckClient.call("sessions", { limit: Config.homeSessions }, function(err, list) {
       if (!err) root.put("sessions", list)
+    })
+  }
+
+  // Deletes a card and its review history (flashcard-mcp's deleteCard: a
+  // leech dropped, Del in Study or on the Cards stage), then checks the deck:
+  // a delete moves the cards' stamp, so that is one reload, even mid-session,
+  // and the poll does not repeat it. `done(err)` runs once the deck has it.
+  function deleteCard(cardId, done) {
+    deckClient.call("deleteCard", { cardId: cardId }, function(err) {
+      if (!err) root.checkDeck()
+      if (done) done(err)
     })
   }
 
@@ -192,11 +204,11 @@ Item {
   }
 
   // A page written by a Claude session shows up without a restart: the wiki
-  // service's stamp is the mtime and size of every page, cheap to compare.
-  // Only while the window is in front: a background window has nothing to
-  // show it on, and coming back to the front refreshes anyway.
+  // service's stamp is compared, only while the window is in front. A
+  // background window has nothing to show it on, and coming back to the
+  // front refreshes anyway.
   Timer {
-    interval: Theme.wikiPollInterval
+    interval: Config.wikiPollInterval
     running: wikiClient.ready && root.active
     repeat: true
     onTriggered: wikiClient.call("stamp", {}, function(err, s) {
@@ -207,21 +219,19 @@ Item {
     })
   }
 
-  // Three aggregate queries, so it runs more often than the wiki's stamp.
   // Not triggered on start: the client's start and coming back to the front
   // check the deck already (onReadyChanged, onActiveChanged).
   Timer {
-    interval: Theme.deckPollInterval
+    interval: Config.deckPollInterval
     running: deckClient.ready && root.active
     repeat: true
     onTriggered: root.checkDeck()
   }
 
-  // The IPC comes once per card Claude writes: a batch of new cards is one
-  // reload, not one each.
+  // Debounced: the IPC comes once per card Claude writes.
   Timer {
     id: pushed
-    interval: Theme.deckPushDebounce
+    interval: Config.deckPushDebounce
     onTriggered: root.checkDeck()
   }
   function deckPushed() { pushed.restart() }

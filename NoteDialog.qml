@@ -21,11 +21,11 @@ Modal {
   id: root
   objectName: "noteDialog"
 
-  property var app: null
+  required property App app
   property var card: null
   // The card has a note: a binding, so a note resolved while the dialog is
   // up turns it back into a new one.
-  readonly property bool existing: card !== null && app !== null && !!app.store.notes[card.id]
+  readonly property bool existing: card !== null && !!app.store.notes[card.id]
   property bool saving: false
 
   title: existing ? "Note on this card" : "Note this card"
@@ -70,8 +70,6 @@ Modal {
     else editor.select(e.start, e.end)
     return true
   }
-
-  onClosed: if (app) app.focusScreen()
 
   UiText {
     objectName: "noteCardFront"

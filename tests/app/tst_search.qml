@@ -12,7 +12,7 @@ OmvidaTest {
     type("caching")
     tryVerify(function() { return searchPalette.rows.length > 0 && searchPalette.rows[0].kind === "page" }, 3000)
     key(Qt.Key_Return)
-    tryCompare(app, "wikiPath", "web/http-caching")
+    tryCompare(app.nav, "wikiPath", "web/http-caching")
     verify(!searchPalette.opened)
   }
 
@@ -46,7 +46,7 @@ OmvidaTest {
     app.openSearch("caching")
     tryVerify(function() { return searchPalette.rows.length > 0 && searchPalette.rows[0].kind === "page" }, 3000)
     click("paletteHint:open")
-    tryCompare(app, "wikiPath", "web/http-caching")
+    tryCompare(app.nav, "wikiPath", "web/http-caching")
     verify(!searchPalette.opened)
 
     app.openSearch("What is an origin?")

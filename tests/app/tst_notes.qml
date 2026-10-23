@@ -35,7 +35,7 @@ OmvidaTest {
     // The window's keys stay quiet over a dialog.
     key(Qt.Key_N, Qt.ControlModifier)
     key(Qt.Key_1, Qt.ControlModifier)
-    verify(!app.addMenuOpen && app.currentScreen === "study", "no Add, no screen change")
+    verify(!app.addMenuOpen && app.nav.currentScreen === "study", "no Add, no screen change")
     key(Qt.Key_Escape)
     tryVerify(function() { return !app.noteOpen }, 2000)
     compare(study.phase, "answering", "Esc closed the dialog, not the session")
@@ -80,7 +80,7 @@ OmvidaTest {
   // The summary counts the noted cards and fixes them; its related pages
   // stay in the wiki's side panel once one is open.
   function test_z_the_summary_offers_the_fix_and_keeps_its_pages_in_the_wiki() {
-    app.clearStudyPages()
+    app.study.clearPages()
     startSession()
     var noted = study.card.id
     key(Qt.Key_N, Qt.ControlModifier)
@@ -118,22 +118,22 @@ OmvidaTest {
 
     tryVerify(function() { return study.related.length > 0 }, 5000)
     var pages = study.related.map(function(p) { return p.path })
-    compare(app.studyPages.map(function(p) { return p.path }), pages)
+    compare(app.study.pages.map(function(p) { return p.path }), pages)
     click("related:" + pages[0])
-    tryCompare(app, "currentScreen", "wiki")
+    tryCompare(app.nav, "currentScreen", "wiki")
     // Every page from the session is listed, the open one marked; a click
     // goes from one to the next.
     pages.forEach(function(p) { item("studyPage:" + p) })
     if (pages.length > 1) {
       click("studyPage:" + pages[1])
-      tryCompare(app, "wikiPath", pages[1])
+      tryCompare(app.nav, "wikiPath", pages[1])
       item("studyPage:" + pages[0])
     }
     click("studyPageDrop:" + pages[0])
-    tryVerify(function() { return app.studyPages.length === pages.length - 1 }, 2000)
+    tryVerify(function() { return app.study.pages.length === pages.length - 1 }, 2000)
     if (pages.length > 1) {
       click("studyPagesClear")
-      tryCompare(app.studyPages, "length", 0)
+      tryCompare(app.study.pages, "length", 0)
     }
     tryVerify(function() { return findNamed(target, "studyPages") === null }, 2000, "the section goes when empty")
   }
@@ -144,7 +144,7 @@ OmvidaTest {
     app.store.saveNote("fixturecard0002", "**Reword** the front", null)
     app.store.saveNote("fixturecard0004", "What is a scheme?", null)
     tryCompare(app.store, "noteCount", 2, 5000)
-    app.setScreen("cards")
+    app.nav.setScreen("cards")
     var cards = cardsScreen
     click("notedChip")
     tryVerify(function() { return cards.filtered.length === 2 }, 3000)
@@ -179,7 +179,7 @@ OmvidaTest {
   function test_home_lists_past_sessions_and_fixes_all() {
     compare(run(["python3", repo + "/tests/fixtures/seed_deck.py", deckDb, "--notes"]).code, 0, "seeded")
     app.store.refreshDeck()
-    app.setScreen("home")
+    app.nav.setScreen("home")
     tryVerify(function() { return app.store.sessions.some(function(s) { return s.id === "fixturesession" }) }, 5000)
     item("flaw:lapsed:fixturecard0003")
     item("flaw:noted:fixturecard0001")
@@ -196,7 +196,7 @@ OmvidaTest {
   // The wiki's left panel drags wider by its right edge, and no further
   // than leaves the page its column.
   function test_the_side_panel_is_resizable() {
-    app.openPage("web/http-caching", "")
+    app.nav.openPage("web/http-caching", "")
     tryVerify(function() { return wiki.loadedPath === "web/http-caching" }, 8000)
     wiki.sideOpen = true
     var handle = item("sidePanelHandle")

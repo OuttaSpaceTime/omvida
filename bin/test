@@ -13,7 +13,7 @@
 #
 # Layer 3 starts the real app once per tests/app/tst_*.qml in a fresh sandbox
 # (a fixture study repo and deck, fake claude/kitty/qmd), with OMVIDA_TEST
-# pointing omvida.qml's test hook at the file. A failed run keeps its sandbox:
+# pointing App.qml's test hook at the file. A failed run keeps its sandbox:
 # the app's log, a screenshot per failed test, and the files as left.
 # The deck server's own tests live in flashcard-mcp (npm test there).
 set -uo pipefail

@@ -207,7 +207,7 @@ Column {
     }
     UiText {
       objectName: "calibrationVerdict"
-      text: root.c ? root.c.verdict + (root.c.marginal ? " (marginal)" : "") : ""
+      text: Format.verdictText(root.c)
       font.pixelSize: Theme.bodySmallSize
       color: root.c ? Theme.verdictColor(root.c.verdict) : Theme.dim
     }

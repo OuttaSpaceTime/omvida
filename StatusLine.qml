@@ -37,7 +37,7 @@ import "bar/Model.js" as Overview
 Rectangle {
   id: root
 
-  property var app: null
+  required property App app
   property var screen: null
   property string screenName: ""
 
@@ -54,7 +54,7 @@ Rectangle {
   readonly property var segments: prop("statusSegments", [])
   readonly property bool shared: prop("statusShared", true)
   readonly property var hints: shared ? StatusBits.common(app, prop("statusHints", [])) : prop("statusHints", [])
-  readonly property var alerts: shared && app
+  readonly property var alerts: shared
     ? prop("statusAlerts", []).concat(StatusBits.pressure(app, app.store.overview ? app.store.overview.pressure : null,
                                                            Overview.clearance(app.store.overview), Theme.verdictColor))
     : prop("statusAlerts", [])
@@ -64,14 +64,17 @@ Rectangle {
 
   // How many hints fit, left to right, in what the mode, the segments and
   // the alerts leave. Read from the hints' own widths, never from the row
-  // they sit in, whose width this decides.
+  // they sit in, whose width this decides. The row's spacing and its margin
+  // count too: summing the widths alone let every hint "fit" at the
+  // window's least width, and the row, anchored right, ran left over the
+  // mode block.
   readonly property int hintsShown: {
-    var room = root.width - modeBlock.width - segBox.width - alertRow.width - Theme.spaceSm * 2
+    var room = root.width - modeBlock.width - segBox.width - alertRow.width - hintRow.anchors.rightMargin - Theme.spaceSm * 2
     var used = 0
     for (let i = 0; i < hintRepeater.count; i++) {
       let it = hintRepeater.itemAt(i)
       if (!it) return i
-      used += it.implicitWidth
+      used += it.implicitWidth + (i > 0 ? hintRow.spacing : 0)
       if (used > room) return i
     }
     return hintRepeater.count
@@ -139,6 +142,7 @@ Rectangle {
   // Hints: the keys that work now, each also a button.
   Row {
     id: hintRow
+    objectName: "statusHints"
     anchors.right: alertRow.left
     anchors.rightMargin: Theme.spaceLg
     height: parent.height

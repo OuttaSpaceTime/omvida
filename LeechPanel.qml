@@ -11,7 +11,7 @@ import QtQuick
 Column {
   id: root
 
-  property var session: null
+  required property StudySession session
   spacing: Theme.spaceLg
 
   UiText {
@@ -34,7 +34,7 @@ Column {
     spacing: Theme.spaceXl
     PlainButton { objectName: "leechRewrite"; label: "rewrite in claude"; tint: Theme.accentColor; onActivated: root.session.leechFix("rewrite") }
     PlainButton { objectName: "leechSplit"; label: "split in claude"; onActivated: root.session.leechFix("split") }
-    PlainButton { objectName: "leechKeep"; label: "keep as is"; onActivated: root.session.leechResolve("resolveLeech", "kept as is") }
+    PlainButton { objectName: "leechKeep"; label: "keep as is"; onActivated: root.session.leechKeep() }
     PlainButton { objectName: "leechDrop"; label: "delete"; tint: Theme.redText; onActivated: dropConfirm.visible = true }
   }
   Row {
@@ -42,7 +42,7 @@ Column {
     visible: false
     spacing: Theme.spaceXl
     UiText { text: "Delete this card and its history?"; font.pixelSize: Theme.bodySmallSize; color: Theme.redText; anchors.verticalCenter: parent.verticalCenter }
-    PlainButton { objectName: "leechDropConfirm"; label: "delete"; tint: Theme.redText; onActivated: { dropConfirm.visible = false; root.session.leechResolve("deleteCard", "deleted") } }
+    PlainButton { objectName: "leechDropConfirm"; label: "delete"; tint: Theme.redText; onActivated: { dropConfirm.visible = false; root.session.leechDrop() } }
     PlainButton { label: "cancel"; onActivated: dropConfirm.visible = false }
   }
   Row {

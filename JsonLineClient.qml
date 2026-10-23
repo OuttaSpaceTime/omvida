@@ -12,6 +12,11 @@ import Quickshell.Io
 // restarted after 1.5s, up to three times in a row: a
 // crash during one request should not cost the rest of the session. Every
 // call in flight when it exits gets an error, so no screen waits forever.
+// Nor when it hangs without exiting: a request unanswered for `timeout`
+// (Config.requestTimeout) gets an error too, and its answer, should one
+// come, is dropped. The clock starts when the line is written, not when it
+// is queued, so a slow start (the wiki service builds its venv on first
+// launch) costs no request its answer.
 Item {
   id: root
 
@@ -23,18 +28,26 @@ Item {
   property string lastStderr: ""
   property string failure: ""
 
+  property int timeout: Config.requestTimeout
+
   property int nextId: 1
+  // id -> { cb, method, line, sentAt }: sentAt is 0 until the line is
+  // written, which waits for the ready line. Integer keys keep their order,
+  // so queued requests go out as they were made.
   property var pending: ({})
-  property var queue: []
   property int restarts: 0
 
   // cb(error, result): error is null or a message string.
   function call(method, params, cb) {
     var id = root.nextId++
-    var line = JSON.stringify({ id: id, method: method, params: params || {} })
-    root.pending[id] = cb
-    if (root.ready) proc.write(line + "\n")
-    else root.queue.push(line)
+    root.pending[id] = { cb: cb, method: method, sentAt: 0,
+                         line: JSON.stringify({ id: id, method: method, params: params || {} }) }
+    if (root.ready) send(root.pending[id])
+  }
+
+  function send(p) {
+    p.sentAt = Date.now()
+    proc.write(p.line + "\n")
   }
 
   function handleLine(line) {
@@ -47,23 +60,33 @@ Item {
     if (msg.ready === true) {
       root.ready = true
       root.failure = ""
-      let q = root.queue
-      root.queue = []
-      for (let i = 0; i < q.length; i++) proc.write(q[i] + "\n")
+      for (let id in root.pending) if (root.pending[id].sentAt === 0) root.send(root.pending[id])
       return
     }
-    var cb = root.pending[msg.id]
+    // Answered once: a request already failed (timed out, or the backend
+    // exited) is no longer pending, and its late answer is dropped.
+    var p = root.pending[msg.id]
+    if (p === undefined) return
     delete root.pending[msg.id]
-    if (cb === undefined) return
-    if (msg.error) cb(msg.error.message || "error", null)
-    else cb(null, msg.result)
+    if (msg.error) p.cb(msg.error.message || "error", null)
+    else p.cb(null, msg.result)
   }
 
   function failAll(reason) {
     var p = root.pending
     root.pending = ({})
-    root.queue = []
-    for (let id in p) if (typeof p[id] === "function") p[id](reason, null)
+    for (let id in p) p[id].cb(reason, null)
+  }
+
+  // The requests written longer than `timeout` ago get their error.
+  function expire() {
+    var now = Date.now()
+    for (let id in root.pending) {
+      let p = root.pending[id]
+      if (p.sentAt === 0 || now - p.sentAt < root.timeout) continue
+      delete root.pending[id]
+      p.cb(root.name + ": no answer to " + p.method + " in " + (root.timeout / 1000) + "s", null)
+    }
   }
 
   Process {
@@ -94,6 +117,15 @@ Item {
     id: restartTimer
     interval: 1500
     onTriggered: proc.running = true
+  }
+
+  // Checks for overdue requests, often enough that an error comes at most a
+  // quarter of the timeout late. Over an empty `pending` it costs nothing.
+  Timer {
+    interval: Math.min(1000, root.timeout / 4)
+    running: root.ready
+    repeat: true
+    onTriggered: root.expire()
   }
 
   // A run that stayed up a while has earned its restarts back.

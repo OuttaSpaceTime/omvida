@@ -101,7 +101,7 @@ OmvidaTest {
     var cards = app.store.allCards, overview = app.store.overview
     study.submit(1)
     tryVerify(function() { return app.store.overview !== overview }, 8000, "the overview was reloaded")
-    wait(2500)   // past Theme.deckPollInterval
+    wait(2500)   // past Config.deckPollInterval
     verify(app.store.allCards === cards, "the cards were not")
     verify(app.store.scheduleStale, "and are known to be behind")
     study.endNow()
@@ -119,7 +119,7 @@ OmvidaTest {
     var id = study.card.id
     app.store.active = false
     sqlWrite("UPDATE Card SET back = 'Pushed by the hook', updatedAt = " + sqlNow + " WHERE id = '" + id + "'")
-    wait(2500)   // past Theme.deckPollInterval
+    wait(2500)   // past Config.deckPollInterval
     verify(study.card.back !== "Pushed by the hook", "no poll in the background")
     app.ipc.deckChanged()
     tryVerify(function() { return study.card.back === "Pushed by the hook" }, 3000, "the IPC call reloaded the deck")

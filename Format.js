@@ -91,7 +91,7 @@ function decodeEntities(s) {
 }
 
 // A link the browser should open: an outside http(s) URL, and nothing else
-// (no file:, no desktop handler). app.followLink and CardFace both ask this.
+// (no file:, no desktop handler). Navigator.followLink and CardFace both ask this.
 function isExternalUrl(href) {
   return /^https?:/.test(String(href || ""))
 }
@@ -119,6 +119,13 @@ function calibrationLine(c) {
   if (c.marginal) s += ", marginal"
   if (c.true_retention !== null && c.true_retention !== undefined) s += " (true retention " + pct(c.true_retention) + ")"
   return s
+}
+
+// The calibration verdict as the app shows it beside a figure: verbatim,
+// marginal said after it. The bar has its own copy (bar/Model.js, a plugin
+// that cannot import this file).
+function verdictText(c) {
+  return c ? c.verdict + (c.marginal ? " (marginal)" : "") : ""
 }
 
 // Calendar days from the local day `day` (YYYY-MM-DD) to now's.

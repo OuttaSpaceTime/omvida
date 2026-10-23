@@ -1,7 +1,7 @@
 # Architecture
 
 ```
-                 omvida.qml (window, navigation, shared data)
+          App.qml (window, overlays) · Store (data) · Navigator · StudySession
    Home · Study · Wiki · Cards · Graph · Search/Ask · Add      bar/ (omarchy-shell plugin)
           │                     │               │                      │
    JsonLineClient        JsonLineClient     claude / kitty         bin/omvida-overview
@@ -17,18 +17,39 @@
 
 ## The parts
 
-**QML** (repo root, one Quickshell config, as Omvision). `omvida.qml` owns navigation and the
-data screens share (the wiki index, the deck overview, all cards). Screens are files of their
-own. Every one reaches the data and both backends as `app.store` (`Store.qml`); none is
-handed a client of its own. What runs over time sits apart from the view that shows it:
-`StudySession.qml` (a study session, drawn by `StudyScreen`) and `AskSession.qml` (one Ask,
-drawn by `SearchPalette`). Pure logic is in `.js` modules, unit-tested without a window:
+**QML** (repo root, one Quickshell config, as Omvision). `omvida.qml` is only the `ShellRoot`;
+the app is `App.qml`, a type of its own, which holds the parts and the window. The parts are
+types too: `Store.qml` (the data the screens share, the wiki index, the deck overview, all
+cards, and both backends), `Navigator.qml` (the screen, the open page, back and forward) and
+`StudySession.qml` (a study session, drawn by `StudyScreen`). `AskSession.qml` is one Ask,
+drawn by `SearchPalette`. What runs over time sits apart from the view that shows it.
+
+The wiring follows QML's own advice: dependencies go down typed, events come up as signals.
+A screen or dialog declares `required property App app` and reaches the parts as `app.store`,
+`app.nav` and `app.study`, with no client of its own, so there is one way to each backend.
+Typed, qmllint checks every member a screen uses (`bin/check lint`); `property var app`, as
+it was, let a misspelled one through to run time. A widget below a screen gets only what it
+shows (`FolderView` and `PageCardsDialog` a `Store`, `GraphView` the graph, `PageView` its
+blocks) and says what was clicked (`pageChosen`, `linkActivated`), and a dialog says it
+`closed`: `App.qml` connects them, and hands the keyboard back. The logic objects hold no
+`app` either. `Navigator` only says `navigating` and `anchorRequested`; App closes the palette,
+notes the page in the study log and scrolls the wiki. `StudySession` gets the `Store` and asks
+for what it wants shown (`toastRequested`, `launchRequested`, `noteAsked`, `deleteAsked`), and
+App opens the toast, kitty, the note dialog or the confirm. Which study phases mean what (`running`, `cardShown`, `frontShown`...)
+is said once, on `StudySession`.
+
+Settings: `Theme.qml` is how things look (colours from the omarchy theme, type, spacing,
+motion), `Config.qml` how often and how long (polls, debounces, timeouts, data limits),
+`Paths.qml` where things are.
+
+Pure logic is in `.js` modules, unit-tested without a window:
 `StudyKeys.js` (what a key means), `Session.js` (a session's record), `Format.js` (wording,
 and card HTML as plain text), `Cards.js` (explorer filters, the viewer's, and a tile's
 caption), `Graph.js` (force layout), `WikiTree.js` (lookups in the wiki service's tree), `NoteEdit.js`
 (markdown editing in the note dialog), `Launch.js` (every argv the app launches, and
 every prompt handed to Claude), `StatusBits.js` (the status line's shared hints and alert),
-`Icons.js` (the Nerd Font glyphs, by name).
+`Icons.js` (the Nerd Font glyphs, by name). `Navigator.qml` uses no singleton, so it is
+unit-tested the same way.
 
 **The deck server** is flashcard-mcp's `src/app/server.ts`, started by `bin/omvida-deck`.
 It runs for the app's whole life rather than per call: a tsx start costs about a second, and
@@ -46,7 +67,9 @@ so a theme switch recolours without re-rendering. It also ranks pages (after a s
 for Home), runs qmd, and appends the session log entry.
 
 **Both speak JSON lines** over stdio (`JsonLineClient.qml`): `{id, method, params}` in,
-`{id, result | error}` out, `{"ready": true}` at start. MCP was the alternative for the deck,
+`{id, result | error}` out, `{"ready": true}` at start. A backend that exits is restarted; a
+request unanswered for `Config.requestTimeout` (counted from when it is written) gets an
+error, so a backend that hangs leaves no screen waiting. MCP was the alternative for the deck,
 and was rejected: a QML MCP client means the initialize handshake and tool-result envelopes by
 hand, for nothing the app needs. The CLI per call was rejected for its second-long start.
 

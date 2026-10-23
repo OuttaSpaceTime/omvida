@@ -5,7 +5,7 @@ import "Format.js" as Format
 import "StatusBits.js" as StatusBits
 import "bar/Model.js" as Overview
 
-// The Study screen: a view over the session (StudySession.qml, which omvida.qml
+// The Study screen: a view over the session (StudySession.qml, which App.qml
 // owns). The card, a leech and the summary are components of their own; this
 // file places them and tells the window's status line (StatusLine.qml) the
 // mode, where the session is, the keys that work now and what needs a look,
@@ -13,7 +13,8 @@ import "bar/Model.js" as Overview
 Item {
   id: root
 
-  property var session: null
+  required property App app
+  required property StudySession session
   property alias answerField: card.answerField
 
   // The window's focusScreen() calls this when Study is shown or an overlay
@@ -46,9 +47,6 @@ Item {
   // queue's review/new split is left out: the position's total already says
   // how much is left.
   readonly property string phase: root.session.phase
-  // Between cards (loading) the line keeps the answering keys, so it does
-  // not flicker through a third set on every card.
-  readonly property bool answeringKeys: phase === "answering" || phase === "loading" || (phase === "submitting" && !root.session.backShown)
 
   // Study's keys and pressure are its session's, not the reading screens'
   // ctrl+K, ctrl+N and back (StatusLine.qml).
@@ -71,18 +69,18 @@ Item {
 
   readonly property var statusSegments: {
     var s = root.session
-    if ((s.inCard || phase === "loading") && s.next && s.card) {
+    if (s.cardShown && s.next && s.card) {
       let out = []
       let pos = Format.position(s.next)
       if (pos !== "") out.push({ text: pos, color: Theme.ink })
       out.push({ text: s.card.deck })
       if (s.next.repeat) out.push({ text: "repeat" })
-      if (s.app.store.notes[s.card.id]) out.push({ text: "noted", color: Theme.accentColor })
+      if (root.app.store.notes[s.card.id]) out.push({ text: "noted", color: Theme.accentColor })
       return out
     }
     switch (phase) {
     case "idle":
-      let due = s.app.store.overview ? s.app.store.overview.pressure.flashcardsDue : 0
+      let due = root.app.store.overview ? root.app.store.overview.pressure.flashcardsDue : 0
       return [{ text: Format.plural(due, "card") + " due" }]
     case "syncing": return [{ text: "syncing with anki…" }]
     case "starting": case "loading": return [{ text: "starting…" }]
@@ -111,7 +109,7 @@ Item {
     var note = { keys: "ctrl+N", label: "note", run: function() { s.note() } }
     var end = { keys: "esc", label: "end", run: function() { s.endNow() } }
     var del = { keys: "del", label: "delete", run: function() { s.askDelete() } }
-    if (answeringKeys) return [
+    if (s.frontShown) return [
       { keys: "shift+enter", label: "reveal", run: function() { s.reveal(false) } },
       { keys: "alt+enter", label: "reveal+accept", run: function() { s.reveal(true) } },
       // The mouse has no Shift: a click reveals, where the keycaps are.
@@ -138,8 +136,8 @@ Item {
     case "error": return [{ keys: "enter", label: "try again", run: function() { s.start() } }]
     case "done": return [
       { keys: "enter", label: "study again", run: function() { s.start() } },
-      { keys: "", label: "wiki", run: function() { s.app.setScreen("wiki") } },
-      { keys: "", label: "home", run: function() { s.app.setScreen("home") } }
+      { keys: "", label: "wiki", run: function() { root.app.nav.setScreen("wiki") } },
+      { keys: "", label: "home", run: function() { root.app.nav.setScreen("home") } }
     ]
     }
     return []
@@ -151,15 +149,15 @@ Item {
   readonly property var statusAlerts: {
     var s = root.session
     var pressure = s.info && s.info.pressure ? s.info.pressure
-                 : (s.app.store.overview ? s.app.store.overview.pressure : null)
-    var out = StatusBits.pressure(s.app, pressure, Overview.clearance(s.app.store.overview), Theme.verdictColor)
+                 : (root.app.store.overview ? root.app.store.overview.pressure : null)
+    var out = StatusBits.pressure(root.app, pressure, Overview.clearance(root.app.store.overview), Theme.verdictColor)
     if (s.info && s.info.newHeldBack > 0 && phase !== "done")
       out.push({ text: s.info.newHeldBack + " new held back", tip: "new cards held back while pressure is " + pressure.verdict })
     var note = s.syncNote
     if (note !== "") {
       let failed = note.indexOf("Anki sync failed") === 0
       out.push({ text: failed ? "sync ✕" : "synced", color: failed ? Theme.redText : Theme.dim, tip: note,
-                 run: function() { s.app.toast(note) } })
+                 run: function() { root.app.toast(note) } })
     }
     return out
   }
@@ -189,12 +187,12 @@ Item {
 
       // ---- idle / syncing / starting / error -------------------------------------
       Column {
-        visible: root.phase === "idle" || root.phase === "syncing" || root.phase === "starting" || root.phase === "error"
+        visible: root.phase === "idle" || root.session.opening || root.phase === "error"
         width: parent.width
         spacing: Theme.spaceLg
-        ProgressPanel { width: parent.width; overview: root.session.app.store.overview; visible: root.phase === "idle" }
+        ProgressPanel { width: parent.width; overview: root.app.store.overview; visible: root.phase === "idle" }
         UiText {
-          visible: root.phase === "syncing" || root.phase === "starting"
+          visible: root.session.opening
           text: root.phase === "syncing" ? "Syncing with Anki…" : "Starting…"
           color: Theme.dim
         }
@@ -233,6 +231,7 @@ Item {
         visible: root.phase === "done"
         width: parent.width
         session: root.session
+        app: root.app
       }
     }
   }

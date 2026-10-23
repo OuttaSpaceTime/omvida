@@ -18,7 +18,7 @@ import "Format.js" as Format
 Column {
   id: root
 
-  property var session: null
+  required property StudySession session
   property alias answerField: answer
   spacing: root.session.backShown ? Theme.spaceXl : Theme.space2xl
 
@@ -26,7 +26,7 @@ Column {
   // once and the rating keys always reach it.
   function focusAnswer() { answer.forceActiveFocus() }
 
-  readonly property bool showCard: root.session.inCard || root.session.phase === "loading"
+  readonly property bool showCard: root.session.cardShown
 
   // ---- a rating taken ---------------------------------------------------------------
   // The chosen keycap fills while the others fade (below), then the whole

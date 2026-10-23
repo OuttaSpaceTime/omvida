@@ -22,7 +22,7 @@ import "Launch.js" as Launch
 Item {
   id: root
 
-  property var app: null
+  required property App app
 
   property bool opened: false
   property string query: ""
@@ -36,7 +36,7 @@ Item {
 
   // Asking: the palette shows askRun's question and answer.
   property bool asking: false
-  property AskSession askRun: AskSession { app: root.app }
+  property AskSession askRun: AskSession { store: root.app.store }
 
   visible: opened
   z: 40
@@ -79,16 +79,18 @@ Item {
        { keys: "ctrl+enter", label: "ask Claude", run: root.ask },
        { keys: "esc", label: "close", run: root.close }]
 
+  // The window hands the keyboard back to the screen on `closed`.
+  signal closed()
   function close() {
     root.opened = false
     root.askRun.stop()
-    if (root.app) root.app.focusScreen()
+    root.closed()
   }
 
   // Every word must appear in the title, an alias or the path; titles that
   // start with the query rank first.
   function matchPages(q) {
-    if (!root.app || !root.app.store.wikiIndex) return []
+    if (!root.app.store.wikiIndex) return []
     var words = q.toLowerCase().split(/\s+/).filter(function(w) { return w !== "" })
     if (words.length === 0) return []
     var scored = []
@@ -126,12 +128,12 @@ Item {
     })
   }
 
-  Timer { id: debounce; interval: Theme.searchDebounce; onTriggered: root.runBackendSearch() }
+  Timer { id: debounce; interval: Config.searchDebounce; onTriggered: root.runBackendSearch() }
 
   function activate(i) {
     var r = root.rows[i]
     if (!r) return
-    if (r.kind === "page" || r.kind === "text") root.app.openPage(r.path, "")
+    if (r.kind === "page" || r.kind === "text") root.app.nav.openPage(r.path, "")
     else if (r.kind === "ask") root.ask()
     else if (r.kind === "card") {
       let item = resultsRep.itemAt(i)
@@ -356,8 +358,8 @@ Item {
           objectName: "askAnswerBlocks"
           visible: root.askRun.blocks !== null
           width: answerFlick.width - Theme.spaceMd
-          app: root.app
           blocks: root.askRun.blocks || []
+          onLinkActivated: function(link) { root.app.nav.followLink(link) }
         }
         // While it streams: the markdown as it arrives.
         UiText {
@@ -370,7 +372,7 @@ Item {
           wrapMode: Text.Wrap
           linkColor: Theme.accentColor
           lineHeight: Theme.proseLineHeight
-          onLinkActivated: function(link) { root.app.followLink(link) }
+          onLinkActivated: function(link) { root.app.nav.followLink(link) }
           HoverHandler { cursorShape: answerText.hoveredLink !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor }
         }
       }

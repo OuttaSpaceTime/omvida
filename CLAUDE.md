@@ -39,6 +39,13 @@ and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
   server, and the study log entry through the wiki service. Fixing a noted card is a skill's
   job too: "fix all" hands the noted cards to one Claude Code session, the study repo's
   `/study-fix-notes` (`Launch.fixNotesArgv`).
+- Wiring (`docs/architecture.md`, "The parts"): a screen or dialog declares
+  `required property App app` (typed, so qmllint checks every `app.` it writes), never
+  `property var app`; a widget below a screen takes only what it shows and signals what was
+  clicked; a logic object (`Navigator`, `StudySession`) holds no `app` and signals what it
+  wants of the window; navigation is `app.nav`; a study phase's meaning is a property on
+  `StudySession`, not a list of phases in a view. `Theme.qml` is looks, `Config.qml` timing
+  and limits.
 - No modal, palette or sheet dims the window behind it: no scrim, no translucent layer.
   `docs/layout-rules.md` rule 10; `bin/check noscrim` enforces it.
 - Don't name a QML file after a QtQuick.Controls type (`Button`, `Dialog`...): in a file that

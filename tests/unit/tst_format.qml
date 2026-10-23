@@ -61,6 +61,12 @@ TestCase {
     compare(F.calibrationLine({ verdict: "calibrated", marginal: true, true_retention: 0.81 }), "calibrated, marginal (true retention 81%)")
   }
 
+  function test_verdict_text_is_verbatim() {
+    compare(F.verdictText({ verdict: "low-signal", marginal: false }), "low-signal")
+    compare(F.verdictText({ verdict: "calibrated", marginal: true }), "calibrated (marginal)")
+    compare(F.verdictText(null), "")
+  }
+
   function test_ago() {
     var now = new Date(2026, 9, 6, 12)
     compare(F.ago("2026-10-06", now), "today")

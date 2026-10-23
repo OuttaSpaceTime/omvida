@@ -6,15 +6,20 @@ import "Session.js" as Session
 import "Format.js" as Format
 
 // A study session: the /study skill's loop, as state and actions with no view.
-// StudyScreen draws it; omvida.qml owns it, beside the deck and wiki clients,
-// so the tests drive it directly and the window can ask it for the current
-// card or a pending log entry.
+// StudyScreen draws it; App.qml owns it (app.study), beside the store, so the
+// tests drive it directly and the window can ask it for a pending log entry.
+// It is handed the store and nothing of the window: what it wants shown (a
+// toast, Claude Code in kitty, the note dialog, the delete confirm) it asks
+// for by a signal, and App.qml decides how. It held the whole App at first,
+// and so opened overlays from inside the study loop's logic. Which phases mean what (running, cardShown, frontShown,
+// backShown...) is said here once; views and the window read those, never a
+// list of phases of their own, so a new phase is one file's change.
 //
 //   front shown, answer typed (or not)  ->  reveal: the back, and Claude's
 //                                            suggested rating with its reason
 //   then: submit the suggestion, Good, or any rating
 //
-// The grade starts before the reveal: whenever typing pauses (gradePauseMs),
+// The grade starts before the reveal: whenever typing pauses (Config.gradePause),
 // the answer so far is graded in the background, and a reveal with the answer
 // unchanged takes that grade, often already in. A changed answer is graded
 // afresh, never sent on to the earlier grade's conversation, so a draft and
@@ -34,9 +39,9 @@ import "Format.js" as Format
 QtObject {
   id: root
 
-  property var app: null
-  readonly property var deck: app ? app.store.deck : null
-  readonly property var wikiService: app ? app.store.wiki : null
+  required property Store store
+  readonly property JsonLineClient deck: store.deck
+  readonly property JsonLineClient wikiService: store.wiki
   // The answer as typed, bound from the view's answer box.
   property string answer: ""
 
@@ -52,7 +57,7 @@ QtObject {
   // as well: two records of one fact disagreed.
   readonly property var noted: {
     var id = root.sessionId !== "" ? root.sessionId : root.endedId
-    var s = root.app ? root.app.store.sessions.find(function(x) { return x.id === id }) : null
+    var s = root.store.sessions.find(function(x) { return x.id === id })
     return s ? s.noted : []
   }
   property var info: null        // startSession's result
@@ -72,9 +77,6 @@ QtObject {
   // when the answer is still that text (trimmed, for the comparison only),
   // done or on its way. A failed one is asked for again.
   property var early: null
-  // A pause long enough to read as "done for now" rather than between words;
-  // each pause that changes the answer costs one grade.
-  readonly property int gradePauseMs: 1200
   property var rec: Session.empty()
   property double shownAt: 0
   property double revealedAt: 0
@@ -85,6 +87,11 @@ QtObject {
   property string errorText: ""
   property string syncNote: ""
 
+  // A session is under way: from the sync to the summary, which is not.
+  // The store holds the cards' scheduling back meanwhile (Store.studying).
+  readonly property bool running: phase !== "idle" && phase !== "done" && phase !== "error"
+  // Before the first card: syncing with Anki, then asking the deck for a session.
+  readonly property bool opening: phase === "syncing" || phase === "starting"
   readonly property bool inCard: phase === "answering" || phase === "grading" || phase === "revealed" || phase === "submitting"
   // A card is up and nothing is on its way to the deck: it can still change
   // under the session (catchUp) or be deleted (askDelete).
@@ -93,6 +100,22 @@ QtObject {
   // rating follows a reveal: a first Shift+digit reveals and picks). A
   // delete from the answer keeps the answering layout until the next card.
   readonly property bool backShown: phase === "grading" || phase === "revealed" || (phase === "submitting" && revealedAt > 0)
+  // The card on screen: one up, or the next on its way (loading), when the
+  // view dims the last one rather than drop it.
+  readonly property bool cardShown: inCard || phase === "loading"
+  // Its front is what counts: answering, between cards (so the status line
+  // does not flicker through a third set of keys on every card), or a delete
+  // from the answer on its way.
+  readonly property bool frontShown: phase === "answering" || phase === "loading" || (phase === "submitting" && !backShown)
+
+  // What it asks of the window (App.qml wires each).
+  signal toastRequested(string text)
+  // Claude Code in kitty (Launch.js has every argv), with a toast.
+  signal launchRequested(var argv, string note)
+  // The note dialog on `card`; `prefill` starts a new note.
+  signal noteAsked(var card, string prefill)
+  // The delete confirm for `card`; its accept calls deleteCard(card).
+  signal deleteAsked(var card)
 
   // The view empties the answer box: a new card is on its way.
   signal answerReset()
@@ -102,7 +125,7 @@ QtObject {
   property AnkiSync sync: AnkiSync {}
 
   property Timer pauseTimer: Timer {
-    interval: root.gradePauseMs
+    interval: Config.gradePause
     onTriggered: root.gradeEarly()
   }
   onAnswerChanged: if (phase === "answering") pauseTimer.restart()
@@ -125,7 +148,7 @@ QtObject {
 
   // ---- the session ----------------------------------------------------------------
   function startIfIdle() {
-    if (phase === "idle" || phase === "done" || phase === "error") start()
+    if (!running) start()
   }
 
   function start() {
@@ -135,7 +158,7 @@ QtObject {
     root.syncNote = ""
     sync.run(function(r) {
       if (r.note !== "") root.syncNote = r.note
-      if (r.moved) root.app.store.refreshDeck()
+      if (r.moved) root.store.refreshDeck()
       root.openSession()
     })
   }
@@ -313,24 +336,24 @@ QtObject {
   //   a blocked leech changed or gone: ask for the next card, and the server
   //            decides whether the block lifts (Continue, pressed for you).
   property Connections deckWatch: Connections {
-    target: root.app ? root.app.store : null
+    target: root.store
     function onAllCardsChanged() { root.catchUp() }
   }
 
   function catchUp() {
-    var byId = root.app.store.cardsById
+    var byId = root.store.cardsById
     var find = function(id) { return byId[id] || null }
     if (root.phase === "blocked") {
       let b = find(root.blocked.card.id)
       if (b && JSON.stringify(b) === JSON.stringify(root.blocked.card)) return
-      root.app.toast(b ? "The leech changed in Claude Code" : "The leech is gone from the deck")
+      root.toastRequested(b ? "The leech changed in Claude Code" : "The leech is gone from the deck")
       root.loadNext()
       return
     }
     if (!root.cardOpen) return
     var c = find(root.card.id)
     if (!c) {
-      root.app.toast("This card was removed in Claude Code")
+      root.toastRequested("This card was removed in Claude Code")
       root.loadNext()
       return
     }
@@ -340,7 +363,7 @@ QtObject {
     if (root.phase === "grading") root.phase = "revealed"
     // An answer already typed is graded against the card as it now is.
     if (root.phase === "answering") pauseTimer.restart()
-    root.app.toast("Card updated in Claude Code")
+    root.toastRequested("Card updated in Claude Code")
   }
 
   // Only while the card is open: once a rating is on its way (and the view
@@ -353,13 +376,13 @@ QtObject {
 
   function discuss() {
     if (!root.card) return
-    root.app.launch(Launch.discussArgv(Paths.studyDir, root.card, root.answer, root.suggestion),
+    root.launchRequested(Launch.discussArgv(Paths.studyDir, root.card, root.answer, root.suggestion),
                     "Discussing in Claude Code. Rate the card when you're back.")
   }
 
   function fixCard() {
     if (!root.card || !root.suggestion || !root.suggestion.quality) return
-    root.app.launch(Launch.fixCardArgv(Paths.studyDir, root.card, root.suggestion.quality), "Opened Claude Code to fix the card")
+    root.launchRequested(Launch.fixCardArgv(Paths.studyDir, root.card, root.suggestion.quality), "Opened Claude Code to fix the card")
   }
 
   // Note the card for later (NoteDialog.qml), and go on studying: a fix
@@ -370,10 +393,11 @@ QtObject {
   function note() {
     if (!root.card) return
     var q = root.suggestion ? root.suggestion.quality : null
-    root.app.openNote(root.card, q ? "> " + Format.cardIssue(q) + "\n\n" : "")
+    root.noteAsked(root.card, q ? "> " + Format.cardIssue(q) + "\n\n" : "")
   }
 
-  // Delete the card on screen, once the window's confirm dialog says so.
+  // Delete the card on screen, once the window's confirm dialog says so
+  // (deleteAsked: its accept calls deleteCard with the card asked about).
   // The deck server deletes it and its history (deleteCard, as for a leech)
   // and its session passes over a deleted card's place in the queue
   // (flashcard-mcp's getNextCard), so the next card follows as after a
@@ -381,19 +405,15 @@ QtObject {
   // the log's lines are flashcard-mcp's format.
   function askDelete() {
     if (!root.card || !root.cardOpen) return
-    var c = root.card
-    root.app.confirm("Delete this card?", Format.stripHtml(c.front),
-                     "Its review history goes with it. This cannot be undone.",
-                     "Delete", function() { root.deleteCard(c) })
+    root.deleteAsked(root.card)
   }
 
   function deleteCard(c) {
     if (!root.card || root.card.id !== c.id || root.phase === "submitting") return
     root.forgetGrade()
     root.phase = "submitting"
-    deck.call("deleteCard", { cardId: c.id }, function(err) {
+    root.store.deleteCard(c.id, function(err) {
       if (err) { root.fail(err); return }
-      root.app.store.refreshDeck()
       root.loadNext()
     })
   }
@@ -425,20 +445,40 @@ QtObject {
 
   // ---- leeches ------------------------------------------------------------------------
   function leechFix(how) {
-    root.app.launch(Launch.leechArgv(Paths.studyDir, root.blocked.card, root.blocked.lapses, how),
+    root.launchRequested(Launch.leechArgv(Paths.studyDir, root.blocked.card, root.blocked.lapses, how),
                     "Fix it in Claude Code: the session goes on once it is saved")
     root.rec = Session.leech(root.rec, root.blocked.card, root.blocked.lapses, how === "split" ? "split in Claude Code" : "rewritten in Claude Code")
   }
 
-  // Keep the card as is (resolveLeech) or drop it (deleteCard), then go on.
-  function leechResolve(method, note) {
+  // Keep the card as is (the deck server's resolveLeech) or drop it, then go on.
+  function leechKeep() {
     var b = root.blocked
-    deck.call(method, { cardId: b.card.id }, function(err) {
-      if (err) { root.fail(err); return }
-      root.rec = Session.leech(root.rec, b.card, b.lapses, note)
-      root.loadNext()
-    })
+    deck.call("resolveLeech", { cardId: b.card.id }, function(err) { root.leechResolved(err, b, "kept as is") })
   }
+  function leechDrop() {
+    var b = root.blocked
+    root.store.deleteCard(b.card.id, function(err) { root.leechResolved(err, b, "deleted") })
+  }
+  function leechResolved(err, b, note) {
+    if (err) { root.fail(err); return }
+    root.rec = Session.leech(root.rec, b.card, b.lapses, note)
+    root.loadNext()
+  }
+
+  // ---- pages from study ----------------------------------------------------------------
+  // The wiki pages a finished session pointed to (its summary's related
+  // pages), kept for the wiki's side panel so they stay one click apart while
+  // you read them: the summary is gone once a page is open, and was the only
+  // place they were listed. Newest session's first, each page once, until
+  // cleared (one by one or all) or the app closes, so across sessions.
+  // [{ path, title, lapsed, via, cards }]
+  property var pages: []
+  function addPages(list) {
+    var paths = list.map(function(p) { return p.path })
+    root.pages = list.concat(root.pages.filter(function(p) { return paths.indexOf(p.path) === -1 }))
+  }
+  function dropPage(path) { root.pages = root.pages.filter(function(p) { return p.path !== path }) }
+  function clearPages() { root.pages = [] }
 
   // ---- the end ------------------------------------------------------------------------
   function finish() {
@@ -454,9 +494,9 @@ QtObject {
       if (err) return
       root.related = pages
       // Kept in the wiki's side panel too, where they stay once a page is open.
-      root.app.addStudyPages(pages)
+      root.addPages(pages)
     })
-    root.app.store.refreshDeck()
+    root.store.refreshDeck()
   }
 
   // End early: what was reviewed still counts, and the session is closed.
@@ -479,11 +519,11 @@ QtObject {
   function writeLog(then) {
     if (!root.logPending) { if (then) then(); return }
     root.logPending = false
-    var entry = Session.logEntry(root.rec, root.app.store.overview ? root.app.store.overview.calibration : null)
+    var entry = Session.logEntry(root.rec, root.store.overview ? root.store.overview.calibration : null)
     wikiService.call("logSession", { entry: entry }, function(err) {
       if (then) { then(); return }
-      if (err) { root.app.store.status = "session log: " + err; return }
-      sync.run(function(r) { if (r.note !== "") root.app.toast(r.note) })
+      if (err) { root.store.status = "session log: " + err; return }
+      sync.run(function(r) { if (r.note !== "") root.toastRequested(r.note) })
     })
   }
 }

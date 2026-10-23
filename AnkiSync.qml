@@ -59,7 +59,7 @@ Item {
 
   // Sync must never hold a session hostage.
   Timer {
-    interval: 45000
+    interval: Config.ankiSyncTimeout
     running: proc.running
     onTriggered: { proc.running = false }
   }

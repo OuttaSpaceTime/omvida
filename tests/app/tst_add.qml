@@ -5,7 +5,7 @@ OmvidaTest {
   name: "add"
 
   function test_add_flashcards_from_a_page() {
-    app.openPage("web/http-caching", "")
+    app.nav.openPage("web/http-caching", "")
     tryVerify(function() { return wiki.loadedPath === "web/http-caching" }, 8000)
     key(Qt.Key_N, Qt.ControlModifier)
     click("add:flashcard")
@@ -20,7 +20,7 @@ OmvidaTest {
   }
 
   function test_add_a_wiki_entry_with_a_typed_topic() {
-    app.setScreen("home")
+    app.nav.setScreen("home")
     click("addButton")
     click("add:wiki")
     var field = item("topicField")

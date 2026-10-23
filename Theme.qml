@@ -331,9 +331,8 @@ QtObject {
   // it scrolls.
   readonly property int noteDialogWidth: 720
   readonly property int noteEditorLines: 8
-  // Home's past sessions: the newest few, and per session this many of the
-  // cards it lapsed or noted before "N more".
-  readonly property int homeSessions: 5
+  // Per past session on Home, this many of the cards it lapsed or noted
+  // before "N more" (how many sessions is Config.homeSessions).
   readonly property int sessionFlawsShown: 3
   // The "lapsed" / "noted" column before each card there, so the fronts
   // start on one edge.
@@ -359,11 +358,6 @@ QtObject {
   // How long a new graph may lay itself out before its first paint; past it,
   // the rest settles on screen.
   readonly property int graphSettleBudget: 250
-  // Over a typing gap, so a word is one search, not one per letter.
-  readonly property int searchDebounce: 250
-  readonly property int wikiPollInterval: 3000
-  readonly property int deckPollInterval: 2000
-  readonly property int deckPushDebounce: 300
 
   // ---- loading the theme ------------------------------------------------------------
   function parseToml(text) {

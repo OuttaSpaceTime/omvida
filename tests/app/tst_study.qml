@@ -440,7 +440,7 @@ OmvidaTest {
     // Opening one writes the log, with the page in it.
     var rel = study.related[0].path
     click("related:" + rel)
-    tryCompare(app, "currentScreen", "wiki")
+    tryCompare(app.nav, "currentScreen", "wiki")
     var d = new Date()
     var m = d.getMonth() + 1
     var day = d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (d.getDate() < 10 ? "0" : "") + d.getDate()

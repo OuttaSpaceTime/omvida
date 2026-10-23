@@ -3,11 +3,13 @@ import QtQuick
 
 // A wiki page as the wiki service's blocks (render.py says why blocks), laid
 // out down one column. Headings are items, so a section link scrolls to one.
+// A link clicked in any block comes out as linkActivated, for the screen
+// that shows the page to follow.
 Column {
   id: root
 
-  property var app: null
   property var blocks: []
+  signal linkActivated(string link)
   spacing: Theme.spaceMd
 
   // The y of the heading with this anchor, or -1.
@@ -59,7 +61,7 @@ Column {
     RichBlock {
       id: h
       property var block: ({})
-      app: root.app
+      onLinkActivated: function(link) { root.linkActivated(link) }
       objectName: "heading:" + (h.block.anchor || "")
       width: root.width
       html: h.block.html || ""
@@ -72,7 +74,7 @@ Column {
     RichBlock {
       id: r
       property var block: ({})
-      app: root.app
+      onLinkActivated: function(link) { root.linkActivated(link) }
       width: root.width
       html: r.block.html || ""
     }
@@ -104,7 +106,7 @@ Column {
         width: parent.width - Theme.spaceLg * 2
         spacing: Theme.spaceXs
         SectionLabel { text: co.block.label || ""; color: Theme.accentColor }
-        RichBlock { app: root.app; width: parent.width; html: co.block.html || "" }
+        RichBlock { width: parent.width; html: co.block.html || ""; onLinkActivated: function(link) { root.linkActivated(link) } }
       }
     }
   }
@@ -116,7 +118,7 @@ Column {
       width: root.width
       height: qb.implicitHeight
       Rectangle { width: Theme.selectionBarWidth; height: parent.height; color: Theme.hairline }
-      RichBlock { id: qb; x: Theme.spaceLg; width: parent.width - Theme.spaceLg; app: root.app; html: q.block.html || ""; color: Theme.secondaryInk }
+      RichBlock { id: qb; x: Theme.spaceLg; width: parent.width - Theme.spaceLg; html: q.block.html || ""; color: Theme.secondaryInk; onLinkActivated: function(link) { root.linkActivated(link) } }
     }
   }
   Component {

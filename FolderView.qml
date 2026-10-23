@@ -5,15 +5,18 @@ import "Format.js" as Format
 import "WikiTree.js" as WikiTree
 
 // A folder as a page: its pages and subfolders. "" is the whole wiki, shown
-// as its topics.
+// as its topics. A click says which page or folder (pageChosen,
+// folderChosen); the screen opens it.
 Column {
   id: root
 
-  property var app: null
+  required property Store store
   property string folderPath: ""
+  signal pageChosen(string path)
+  signal folderChosen(string path)
   spacing: Theme.spaceLg
 
-  readonly property var folder: WikiTree.findFolder(app && app.store.wikiIndex ? app.store.wikiIndex.tree : null, folderPath)
+  readonly property var folder: WikiTree.findFolder(store.wikiIndex ? store.wikiIndex.tree : null, folderPath)
 
   UiText {
     objectName: "folderTitle"
@@ -44,7 +47,7 @@ Column {
         title: folderRow.modelData.name
         topic: folderRow.modelData.path
         note: Format.plural(folderRow.modelData.count, "page")
-        onActivated: root.app.openFolder(folderRow.modelData.path)
+        onActivated: root.folderChosen(folderRow.modelData.path)
       }
     }
   }
@@ -62,8 +65,8 @@ Column {
         objectName: "folderPage:" + pageRow.modelData.path
         width: root.width
         title: pageRow.modelData.title
-        note: root.app.store.pagesByPath[pageRow.modelData.path] ? root.app.store.pagesByPath[pageRow.modelData.path].updated : ""
-        onActivated: root.app.openPage(pageRow.modelData.path, "")
+        note: root.store.pagesByPath[pageRow.modelData.path] ? root.store.pagesByPath[pageRow.modelData.path].updated : ""
+        onActivated: root.pageChosen(pageRow.modelData.path)
       }
     }
   }

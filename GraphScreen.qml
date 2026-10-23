@@ -8,9 +8,11 @@ Item {
   id: root
   objectName: "graphScreen"
 
-  property var app: null
-  property bool local: false
-  readonly property string focusPath: app ? app.wikiPath : ""
+  required property App app
+  // All pages, or around the open page: the navigator's, so "graph around
+  // this page" from the wiki lands here so set (Navigator.openGraph).
+  readonly property bool local: app.nav.graphLocal
+  readonly property string focusPath: app.nav.wikiPath
 
   // ---- the window's status line ---------------------------------------------
   // The counts of what is drawn, and how to handle it: how to use what is on
@@ -29,13 +31,13 @@ Item {
     x: Theme.spaceXl
     y: Theme.spaceLg
     spacing: Theme.spaceXs
-    Chip { objectName: "graphAll"; label: "All pages"; selected: !root.local; onActivated: root.local = false }
+    Chip { objectName: "graphAll"; label: "All pages"; selected: !root.local; onActivated: root.app.nav.graphLocal = false }
     Chip {
       objectName: "graphLocal"
       label: root.focusPath !== "" && root.app.store.pagesByPath[root.focusPath] ? "Around " + root.app.store.pagesByPath[root.focusPath].title : "Around the open page"
       enabled: root.focusPath !== ""
       selected: root.local
-      onActivated: root.local = true
+      onActivated: root.app.nav.graphLocal = true
     }
   }
 
@@ -47,7 +49,7 @@ Item {
     spacing: Theme.spaceXs
     z: 1
     Repeater {
-      model: root.app && root.app.store.wikiIndex ? root.app.store.wikiIndex.tree.folders : []
+      model: root.app.store.wikiIndex ? root.app.store.wikiIndex.tree.folders : []
       delegate: Row {
         id: legendRow
         required property var modelData
@@ -65,8 +67,9 @@ Item {
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.bottom: parent.bottom
-    app: root.app
+    graph: root.app.store.graph
     focusPath: root.focusPath
+    onPageChosen: function(path) { root.app.nav.openPage(path) }
     local: root.local && root.focusPath !== ""
   }
 }

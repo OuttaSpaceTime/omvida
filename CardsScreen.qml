@@ -32,7 +32,7 @@ import "NoteEdit.js" as NoteEdit
 Item {
   id: root
 
-  property var app: null
+  required property App app
   // What narrows the grid: the text, one state and deck at most ("" for
   // any), and any number of tags, all of which a card must carry
   // (Cards.filterCards). Changed only through setFilter(), addTag() and
@@ -40,12 +40,11 @@ Item {
   // `noted` keeps only the cards with a note (Ctrl+N in Study), and then
   // "fix it" hands those to Claude Code.
   property var filters: ({ query: "", state: "", deck: "", tags: [], noted: false })
-  readonly property var calibration: app && app.store.overview ? app.store.overview.calibration : null
+  readonly property var calibration: app.store.overview ? app.store.overview.calibration : null
 
-  readonly property var all: app ? app.store.allCards : []
-  readonly property var notes: app ? app.store.notes : ({})
+  readonly property var all: app.store.allCards
+  readonly property var notes: app.store.notes
   readonly property var filtered: Cards.filterCards(all, filters, notes)
-  readonly property bool filtering: filters.query !== "" || selectedFilters.length > 0
   // The states, counted over what every filter but the state leaves, so
   // the bar shows how the picked tags' cards split, and switching from one
   // state to another stays one click (counting over `filtered` would leave
@@ -57,16 +56,14 @@ Item {
   // the picked ones, each counted as the cards a pick would leave. Counting
   // over the whole deck instead offered tags that would empty the grid.
   readonly property var tags: Cards.tagCounts(filtered, filters.tags)
-  // The filter section: open, or folded down to what is selected. Its tags
-  // are the most common tagLimit (a property so a test with a small deck
-  // can lower it); the rest are in the tag panel.
-  property bool filtersOpen: true
+  // The filter section (CardFilters.qml): open, or folded down to what is
+  // selected. Its tags are the most common tagLimit (a property so a test
+  // with a small deck can lower it); the rest are in the tag panel.
+  property alias filtersOpen: filterSection.open
   property int tagLimit: Theme.cardsTagsShown
   readonly property var tagsShown: tags.slice(0, tagLimit)
   readonly property int tagsHidden: tags.length - tagsShown.length
   readonly property bool tagPanelOpen: tagPanel.opened
-  // What narrows the grid, in the order the section lists it.
-  readonly property var selectedFilters: Cards.selectedFilters(filters)
   readonly property var decks: Cards.deckNames(all)
   // How many of the cards the filters leave have a note: the "noted" chip.
   readonly property int notedHere: Cards.notedCount(filtered, notes)
@@ -114,23 +111,20 @@ Item {
   // ---- deleting the stage's card ----------------------------------------------
   // Del (or its hint) asks first, in the window's ConfirmDialog, which quotes
   // the card's front; Enter or the red Delete deletes it. The deck server
-  // deletes the card and its history (flashcard-mcp's deleteCard, the call
-  // the leech panel makes), and the walk goes on at the next card. The card
-  // is the one on the stage when Del was pressed, held here, so nothing that
+  // deletes the card and its history (Store.deleteCard, as Study and the
+  // leech panel do), and the walk goes on at the next card. The card is the
+  // one on the stage when Del was pressed, held here, so nothing that
   // happens while the dialog is open can change which card goes.
   function askDelete() {
     var card = flip.card
     if (!card) return
-    app.confirm("Delete this card?", tileTexts[card.id] || "",
-                "Its review history goes with it. This cannot be undone.",
-                "Delete", function() { root.deleteCard(card) })
+    app.confirmDeleteCard(card, function() { root.deleteCard(card) })
   }
 
   function deleteCard(card) {
-    app.store.deck.call("deleteCard", { cardId: card.id }, function(err) {
+    app.store.deleteCard(card.id, function(err) {
       if (err) { app.toast("deck: " + err); return }
       if (flip.card && flip.card.id === card.id) flip.leaveCurrent()
-      app.store.refreshDeck()
     })
   }
 
@@ -161,7 +155,7 @@ Item {
   }
 
   function clearFilters() {
-    search.text = ""
+    filterSection.clearText()
     filters = { query: "", state: "", deck: "", tags: [], noted: false }
   }
 
@@ -199,7 +193,7 @@ Item {
   // return finds the stage, not a sheet left over from before.
   onVisibleChanged: {
     if (!visible) tagPanel.opened = false
-    else if (app) app.store.checkDeck()
+    else app.store.checkDeck()
   }
   onFiltersChanged: flip.forget()
 
@@ -309,256 +303,29 @@ Item {
           width: topRow.sideBySide ? Theme.cardsAsideWidth : topRow.width
           spacing: Theme.spaceXl
 
-          // ---- retention ----------------------------------------------------------
-          Column {
-            objectName: "retentionPanel"
+          RetentionPanel {
             width: parent.width
-            spacing: Theme.spaceSm
-            // How many reviews the figure rests on sits at the header's right
-            // end, as the filter header carries its count, so the line below
-            // is only the figure and its verdict. It used to trail the
-            // verdict after a "·", which made that line run past the aside
-            // and read as one more clause of the verdict.
-            Item {
-              width: parent.width
-              height: retentionLabel.height
-              SectionLabel {
-                id: retentionLabel
-                text: "Retention · " + (root.calibration ? root.calibration.window_days : 30) + " days"
-              }
-              UiText {
-                objectName: "retentionReviews"
-                visible: root.calibration !== null
-                anchors.right: parent.right
-                anchors.baseline: retentionLabel.baseline
-                text: root.calibration ? Format.plural(root.calibration.reviews, "review") : ""
-                font.pixelSize: Theme.captionSize; color: Theme.dim
-              }
-            }
-            // The verdict takes what the figure leaves of the column and
-            // wraps, should a verdict ever be too long for it. An Item, not
-            // a Row: a Row never bounds its children, and is as tall as its
-            // tallest child without counting the verdict's baseline offset,
-            // so a wrapped verdict would run into the rating mix below.
-            Item {
-              width: parent.width
-              height: Math.max(retentionFigure.height, retentionVerdict.y + retentionVerdict.height)
-              UiText {
-                id: retentionFigure
-                text: root.calibration && root.calibration.true_retention !== null ? Format.pct(root.calibration.true_retention) : "–"
-                font.pixelSize: Theme.headingSize
-                font.bold: true
-                color: root.calibration ? Theme.verdictColor(root.calibration.verdict) : Theme.faint
-              }
-              UiText {
-                id: retentionVerdict
-                objectName: "retentionVerdict"
-                x: retentionFigure.width + Theme.spaceMd
-                width: parent.width - x
-                wrapMode: Text.Wrap
-                anchors.baseline: retentionFigure.baseline
-                text: root.calibration ? root.calibration.verdict + (root.calibration.marginal ? " (marginal)" : "") : "loading…"
-                font.pixelSize: Theme.bodySmallSize
-                color: root.calibration ? Theme.verdictColor(root.calibration.verdict) : Theme.faint
-              }
-            }
-            Flow {
-              objectName: "ratingMix"
-              visible: root.calibration !== null
-              width: parent.width
-              spacing: Theme.spaceLg
-              Repeater {
-                model: root.calibration ? [1, 2, 3, 4] : []
-                delegate: UiText {
-                  id: mixItem
-                  required property int modelData
-                  readonly property string name: Format.ratingName(mixItem.modelData).toLowerCase()
-                  text: root.calibration.rating_mix[mixItem.name] + " " + mixItem.name
-                  font.pixelSize: Theme.bodySmallSize
-                  color: Theme.ratingColor(mixItem.modelData)
-                }
-              }
-            }
+            calibration: root.calibration
           }
 
-          // ---- filters -------------------------------------------------------------
-          // The header folds the whole section away, leaving only what is
-          // selected. The selected filters always sit on top, each with ✕,
-          // so what narrows the grid is never lost among the choices; under
-          // them the field and what is left to choose: states, decks, and
-          // the most common tags still worth picking, the rest in the tag
-          // panel ("N more tags").
-          Column {
+          CardFilters {
+            id: filterSection
             width: parent.width
-            spacing: Theme.spaceSm
-
-            Item {
-              width: parent.width
-              height: Theme.smallControlHeight
-              PlainButton {
-                objectName: "filtersToggle"
-                anchors.verticalCenter: parent.verticalCenter
-                label: (root.filtersOpen ? "▾ " : "▸ ") + "FILTER"
-                onActivated: root.filtersOpen = !root.filtersOpen
-              }
-              Row {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.spaceXl
-                PlainButton {
-                  objectName: "fixNoted"
-                  visible: root.filters.noted && root.notedHere > 0
-                  label: "fix it · " + root.notedHere
-                  tint: Theme.accentColor
-                  onActivated: root.fixNoted()
-                }
-                PlainButton { objectName: "clearFilters"; visible: root.filtering; label: "clear"; onActivated: root.clearFilters() }
-                UiText {
-                  objectName: "filteredCount"
-                  text: Format.plural(root.filtered.length, "card")
-                  font.pixelSize: Theme.captionSize; color: Theme.dim
-                  anchors.verticalCenter: parent.verticalCenter
-                }
-              }
-            }
-
-            // What is selected, on top: a click drops it.
-            Flow {
-              objectName: "selectedFilters"
-              visible: root.selectedFilters.length > 0
-              // A chip's outline reaches past its words into the gap its
-              // width keeps, so two picked chips side by side would share
-              // an edge without this.
-              spacing: Theme.spaceXs
-              width: parent.width
-              Repeater {
-                model: root.selectedFilters
-                delegate: Chip {
-                  id: picked
-                  required property var modelData
-                  objectName: "selected:" + picked.modelData.kind + ":" + picked.modelData.value
-                  label: picked.modelData.label + " ✕"
-                  dot: picked.modelData.kind === "state" ? Theme.stateColor(picked.modelData.value)
-                     : picked.modelData.kind === "noted" ? Theme.accentColor : "transparent"
-                  selected: true
-                  onActivated: root.dropFilter(picked.modelData.kind, picked.modelData.value)
-                }
-              }
-            }
-
-            // An underline, not a box: the field is one more quiet line.
-            // No side padding, so its text starts on the column's edge.
-            // It stays when the section is folded: typing is the quickest
-            // filter there is.
-            TextField {
-              id: search
-              objectName: "cardFilter"
-              width: parent.width
-              leftPadding: 0
-              rightPadding: 0
-              placeholderText: "filter by text"
-              font.family: Theme.fontFamily
-              font.pixelSize: Theme.bodySmallSize
-              color: Theme.ink
-              placeholderTextColor: Theme.faint
-              background: Item {
-                Rectangle {
-                  y: parent.height - height
-                  width: parent.width
-                  height: Theme.hairlineWidth
-                  color: search.activeFocus ? Theme.accentColor : Theme.border
-                }
-              }
-              // The grid follows a pause in the typing, not each key: every
-              // change of filter rebuilds its tiles.
-              onTextChanged: queryPause.restart()
-              Timer { id: queryPause; interval: Theme.searchDebounce; onTriggered: root.setFilter("query", search.text) }
-              Keys.onEscapePressed: { text = ""; root.app.focusScreen() }
-            }
-
-            Column {
-              visible: root.filtersOpen
-              width: parent.width
-              spacing: Theme.spaceSm
-
-              // The state bar: click a state to filter.
-              Row {
-                width: parent.width
-                topPadding: Theme.spaceSm
-                Repeater {
-                  model: root.stateList
-                  delegate: Rectangle {
-                    id: stateSegment
-                    required property var modelData
-                    objectName: "stateBar:" + stateSegment.modelData.state
-                    width: aside.width * stateSegment.modelData.count / root.stateTotal
-                    height: Theme.statBarHeight
-                    color: Theme.stateColor(stateSegment.modelData.state)
-                    opacity: root.filters.state === "" || root.filters.state === stateSegment.modelData.state ? 1 : 0.3
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.setFilter("state", root.filters.state === stateSegment.modelData.state ? "" : stateSegment.modelData.state) }
-                  }
-                }
-              }
-              Flow {
-                width: parent.width
-                Repeater {
-                  model: root.stateList.filter(function(s) { return s.state !== root.filters.state })
-                  delegate: Chip {
-                    id: stateLink
-                    required property var modelData
-                    objectName: "stateChip:" + stateLink.modelData.state
-                    label: stateLink.modelData.state
-                    count: stateLink.modelData.count
-                    dot: Theme.stateColor(stateLink.modelData.state)
-                    onActivated: root.setFilter("state", stateLink.modelData.state)
-                  }
-                }
-              }
-              Flow {
-                width: parent.width
-                visible: !root.filters.noted && root.notedHere > 0
-                Chip {
-                  objectName: "notedChip"
-                  label: "noted"
-                  count: root.notedHere
-                  dot: Theme.accentColor
-                  onActivated: root.setFilter("noted", true)
-                }
-              }
-              Flow {
-                width: parent.width
-                visible: root.decks.length > 1
-                Repeater {
-                  model: root.decks.filter(function(d) { return d !== root.filters.deck })
-                  delegate: Chip {
-                    id: deckLink
-                    required property var modelData
-                    label: deckLink.modelData
-                    onActivated: root.setFilter("deck", deckLink.modelData)
-                  }
-                }
-              }
-              Flow {
-                width: parent.width
-                Repeater {
-                  model: root.tagsShown
-                  delegate: Chip {
-                    id: tagLink
-                    required property var modelData
-                    objectName: "tagChip:" + tagLink.modelData.tag
-                    label: "#" + tagLink.modelData.tag
-                    count: tagLink.modelData.count
-                    onActivated: root.addTag(tagLink.modelData.tag)
-                  }
-                }
-              }
-              PlainButton {
-                objectName: "moreTags"
-                visible: root.tagsHidden > 0
-                label: root.tagsHidden + " more tags ›"
-                onActivated: root.openTags()
-              }
-            }
+            filters: root.filters
+            filteredCount: root.filtered.length
+            notedHere: root.notedHere
+            stateList: root.stateList
+            stateTotal: root.stateTotal
+            decks: root.decks
+            tagsShown: root.tagsShown
+            tagsHidden: root.tagsHidden
+            onFilterSet: function(kind, value) { root.setFilter(kind, value) }
+            onFilterDropped: function(kind, value) { root.dropFilter(kind, value) }
+            onTagAdded: function(tag) { root.addTag(tag) }
+            onClearRequested: root.clearFilters()
+            onFixRequested: root.fixNoted()
+            onMoreTagsRequested: root.openTags()
+            onEscaped: root.app.focusScreen()
           }
         }
       }
@@ -630,6 +397,6 @@ Item {
     cardCount: root.filtered.length
     onPicked: function(tag) { root.addTag(tag) }
     onDropped: function(tag) { root.dropTag(tag) }
-    onClosed: if (root.app) root.app.focusScreen()
+    onClosed: root.app.focusScreen()
   }
 }

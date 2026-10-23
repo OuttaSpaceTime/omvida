@@ -13,7 +13,7 @@ import "Launch.js" as Launch
 //
 // The left panel's right edge drags it wider, as the graph rail's left edge
 // does; over either of its modes it lists the pages a finished session
-// pointed to (WikiSidePanel, app.studyPages).
+// pointed to (WikiSidePanel, app.study.pages).
 //
 // Either panel folds to a strip at its edge, `[` and `]` or the chevron in
 // its corner, and stays as left while the app runs. The graph starts folded:
@@ -29,15 +29,15 @@ import "Launch.js" as Launch
 Item {
   id: root
 
-  property var app: null
+  required property App app
   property var page: null        // { meta, blocks } from the wiki service
   property string loadedPath: ""
   property string loadError: ""
   property string pendingAnchor: ""   // a heading to scroll to once its page is in
 
-  readonly property string path: app ? app.wikiPath : ""
+  readonly property string path: app.nav.wikiPath
   readonly property var meta: page ? page.meta : null
-  readonly property var pageCards: meta && app ? Cards.cardsForPage(meta, app.store.allCards) : []
+  readonly property var pageCards: meta ? Cards.cardsForPage(meta, app.store.allCards) : []
   // The graph rail's width: dragged by its left edge, kept while the app
   // runs, never so wide that the page loses its reading column.
   property real graphRailWidth: Theme.sidePanelWidth
@@ -67,7 +67,7 @@ Item {
   // ---- the window's status line ---------------------------------------------
   // Where you are: the open page's file path, or the folder's.
   readonly property var statusSegments: {
-    var f = root.app ? root.app.wikiFolder : ""
+    var f = root.app.nav.wikiFolder
     return [{ text: root.path !== "" ? root.path : (f === "" ? "wiki" : f + "/") }]
   }
   // The panels' keys, while there is room to show them.
@@ -142,7 +142,6 @@ Item {
   function reloadPage() { if (root.path !== "") load(root.path, true) }
 
   function load(p, quiet) {
-    if (!root.app) return
     if (!quiet) { root.page = null; root.loadError = "" }
     root.app.store.wiki.call("page", { path: p }, function(err, res) {
       if (p !== root.path) return
@@ -170,7 +169,7 @@ Item {
 
   onPathChanged: if (path !== "") load(path, false)
   Connections {
-    target: root.app ? root.app.store.wiki : null
+    target: root.app.store.wiki
     function onReadyChanged() { if (root.app.store.wiki.ready && root.path !== "" && !root.page) root.load(root.path, false) }
   }
 
@@ -233,8 +232,10 @@ Item {
         FolderView {
           visible: root.path === ""
           width: parent.width
-          app: root.app
-          folderPath: root.app ? root.app.wikiFolder : ""
+          store: root.app.store
+          folderPath: root.app.nav.wikiFolder
+          onPageChosen: function(path) { root.app.nav.openPage(path) }
+          onFolderChosen: function(path) { root.app.nav.openFolder(path) }
         }
 
         UiText {
@@ -253,7 +254,7 @@ Item {
             text: root.meta ? ["wiki"].concat(root.meta.folder === "" ? [] : root.meta.folder.split("/")).join(" / ") : ""
             font.pixelSize: Theme.captionSize
             color: Theme.faint
-            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.app.openFolder(root.meta.folder) }
+            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.app.nav.openFolder(root.meta.folder) }
           }
           UiText {
             objectName: "pageTitle"
@@ -338,8 +339,8 @@ Item {
           id: pageView
           visible: root.path !== "" && root.page !== null
           width: parent.width
-          app: root.app
           blocks: root.page ? root.page.blocks : []
+          onLinkActivated: function(link) { root.app.nav.followLink(link) }
         }
 
         // ---- connections: where did I come from, where can I go ----------------------
@@ -373,7 +374,7 @@ Item {
                   width: (col.width - Theme.spaceXl) / 2
                   title: root.app.store.pagesByPath[linkRow.modelData] ? root.app.store.pagesByPath[linkRow.modelData].title : linkRow.modelData
                   topic: linkRow.modelData.split("/").slice(0, -1).join("/")
-                  onActivated: root.app.openPage(linkRow.modelData, "")
+                  onActivated: root.app.nav.openPage(linkRow.modelData, "")
                 }
               }
             }
@@ -404,7 +405,7 @@ Item {
         objectName: "graphFullScreen"
         icon: "fullscreen"
         tip: "Open in the graph screen"
-        onActivated: root.app.openGraph(true)
+        onActivated: root.app.nav.openGraph(true)
       }
       PlainButton {
         objectName: "graphCollapse"
@@ -416,8 +417,9 @@ Item {
     GraphView {
       anchors.fill: parent
       anchors.topMargin: Theme.space2xl + Theme.spaceSm
-      app: root.app
+      graph: root.app.store.graph
       focusPath: root.path
+      onPageChosen: function(path) { root.app.nav.openPage(path) }
       local: true
       compact: true
     }

@@ -25,10 +25,10 @@ Item {
   id: root
   objectName: "homeScreen"
 
-  property var app: null
-  readonly property var index: app ? app.store.wikiIndex : null
-  readonly property var overview: app ? app.store.overview : null
-  readonly property var store: app ? app.store : null
+  required property App app
+  readonly property var index: app.store.wikiIndex
+  readonly property var overview: app.store.overview
+  readonly property Store store: app.store
 
   // What a past session exposed, as one list: the cards it lapsed (red),
   // then those noted during it (accent, with the note's first line), each
@@ -53,7 +53,7 @@ Item {
           + Format.plural(root.index.graph.links.length, "link")
           + (root.overview ? " · " + Format.plural(root.overview.totalCards, "card") : "")
   }] : []
-  readonly property var statusHints: root.app ? [StatusBits.study(root.app)] : []
+  readonly property var statusHints: [StatusBits.study(root.app)]
 
   GlideFlickable {
     id: flick
@@ -98,14 +98,14 @@ Item {
               prominent: true
               icon: "cards"
               tip: "Browse the deck"
-              onActivated: root.app.setScreen("cards")
+              onActivated: root.app.nav.setScreen("cards")
             }
             ActionButton {
               objectName: "homeWikiButton"
               prominent: true
               icon: "wiki"
               tip: "Read the wiki"
-              onActivated: root.app.setScreen("wiki")
+              onActivated: root.app.nav.setScreen("wiki")
             }
           }
         }
@@ -118,7 +118,7 @@ Item {
       // the list then loses them on the deck's next reload.
       Column {
         objectName: "homeSessions"
-        visible: root.store !== null && (root.store.sessions.length > 0 || root.store.noteCount > 0)
+        visible: root.store.sessions.length > 0 || root.store.noteCount > 0
         width: parent.width
         spacing: Theme.spaceSm
         Item {
@@ -127,18 +127,18 @@ Item {
           SectionLabel { id: sessionsLabel; width: parent.width; divided: true; text: "Past sessions" }
           PlainButton {
             objectName: "homeFixAll"
-            visible: root.store !== null && root.store.noteCount > 0
+            visible: root.store.noteCount > 0
             // Its words end on the column's right edge, as the rows' notes do.
             anchors.right: parent.right
             y: sessionsLabel.topPadding + (sessionsLabel.implicitHeight - sessionsLabel.topPadding - sessionsLabel.bottomPadding - height) / 2
             icon: "pencil"
-            label: "fix all · " + (root.store ? Format.plural(root.store.noteCount, "note") : "")
+            label: "fix all · " + Format.plural(root.store.noteCount, "note")
             tint: Theme.accentColor
             onActivated: root.app.fixNotes(null)
           }
         }
         Repeater {
-          model: root.store ? root.store.sessions : []
+          model: root.store.sessions
           delegate: Column {
             id: sessionItem
             required property var modelData
@@ -196,14 +196,14 @@ Item {
         width: parent.width
         SectionLabel { divided: true; text: "Last studied" }
         UiText {
-          visible: root.app && root.app.store.recentPages.length === 0
+          visible: root.store.recentPages.length === 0
           topPadding: Theme.spaceXs
           text: "No recent reviews touch a wiki page yet."
           font.pixelSize: Theme.bodySmallSize
           color: Theme.faint
         }
         Repeater {
-          model: root.app ? root.app.store.recentPages : []
+          model: root.store.recentPages
           delegate: ListRow {
             id: recentRow
             required property var modelData
@@ -213,7 +213,7 @@ Item {
             topic: recentRow.modelData.folder
             badge: Format.plural(recentRow.modelData.cards, "card")
             note: Format.ago(recentRow.modelData.lastStudied)
-            onActivated: root.app.openPage(recentRow.modelData.path, "")
+            onActivated: root.app.nav.openPage(recentRow.modelData.path, "")
           }
         }
       }
@@ -233,7 +233,7 @@ Item {
             title: updatedRow.modelData.title
             topic: updatedRow.modelData.folder
             note: updatedRow.modelData.updated
-            onActivated: root.app.openPage(updatedRow.modelData.path, "")
+            onActivated: root.app.nav.openPage(updatedRow.modelData.path, "")
           }
         }
       }
@@ -314,7 +314,7 @@ Item {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.app.openFolder(topicTile.modelData.path)
+                onClicked: root.app.nav.openFolder(topicTile.modelData.path)
               }
             }
           }

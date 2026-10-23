@@ -49,8 +49,9 @@ and stops.
 - `tests/unit`: `StudyKeys.js` (every binding in every phase, US and German Shift+digit),
   `Format.js`, `Cards.js`, `Graph.js`, `Launch.js` (the prompts and the Ask tool allowlist),
   `NoteEdit.js` (the note editor's list and bold/italic keys),
-  `Session.js`, `StatusBits.js` (the status line's shared hints and pressure alert), and the
-  bar's `Model.js`.
+  `Session.js`, `StatusBits.js` (the status line's shared hints and pressure alert), the
+  bar's `Model.js`, and `Navigator.qml` (back and forward, links, the order of its signals),
+  a QML type that uses no singleton, so `import "../.."` loads it without a window.
 - `tests/app`: `OmvidaTest.qml` is Omvision's harness adapted: the app loads the test file
   through `OMVIDA_TEST`, and tests click and type into the real screens against the real
   backends. Helpers: `click`, `item`, `type`, `key`, `sql` (read the deck), `sqlWrite`,
@@ -60,6 +61,9 @@ and stops.
   every card due again), or gets a file of its own (tst_delete deletes cards, from Study and
   from Cards; tst_catchup rewrites and deletes them behind a session's back, as Claude Code
   does, and watches the session catch up; tst_notes writes card notes and past sessions).
+  tst_client drives `JsonLineClient.qml` alone against `tests/fixtures/echo-backend.py`, a
+  backend that hangs or exits on request: queued calls, the request timeout, a crash. It is an
+  app test only because Quickshell's `Process` exists only inside `qs`.
 
 `started()` runs inside the test hook before the event loop turns, so it cannot run a process
 (`sql`, `run`); do setup in the test itself.
@@ -72,7 +76,7 @@ and stops.
 | `searchBox`, `addButton` | the top bar |
 | `add:flashcard`, `add:wiki`, `topicField`, `topicSubmit` | the Add menu and its dialog |
 | `confirmDialog`, `confirmQuote`, `confirmAccept`, `confirmCancel` (`app.confirmOpen` says whether it is up) | the confirm dialog (Del on Cards and in Study) |
-| `statusLine`, `statusMode`, `statusSegment:<i>`, `statusHint:<label>`, `statusAlert:<i>` | the status line (each has a plain `text`; hints are buttons: `statusHint:keys` on Study, `statusHint:delete` on Cards...) |
+| `statusLine`, `statusMode`, `statusSegment:<i>`, `statusHints` (their row), `statusHint:<label>`, `statusAlert:<i>` | the status line (each has a plain `text`; hints are buttons: `statusHint:keys` on Study, `statusHint:delete` on Cards...) |
 | `keyHelp:<label>` | Study's key list (Alt+?), its rows: `keyHelp:reveal`, `keyHelp:skip`... |
 | `studyCard` (its `opacity` fades between rated cards), `answerField`, `cardFront`, `cardRecap`, `cardBack`, `suggestionBox`, `suggestionLine` (`verdict`, `reason`), `fixCardButton` | the study card |
 | `rate:<1-4>` (`suggested`, `marked` (picked or taken), `chosen`; its `interval` label), `startSessionButton`, `studyAgainButton` | the study controls |
@@ -89,7 +93,7 @@ and stops.
 | `graphScreen`, `graphAll`, `graphLocal`, `graphView` | the graph |
 | `graphRailHandle`, `graphFullScreen`, `graphCollapse`, `graphExpand` | the wiki page's graph rail: its drag edge, its full-screen icon, folding it and opening it again |
 | `sidePanelCollapse`, `sidePanelExpand`, `sidePanelHandle` | folding the wiki's side panel, opening it again, its drag edge |
-| `studyPages`, `studyPage:<path>`, `studyPageDrop:<path>`, `studyPagesClear` | the side panel's "From study" pages (`app.studyPages`) |
+| `studyPages`, `studyPage:<path>`, `studyPageDrop:<path>`, `studyPagesClear` | the side panel's "From study" pages (`app.study.pages`) |
 | `noteDialog` (`app.noteOpen` says whether it is up), `noteCardFront`, `noteEditor`, `notePreview`, `noteSave`, `noteDelete` | a card's note |
 | `summaryNoted`, `summaryFixNotes` | the summary's noted cards |
 | `notedChip`, `selected:noted:yes`, `fixNoted`, `stageNote` | the deck explorer's noted filter, its fix, the stage card's note |

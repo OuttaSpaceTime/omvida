@@ -2,7 +2,7 @@
 
 // The hints and the alert the window's status line (StatusLine.qml) adds
 // after every screen's own, Study's excepted. The keys these hints name are the window's own
-// (omvida.qml's contentRoot), and each hint's run() calls the same function
+// (App.qml's contentRoot), and each hint's run() calls the same function
 // its key does, so a click on a hint and the key never drift apart.
 // One line at the bottom teaches the keys, so the buttons say only what
 // they do.
@@ -16,8 +16,8 @@ function add(app) {
 }
 
 function back(app) {
-  if (!app || app.history.length === 0) return null
-  return { keys: "alt+←", label: "back", run: function() { app.goBack() } }
+  if (app.nav.history.length === 0) return null
+  return { keys: "alt+←", label: "back", run: function() { app.nav.goBack() } }
 }
 
 function study(app) {
@@ -26,7 +26,6 @@ function study(app) {
 
 // The hints every reading screen shares, after its own.
 function common(app, own) {
-  if (!app) return []
   return (own || []).concat([search(app), add(app), back(app)]).filter(function(h) { return h !== null })
 }
 

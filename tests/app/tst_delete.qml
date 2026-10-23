@@ -10,13 +10,13 @@ OmvidaTest {
   function cardCount(id) { return sql("SELECT COUNT(*) FROM Card WHERE id = '" + id + "'")[0][0] }
 
   function init() {
-    app.setScreen("home")
-    app.setScreen("cards")
+    app.nav.setScreen("home")
+    app.nav.setScreen("cards")
     tryVerify(function() { return cardsScreen.filtered.length > 0 }, 5000)
     cardsScreen.showCard(0)
     tryVerify(function() { return stage().activeFocus }, timeout, "the stage has the keyboard")
     // The change of screen hands the keyboard to the stage a turn later
-    // (omvida.qml's focusScreen); let it, or it takes the keyboard back
+    // (App.qml's focusScreen); let it, or it takes the keyboard back
     // from the dialog the first Del opens.
     wait(50)
   }

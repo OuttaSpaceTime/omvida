@@ -11,10 +11,9 @@ TestCase {
     var calls = []
     return {
       calls: calls,
-      history: history || [],
+      nav: { history: history || [], goBack: function() { calls.push("back") } },
       store: { overview: verdict === null ? null : { pressure: { verdict: verdict } } },
       openSearch: function(t) { calls.push("search:" + t) },
-      goBack: function() { calls.push("back") },
       startStudy: function() { calls.push("study") },
       toggleAdd: function() { calls.push("add") }
     }

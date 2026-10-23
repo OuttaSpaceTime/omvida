@@ -10,7 +10,7 @@ import "Format.js" as Format
 Modal {
   id: root
 
-  property var app: null
+  required property Store store
   property var cards: []
   property string mode: "overview"
   cardWidth: Theme.pageMeasure + Theme.space3xl
@@ -60,7 +60,7 @@ Modal {
           width: grid.cellWidth
           height: grid.tileHeight
           card: cardItem.modelData
-          caption: Cards.tileCaption(cardItem.modelData, true, !!(root.app && root.app.store.notes[cardItem.modelData.id]))
+          caption: Cards.tileCaption(cardItem.modelData, true, !!root.store.notes[cardItem.modelData.id])
           text: Format.stripHtml(cardItem.revealed ? cardItem.modelData.back : cardItem.modelData.front)
           marked: cardItem.revealed
           onClicked: cardItem.revealed = !cardItem.revealed

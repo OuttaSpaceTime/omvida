@@ -21,8 +21,8 @@ OmvidaTest {
     if (tagLimitAtStart < 0) tagLimitAtStart = cardsScreen.tagLimit
     cardsScreen.tagLimit = tagLimitAtStart
     cardsScreen.closeTags()
-    app.setScreen("home")
-    app.setScreen("cards")
+    app.nav.setScreen("home")
+    app.nav.setScreen("cards")
     tryVerify(function() { return cardsScreen.filtered.length === 5 }, 5000)
     cardsScreen.showCard(0)
     tryVerify(function() { return stage().activeFocus }, timeout, "the stage has the keyboard")
@@ -292,8 +292,8 @@ OmvidaTest {
   function test_alt_arrows_stay_the_apps() {
     key(Qt.Key_Right)
     key(Qt.Key_Left, Qt.AltModifier)
-    tryCompare(app, "currentScreen", "home")
-    app.setScreen("cards")
+    tryCompare(app.nav, "currentScreen", "home")
+    app.nav.setScreen("cards")
     compare(cardsScreen.current, 1, "Alt+← did not page")
   }
 
@@ -315,5 +315,26 @@ OmvidaTest {
     tryVerify(function() { return cardsScreen.statusAlerts.length === 1 })
     cardsScreen.statusAlerts[0].run()
     tryVerify(function() { return cardsScreen.filtered.length === 5 })
+  }
+
+  // At the window's least width the status line drops hints from the end
+  // rather than run them over the mode block (StatusLine.hintsShown). Cards
+  // has the most hints of any screen. The window itself does not resize
+  // offscreen once it is up, so the line is narrowed alone, to what the
+  // least window leaves it, and put back.
+  function test_status_hints_fit_at_the_least_width() {
+    var line = item("statusLine")
+    var right = line.anchors.right
+    line.anchors.right = undefined
+    line.width = window.minimumSize.width - (window.width - line.width)
+    try {
+      wait(100)
+      verify(line.hintsShown > 0 && line.hintsShown < line.hints.length,
+             "some hints dropped: " + line.hintsShown + " of " + line.hints.length)
+      let mode = item("statusMode")
+      verify(item("statusHints").x >= mode.x + mode.width, "the hints start past the mode block")
+    } finally {
+      line.anchors.right = right
+    }
   }
 }

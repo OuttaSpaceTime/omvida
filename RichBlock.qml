@@ -1,12 +1,13 @@
 import QtQuick
 
-// One block of page HTML (a paragraph, list, table or quote), selectable, its
-// links routed through the app (wiki:, anchor:, http). Read-only
-// TextEdit rather than Text, so a passage can be selected and copied.
+// One block of page HTML (a paragraph, list, table or quote), selectable.
+// A clicked link (wiki:, anchor:, http) is TextEdit's own linkActivated, for
+// whoever shows the page to follow (Navigator.followLink): a block knows
+// nothing of the app. Read-only TextEdit rather than Text, so a passage can
+// be selected and copied.
 TextEdit {
   id: root
 
-  property var app: null
   property string html: ""
   property int size: Theme.bodySize
 
@@ -21,7 +22,6 @@ TextEdit {
   selectionColor: Theme.selectedFill
   selectedTextColor: Theme.ink
   activeFocusOnPress: false
-  onLinkActivated: function(link) { if (root.app) root.app.followLink(link) }
 
   HoverHandler {
     cursorShape: root.hoveredLink !== "" ? Qt.PointingHandCursor : Qt.IBeamCursor

@@ -9,8 +9,8 @@ import Quickshell.Io
 Rectangle {
   id: driver
 
-  // Handed over by omvida.qml (contentRoot.inject).
-  property var app: null
+  // Handed over by App.qml (contentRoot.inject).
+  property App app: null
   property var study: null
   property var studyView: null
   property var wiki: null
@@ -39,9 +39,9 @@ Rectangle {
 
   function applyScreen() {
     var s = driver.screen
-    if (s.indexOf("wiki:") === 0) driver.app.openPage(s.slice(5), "")
-    else if (s.indexOf("folder:") === 0) driver.app.openFolder(s.slice(7))
-    else driver.app.setScreen(s)
+    if (s.indexOf("wiki:") === 0) driver.app.nav.openPage(s.slice(5), "")
+    else if (s.indexOf("folder:") === 0) driver.app.nav.openFolder(s.slice(7))
+    else driver.app.nav.setScreen(s)
   }
 
   // Actions put the app in a state a click or key would. Study actions run a
@@ -84,7 +84,7 @@ Rectangle {
     else if (a === "studydelete") { study.start(); whenPhase.run("answering", function() { driver.study.askDelete() }) }
     else if (a === "done") { study.start(); rateAll.start() }
     else if (a === "keys") { study.start(); whenPhase.run("answering", function() { driver.study.keysWanted() }) }
-    else if (a === "graphlocal") driver.app.openGraph(true)
+    else if (a === "graphlocal") driver.app.nav.openGraph(true)
     // On a wiki page: fold the side panel, open the graph rail, or both
     // (panels:side, panels:graph, panels:side,graph), as `[` and `]` would.
     else if (a === "panels") {
@@ -112,8 +112,8 @@ Rectangle {
     else if (a === "studypages") {
       let pages = driver.app.store.wikiIndex.pages.slice(0, 3).map(function(p) { return { path: p.path, title: p.title, lapsed: 0 } })
       pages[1].lapsed = 1
-      driver.app.addStudyPages(pages)
-      driver.app.openPage(pages[0].path, "")
+      driver.app.study.addPages(pages)
+      driver.app.nav.openPage(pages[0].path, "")
     }
   }
 

@@ -16,7 +16,7 @@ import "Launch.js" as Launch
 QtObject {
   id: root
 
-  property var app: null
+  required property Store store
 
   property string question: ""
   property string text: ""
@@ -50,7 +50,7 @@ QtObject {
     root.done = true
     root.status = ""
     if (root.text === "") return
-    root.app.store.wiki.call("markdown", { text: root.text }, function(err, res) { if (!err) root.blocks = res.blocks })
+    root.store.wiki.call("markdown", { text: root.text }, function(err, res) { if (!err) root.blocks = res.blocks })
   }
 
   property Component askProcess: Component {
