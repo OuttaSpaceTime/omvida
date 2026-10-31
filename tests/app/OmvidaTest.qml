@@ -20,7 +20,7 @@ import Quickshell.Io
 //   kittyCalls(), claudeCalls()   what the fake kitty and claude were run with
 //   askCalls()                    the claude calls that were Ask runs
 //   webappCalls()                 the explorables opened (fake omarchy-launch-webapp)
-//   gradeCalls(), graderPids()    what the fake grader was sent; the graders alive
+//   gradeCalls(), gradeAborts()   what the fake API was sent to grade; the grades aborted
 //   barOverviews()                what was handed to the bar (fake omarchy-shell)
 //   waitReady()                   both backends up and the data loaded
 //   startSession()                Study, a session started, a card up
@@ -232,16 +232,12 @@ TestCase {
       .map(function(a) { return JSON.parse(a[3]) })
   }
   function claudeCalls() { return jsonLines(base.outDir + "/claude-calls.jsonl") }
-  // The Ask runs: every claude call but the graders (the fake tells them apart the same way).
-  function askCalls() { return claudeCalls().filter(function(a) { return a.indexOf("--json-schema") === -1 && a.indexOf("-p") !== -1 }) }
-  // The prompts the fake grader was sent, one [prompt] each: a spare the deck
-  // server boots ahead and ends unused is in claudeCalls() but not here.
+  // The Ask runs: the headless claude calls.
+  function askCalls() { return claudeCalls().filter(function(a) { return a.indexOf("-p") !== -1 }) }
+  // The prompts the fake Claude API was sent to grade, one [prompt] each.
   function gradeCalls() { return jsonLines(base.outDir + "/grades.jsonl") }
-  // The fake graders alive now, by pid.
-  function graderPids() {
-    var r = run(["pgrep", "-f", " fake-grader:" + base.outDir.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$"])
-    return (r.out || "").split("\n").filter(function(l) { return l !== "" })
-  }
+  // The grades the deck server aborted while the fake API was still at them.
+  function gradeAborts() { return jsonLines(base.outDir + "/grade-aborts.jsonl") }
 
   // ---- the app ----------------------------------------------------------------------------
   function waitReady() {

@@ -17,7 +17,7 @@ A card's front, and the answer box already focused. Type an answer, or don't.
 
 | Key | Does |
 |---|---|
-| **Shift+Enter** | reveal the back; a typed answer goes to `claude -p`, which suggests a rating with a one-sentence reason (~3s) |
+| **Shift+Enter** | reveal the back; a typed answer goes to the Claude API (Sonnet), which suggests a rating with a one-sentence reason (1.5–2.5s; once per card, on the reveal, since each grade bills the API) |
 | **Shift+Enter** again | submit the rating Shift+1–4 picked, else **Good** |
 | **Alt+Enter** | accept the suggestion. Before the reveal: reveal, and accept it the moment it arrives |
 | **Shift+1–4** | pick Again / Hard / Good / Easy, overriding the suggestion; before the reveal it reveals too. The same digit again (or Shift+Enter) submits the pick, another digit changes it |

@@ -54,9 +54,12 @@ unit-tested the same way.
 **The deck server** is flashcard-mcp's `src/app/server.ts`, started by `bin/omvida-deck`.
 It runs for the app's whole life rather than per call: a tsx start costs about a second, and
 the session cache lives in it (queues are also saved in the deck, so a restart resumes them). It derives `maxNewCards` from the pressure verdict and returns a leech block as
-data; flashcard-mcp's CLAUDE.md has the method table and the why. `grade` runs `claude -p`
-(Sonnet, structured output, no tools, no MCP, no settings) with /study's fixed rubric, in about
-three seconds, and only suggests: `review` writes whatever rating the developer chose.
+data; flashcard-mcp's CLAUDE.md has the method table and the why. `grade` calls the Claude API
+(Sonnet, structured output, no tools, thinking off) with /study's fixed rubric, and only
+suggests: `review` writes whatever rating the developer chose. It used `claude -p` until
+2026-10-30, at about three seconds a grade; the API takes 1.5–2.5s (measured 2026-10-30). The API key lives in the
+login keyring (`service anthropic account omvida-grading`), and `bin/omvida-deck` hands it to the
+server at start. Every other Claude run stays Claude Code: in kitty, or headless for Ask.
 
 **The wiki service** is `backend/omvida_backend` (Python, uv venv in this repo), started by
 `bin/omvida-wiki`. It ports the Next.js viewer's `lib/wiki.ts` (links both ways, the tree, the

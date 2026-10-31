@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 Omvida is a standalone Quickshell (QML) app for the study wiki (`~/Code/study/wiki`) and its
-flashcards (flashcard-mcp), with a study loop graded by `claude -p`. It is Omvision's sibling
+flashcards (flashcard-mcp), with a study loop graded by the Claude API (through the deck server). It is Omvision's sibling
 and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
 
 ## Running and verifying

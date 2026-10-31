@@ -10,12 +10,13 @@
 #                  app writes its session entries into
 #   master.db      the fixture deck (tests/fixtures/make-deck.sh), built once
 #                  per run into $OMVIDA_DECK_CACHE when that is set
-#   out/           where the fake claude, kitty and omarchy-launch-webapp
-#                  record their calls
+#   out/           where the fake claude, kitty, omarchy-launch-webapp and
+#                  Claude API record their calls
 # and the command runs with HOME, OMVIDA_STUDY_DIR, FLASHCARD_DB and
-# OMVIDA_TEST_OUT pointing there, and tests/fixtures/bin (fake claude, kitty,
-# qmd, omarchy-shell, omarchy-launch-webapp) first on PATH. Nothing here can
-# reach the real deck, wiki, logs, bar or browser.
+# OMVIDA_TEST_OUT pointing there, tests/fixtures/bin (fake claude, kitty,
+# qmd, omarchy-shell, omarchy-launch-webapp) first on PATH, and grading sent
+# to a fake Claude API with a fake key. Nothing here can reach the real deck,
+# wiki, logs, bar, browser, keyring or API.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 dir="${1:?sandbox dir}"; shift
@@ -27,6 +28,13 @@ dir="$(cd "$dir" && pwd -P)"
 case "$dir/" in "$tmp_root"/*|/tmp/*) ;; *) echo "sandbox: refusing $dir: not under $tmp_root" >&2; exit 2 ;; esac
 
 mkdir -p "$dir/home" "$dir/out"
+# Grading talks to a fake Claude API (tests/fixtures/fake-anthropic.py) with a
+# fake key, so the deck server neither reaches the real one nor looks in the
+# keyring (bin/omvida-deck). It exits when this process does: the exec below
+# keeps the pid, so its owner is the app. Started first, so it boots while
+# the fixtures are copied; its port is waited for just before the exec.
+rm -f "$dir/out/fake-api.port"
+python3 "$ROOT/tests/fixtures/fake-anthropic.py" "$dir/out" "$$" >>"$dir/out/fake-api.log" 2>&1 &
 touch "$dir/home/.omvida-test-home"
 rm -rf "$dir/study"
 cp -r "$ROOT/tests/fixtures/study" "$dir/study"
@@ -53,4 +61,9 @@ export OMVIDA_STUDY_DIR="$dir/study"
 export FLASHCARD_DB="$dir/master.db"
 export OMVIDA_TEST_OUT="$dir/out"
 export OMVIDA_SANDBOX="$dir"
+
+for _ in $(seq 100); do [ -s "$dir/out/fake-api.port" ] && break; sleep 0.05; done
+[ -s "$dir/out/fake-api.port" ] || { echo "sandbox: the fake Claude API did not start" >&2; exit 1; }
+export ANTHROPIC_BASE_URL="http://127.0.0.1:$(cat "$dir/out/fake-api.port")"
+export ANTHROPIC_API_KEY="sandbox-fake-key"
 exec "$@"

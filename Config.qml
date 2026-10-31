@@ -26,10 +26,6 @@ QtObject {
   // ---- the user's pace ----------------------------------------------------------------
   // Over a typing gap, so a word is one search, not one per letter.
   readonly property int searchDebounce: 250
-  // A pause in the study answer long enough to read as "done for now" rather
-  // than between words; each pause that changes the answer costs one grade
-  // (StudySession.qml).
-  readonly property int gradePause: 1200
 
   // ---- deadlines ------------------------------------------------------------------------
   // The Anki sync must never hold a session hostage (AnkiSync.qml).

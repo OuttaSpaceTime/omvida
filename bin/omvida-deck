@@ -3,7 +3,23 @@
 # app keeps running for its whole life (JsonLineClient.qml). stdout is the
 # protocol, so everything here writes to stderr. FLASHCARD_DB points at a
 # database file directly (the tests' fixture deck).
+#
+# Grading calls the Claude API (flashcard-mcp's grading.ts), with the key
+# stored in the login keyring: `secret-tool store --label="Omvida grading
+# (Anthropic API)" service anthropic account omvida-grading`. It is read here,
+# into the server's environment only, rather than kept in a file such as
+# flashcard-mcp's .env, which every backup and grep would see. An
+# ANTHROPIC_API_KEY already set wins: bin/sandbox and `bin/shot -R` set a fake
+# one, so no test or screenshot reaches the keyring or the API. The key is
+# read once, at server start: one stored (or unlocked) later needs an app
+# restart. With no key the server still starts, and each grade says the key
+# is missing.
 set -euo pipefail
 dir="$("$(dirname "${BASH_SOURCE[0]}")/flashcard-mcp-dir")"
 cd "$dir"
+if [ -z "${ANTHROPIC_API_KEY:-}" ] && command -v secret-tool >/dev/null; then
+  key="$(secret-tool lookup service anthropic account omvida-grading 2>/dev/null || true)"
+  [ -n "$key" ] && export ANTHROPIC_API_KEY="$key"
+  unset key
+fi
 NODE_NO_WARNINGS=1 DATABASE_URL="file:${FLASHCARD_DB:-$dir/prisma/master.db}" exec node_modules/.bin/tsx src/app/server.ts

@@ -19,13 +19,14 @@ import "Format.js" as Format
 //                                            suggested rating with its reason
 //   then: submit the suggestion, Good, or any rating
 //
-// The grade starts before the reveal: whenever typing pauses (Config.gradePause),
-// the answer so far is graded in the background, and a reveal with the answer
-// unchanged takes that grade, often already in. A changed answer is graded
-// afresh, never sent on to the earlier grade's conversation, so a draft and
-// its verdict cannot sway the rating. The deck server runs the claudes:
-// nextCard ends the last card's grade, so a rating given without Claude's
-// leaves none running, and one spare claude stays booted for the session.
+// The answer is graded once, on the reveal, and on what was typed by then. A
+// grade bills an API call (flashcard-mcp's grading.ts), so nothing is graded
+// ahead. Until 2026-10-30, when grades ran on `claude -p` under the Claude
+// subscription, every pause in the typing graded the answer so far, to have
+// the verdict in by the reveal; that cost a grade per pause, mostly thrown
+// away, to hide a three-second wait the API's 1.5-2.5s no longer needs.
+// The deck server makes the call: nextCard aborts the last card's grade, so
+// a rating given without Claude's leaves none running.
 //
 // StudyKeys.js decides what a key means; handleKey() carries it out. The
 // session itself is flashcard-mcp's: the queue, the scheduling, the leech
@@ -73,10 +74,6 @@ QtObject {
   // (StudyCard.qml) before the card fades out.
   property int chosen: 0
   property int gradeSeq: 0
-  // The latest grade asked for, { text, done, err, res }: reveal() takes it
-  // when the answer is still that text (trimmed, for the comparison only),
-  // done or on its way. A failed one is asked for again.
-  property var early: null
   property var rec: Session.empty()
   property double shownAt: 0
   property double revealedAt: 0
@@ -123,12 +120,6 @@ QtObject {
   signal keysWanted()
 
   property AnkiSync sync: AnkiSync {}
-
-  property Timer pauseTimer: Timer {
-    interval: Config.gradePause
-    onTriggered: root.gradeEarly()
-  }
-  onAnswerChanged: if (phase === "answering") pauseTimer.restart()
 
   // A rating is written at once and the next card asked for right after,
   // but shown only once settleMs have passed: the view shows the rating
@@ -231,12 +222,9 @@ QtObject {
     root.forgetGrade()
   }
 
-  // A grade still running (or one to come on a pause) is no longer wanted:
-  // gradeSeq drops its reply.
+  // A grade still running is no longer wanted: gradeSeq drops its reply.
   function forgetGrade() {
     root.gradeSeq++
-    root.early = null
-    pauseTimer.stop()
   }
 
   function fail(msg) {
@@ -254,31 +242,13 @@ QtObject {
     }
     root.phase = "grading"
     root.acceptPending = !!thenAccept
-    // Graded on a pause: take it now, or as it comes in (requestGrade).
-    var e = root.early
-    if (!e || e.text !== root.answer.trim() || (e.done && e.err)) root.requestGrade()
-    else if (e.done) root.takeGrade(null, e.res)
-  }
-
-  // Typing paused: grade the answer so far, unless it was graded as it is.
-  function gradeEarly() {
-    var text = root.answer.trim()
-    if (root.phase !== "answering" || text === "" || (root.early && root.early.text === text)) return
-    root.requestGrade()
-  }
-
-  // Grades the answer as typed. A newer grade ends the one still running on
-  // the server, and gradeSeq drops its reply.
-  function requestGrade() {
+    // Graded as typed: the trim above only decides whether there is an
+    // answer. gradeSeq drops the reply of a grade no longer wanted, and the
+    // phase one that comes after the session failed.
     var seq = ++root.gradeSeq
-    var early = { text: root.answer.trim(), done: false, err: null, res: null }
-    root.early = early
     deck.call("grade", { cardId: root.card.id, answer: root.answer }, function(err, res) {
-      if (seq !== root.gradeSeq) return
-      early.done = true
-      early.err = err
-      early.res = res
-      if (root.phase === "grading") root.takeGrade(err, res)
+      if (seq !== root.gradeSeq || root.phase !== "grading") return
+      root.takeGrade(err, res)
     })
   }
 
@@ -289,7 +259,7 @@ QtObject {
     } else {
       root.suggestion = res
     }
-    if (root.phase === "grading") root.phase = "revealed"
+    root.phase = "revealed"
     if (root.acceptPending && root.suggestion) root.submit(root.suggestion.rating)
   }
 
@@ -361,8 +331,6 @@ QtObject {
     root.next = Object.assign({}, root.next, { card: c })
     root.dropGrade()
     if (root.phase === "grading") root.phase = "revealed"
-    // An answer already typed is graded against the card as it now is.
-    if (root.phase === "answering") pauseTimer.restart()
     root.toastRequested("Card updated in Claude Code")
   }
 

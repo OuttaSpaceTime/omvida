@@ -47,17 +47,19 @@ OmvidaTest {
     compare(gradeCalls().filter(function(a) { return a.join(" ").indexOf("A sharper front") !== -1 }).length, 0, "nothing graded")
   }
 
-  // An answer typed before the card changed is graded against the new card,
-  // with no more typing.
-  function test_b_an_answer_typed_before_an_edit_is_graded_again() {
+  // An answer typed before the card changed is graded on the reveal, against
+  // the card as it now is.
+  function test_b_an_answer_typed_before_an_edit_is_graded_against_the_new_card() {
     startSession()
     var id = study.card.id
     type("an answer")
-    tryVerify(function() { return study.early && study.early.done }, 5000, "graded on the pause")
     var before = gradeCalls().length
     sqlWrite("UPDATE Card SET back = 'A new back', updatedAt = " + sqlNow + " WHERE id = '" + id + "'")
     tryVerify(function() { return study.card.back === "A new back" }, 10000, "the new back is in")
-    tryVerify(function() { return gradeCalls().length === before + 1 }, 5000, "graded again")
+    compare(gradeCalls().length, before, "nothing graded before the reveal")
+    key(Qt.Key_Return, Qt.ShiftModifier)
+    tryCompare(study, "phase", "revealed", 8000)
+    compare(gradeCalls().length, before + 1, "graded once")
     verify(gradeCalls()[before][0].indexOf("A new back") !== -1, "against the new back")
   }
 

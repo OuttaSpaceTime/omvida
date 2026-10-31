@@ -51,6 +51,9 @@ if [ "$real" = 1 ]; then
   case "${action%%:*}" in ""|search|addmenu|pagecards|cardsnext|cardsflip|cardstags|cardspanel|graphlocal|panels|studypages) ;;
     *) echo "bin/shot: -R refuses -a $action (it could write)" >&2; exit 2 ;; esac
   export PATH="$ROOT/tests/fixtures/bin:$PATH" OMVIDA_TEST_OUT="${TMPDIR:-/tmp}"
+  # No Study, so no grade; a fake key still keeps bin/omvida-deck out of the
+  # keyring (an unlock prompt), and a closed port keeps any grade off the API.
+  export ANTHROPIC_API_KEY="shot-fake-key" ANTHROPIC_BASE_URL="http://127.0.0.1:9"
 else
   box="$(mktemp -d "${TMPDIR:-/tmp}/omvida-shot.XXXXXX")"
   trap 'rm -rf -- "$box"' EXIT

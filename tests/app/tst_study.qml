@@ -140,66 +140,50 @@ OmvidaTest {
     compare(r[r.length - 1], [cardId, 2], "Hard, not the suggested Easy")
   }
 
-  // A pause in typing grades the answer so far; a reveal with the answer
-  // unchanged takes that grade instead of asking again.
-  function test_a_pause_grades_early_and_the_reveal_takes_it() {
+  // A grade bills an API call, so typing alone grades nothing, however long
+  // it pauses: the reveal grades once, the whole answer.
+  function test_typing_grades_nothing_and_the_reveal_grades_once() {
     startSession()
     var before = gradeCalls().length
-    type("a perfect answer")
-    tryVerify(function() { return gradeCalls().length === before + 1 }, 5000, "graded on the pause")
-    tryVerify(function() { return study.early && study.early.done }, 5000, "the grade is in")
-    compare(study.phase, "answering", "still answering")
-    compare(study.suggestion, null, "nothing shown before the reveal")
-    key(Qt.Key_Return, Qt.ShiftModifier)
-    compare(study.phase, "revealed", "the verdict is there at once")
-    compare(item("suggestionLine").verdict, "claude: easy")
-    wait(500)
-    compare(gradeCalls().length, before + 1, "not graded again")
-  }
-
-  // Revealed while the early grade is still running: it is waited for, not
-  // started again.
-  function test_a_reveal_waits_for_the_early_grade_still_running() {
-    startSession()
-    var before = gradeCalls().length
-    type("slowly")
-    tryVerify(function() { return gradeCalls().length === before + 1 }, 5000, "graded on the pause")
+    type("an answer but wrong")
+    // Past the old 1.2s typing pause, the one that used to grade.
+    wait(1500)
+    compare(gradeCalls().length, before, "nothing graded while typing")
     key(Qt.Key_Return, Qt.ShiftModifier)
     compare(study.phase, "grading")
     tryCompare(study, "phase", "revealed", 8000)
-    compare(study.suggestion.rating, 3)
-    compare(gradeCalls().length, before + 1, "one grade")
-  }
-
-  // Typing on after the early grade: the reveal grades the whole answer afresh.
-  function test_an_answer_changed_after_the_pause_is_graded_again() {
-    startSession()
-    var before = gradeCalls().length
-    type("an answer")
-    tryVerify(function() { return gradeCalls().length === before + 1 }, 5000, "graded on the pause")
-    type(" but wrong")
-    key(Qt.Key_Return, Qt.ShiftModifier)
-    tryVerify(function() { return study.suggestion !== null }, 8000)
     compare(study.suggestion.rating, 1, "the verdict is for the whole answer")
-    // At least the two: a keystroke that stalls past the pause adds one.
     var calls = gradeCalls()
-    verify(calls.length >= before + 2, "graded again: " + (calls.length - before))
-    verify(calls[calls.length - 1][0].indexOf("an answer but wrong") !== -1, "the whole answer was sent")
+    compare(calls.length, before + 1, "one grade")
+    verify(calls[before][0].indexOf("an answer but wrong") !== -1, "the whole answer was sent")
   }
 
-  // A pause's grade that failed is not shown as the verdict: the reveal asks again.
-  function test_a_failed_early_grade_is_asked_again_on_reveal() {
+  // A slow grade is waited for in the grading phase, then shown.
+  function test_a_reveal_waits_for_a_slow_grade() {
+    startSession()
+    type("slowly")
+    key(Qt.Key_Return, Qt.ShiftModifier)
+    compare(study.phase, "grading")
+    wait(1000)
+    compare(study.phase, "grading", "still waiting")
+    tryCompare(study, "phase", "revealed", 8000)
+    compare(study.suggestion.rating, 3)
+  }
+
+  // A failed grade reveals the back with the error, and is not asked again.
+  function test_a_failed_grade_reveals_with_the_error() {
     startSession()
     var before = gradeCalls().length
     type("failme")
-    tryVerify(function() { return study.early && study.early.done }, 5000, "the grade is in")
-    verify(study.early.err.indexOf("Fixture grader failed") !== -1, "it failed: " + study.early.err)
     key(Qt.Key_Return, Qt.ShiftModifier)
     tryCompare(study, "phase", "revealed", 8000)
-    compare(gradeCalls().length, before + 2, "asked again")
+    verify(study.gradeError.indexOf("Fixture grader failed") !== -1, "the error: " + study.gradeError)
+    compare(study.suggestion, null)
+    wait(500)
+    compare(gradeCalls().length, before + 1, "asked once")
   }
 
-  // Only the comparison trims: the grader gets the answer as typed, a code
+  // Only the empty-answer check trims: the grader gets the answer as typed, a code
   // answer's first indent included.
   function test_the_grader_gets_the_answer_as_typed() {
     startSession()
@@ -210,25 +194,23 @@ OmvidaTest {
     verify(calls[calls.length - 1][0].indexOf("<developer_answer>\n    indented code\n") !== -1, "indent kept")
   }
 
-  // A card rated without waiting for Claude ends its grade; the spare claude
-  // stays for the next card, and an ended session leaves none at all.
-  function test_rating_ends_the_grade_and_ending_leaves_no_claude() {
+  // A card rated without waiting for Claude ends its grade (the deck server
+  // aborts the request), and so does a session ended mid-grade.
+  function test_rating_or_ending_aborts_the_grade_still_running() {
     startSession()
-    tryVerify(function() { return graderPids().length === 1 }, 5000, "a spare is booted")
-    var spare = graderPids()[0]
     var cardId = study.card.id
     type("slowly")
+    key(Qt.Key_Return, Qt.ShiftModifier)
     tryVerify(function() { return gradeCalls().some(function(c) { return c[0].indexOf("slowly") !== -1 }) }, 5000, "a slow grade is running")
-    var others = function() { return graderPids().filter(function(p) { return p !== spare }) }
-    tryVerify(function() { return others().length === 1 }, 3000, "the grade took the spare, and another booted")
-    var next = others()
     study.submit(3)
     tryVerify(function() { return study.card && study.card.id !== cardId && study.phase === "answering" }, 8000)
-    tryVerify(function() { return graderPids().indexOf(spare) === -1 }, 3000, "the rated card's grade is gone")
-    compare(graderPids(), next, "the spare carries over to the next card")
-    key(Qt.Key_Escape)
+    tryVerify(function() { return gradeAborts().length === 1 }, 3000, "the rated card's grade was aborted")
+    type("slowly again")
+    key(Qt.Key_Return, Qt.ShiftModifier)
+    tryVerify(function() { return gradeCalls().some(function(c) { return c[0].indexOf("slowly again") !== -1 }) }, 5000, "another slow grade")
+    study.endNow()
     tryCompare(study, "phase", "done", 3000)
-    tryVerify(function() { return graderPids().length === 0 }, 3000, "none left after the session")
+    tryVerify(function() { return gradeAborts().length === 2 }, 3000, "ending the session aborted it")
   }
 
   // A rating is shown taken before the card goes: its keycap filled, the

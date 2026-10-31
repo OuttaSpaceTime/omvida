@@ -33,11 +33,14 @@ and stops.
   fixture wiki's `flashcard_ids`. `seed_deck.py <db> --notes` adds a past session with two
   lapses and two card notes, for Home and the Cards "noted" filter (tst_notes, `bin/shot -a notes`).
 - `out/`: where the fakes record their calls.
-- `tests/fixtures/bin` first on PATH: `claude` (grades 3, or 1 for "wrong", 4 for "perfect",
-  flags a card issue for "flagme", fails for "failme", takes 2s over "slowly"; as a grader it waits for its
-  stream-json prompt like a spare the deck server boots ahead, records each prompt it grades in
-  `out/grades.jsonl` (`gradeCalls()`) and is findable alive by `graderPids()`; streams a short
-  answer for Ask), `kitty`, `qmd`,
+- A fake Claude API, `tests/fixtures/fake-anthropic.py`, on a free local port, with
+  `ANTHROPIC_BASE_URL` and a fake `ANTHROPIC_API_KEY` set for the deck server (so
+  `bin/omvida-deck` never looks in the keyring). It grades 3, or 1 for "wrong", 4 for "perfect",
+  flags a card issue for "flagme", fails with a 400 for "failme", takes 2s over "slowly"
+  (`FAKE_GRADE_DELAY` otherwise, default 0.3s); records each prompt in `out/grades.jsonl`
+  (`gradeCalls()`) and each grade the deck server aborted while it waited in
+  `out/grade-aborts.jsonl` (`gradeAborts()`). It exits with the app.
+- `tests/fixtures/bin` first on PATH: `claude` (streams a short answer for Ask), `kitty`, `qmd`,
   `omarchy-shell` (records the overviews handed to the bar, so a test never reaches the real one) and
   `omarchy-launch-webapp` (records the explorables opened, `webappCalls()`).
 
@@ -55,7 +58,7 @@ and stops.
 - `tests/app`: `OmvidaTest.qml` is Omvision's harness adapted: the app loads the test file
   through `OMVIDA_TEST`, and tests click and type into the real screens against the real
   backends. Helpers: `click`, `item`, `type`, `key`, `sql` (read the deck), `sqlWrite`,
-  `kittyCalls`, `claudeCalls`, `askCalls`, `gradeCalls`, `graderPids`, `barOverviews`, `readFile`, `startSession`, `blockOnLeech`, and `repo`
+  `kittyCalls`, `claudeCalls`, `askCalls`, `gradeCalls`, `gradeAborts`, `barOverviews`, `readFile`, `startSession`, `blockOnLeech`, and `repo`
   (this checkout, for the fixture scripts). Tests in a file share
   one app; a file whose tests change the deck resets what it needs in `init()` (tst_study makes
   every card due again), or gets a file of its own (tst_delete deletes cards, from Study and
@@ -104,4 +107,5 @@ and stops.
 
 How things look (use `bin/shot`), the live omarchy theme, the bar plugin inside the running
 shell (`omarchy plugin validate` checks its manifest and files; `bar/Model.js` is unit-tested),
-the real `claude` (one real grade was checked by hand: 3.3s, sensible reason), and kitty itself.
+the real Claude API (grades were checked by hand on 2026-10-30: 1.5–2.5s, sensible reasons), the
+real `claude` for Ask, and kitty itself.
