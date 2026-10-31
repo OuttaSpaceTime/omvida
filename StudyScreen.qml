@@ -107,6 +107,7 @@ Item {
     var discuss = { keys: "ctrl+D", label: "discuss", run: function() { s.discuss() } }
     var skip = { keys: "ctrl+S", label: "skip", run: function() { s.skip() } }
     var note = { keys: "ctrl+N", label: "note", run: function() { s.note() } }
+    var check = { keys: "ctrl+Q", label: "check quality", run: function() { s.checkCard() } }
     var end = { keys: "esc", label: "end", run: function() { s.endNow() } }
     var del = { keys: "del", label: "delete", run: function() { s.askDelete() } }
     if (s.frontShown) return [
@@ -114,7 +115,7 @@ Item {
       { keys: "alt+enter", label: "reveal+accept", run: function() { s.reveal(true) } },
       // The mouse has no Shift: a click reveals, where the keycaps are.
       { keys: "shift+1-4", label: "reveal and pick", run: function() { s.reveal(false) } },
-      discuss, note, skip, end, del
+      discuss, note, check, skip, end, del
     ]
     if (root.session.backShown) {
       // A picked rating goes first: shift+enter submits it, and claude's
@@ -127,7 +128,7 @@ Item {
       else if (!picked) rows.push({ keys: "shift+enter", label: "good", run: function() { s.submit(3) } })
       // shift+1-4 is a legend here: the keycaps above are its buttons. The
       // first press picks, the second submits.
-      return rows.concat([{ keys: "shift+1-4", label: "pick, twice to rate" }, discuss, note, skip, end, del])
+      return rows.concat([{ keys: "shift+1-4", label: "pick, twice to rate" }, discuss, note, check, skip, end, del])
     }
     switch (phase) {
     case "idle": return [{ keys: "enter", label: "start", run: function() { s.start() } }]

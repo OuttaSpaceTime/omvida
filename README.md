@@ -17,19 +17,22 @@ A card's front, and the answer box already focused. Type an answer, or don't.
 
 | Key | Does |
 |---|---|
-| **Shift+Enter** | reveal the back; a typed answer goes to the Claude API (Sonnet), which suggests a rating with a one-sentence reason (1.5–2.5s; once per card, on the reveal, since each grade bills the API) |
+| **Shift+Enter** | reveal the back; a typed answer goes to the Claude API (Haiku), which suggests a rating with a one-sentence reason (once per card, on the reveal, since each grade bills the API) |
 | **Shift+Enter** again | submit the rating Shift+1–4 picked, else **Good** |
 | **Alt+Enter** | accept the suggestion. Before the reveal: reveal, and accept it the moment it arrives |
 | **Shift+1–4** | pick Again / Hard / Good / Easy, overriding the suggestion; before the reveal it reveals too. The same digit again (or Shift+Enter) submits the pick, another digit changes it |
 | **Ctrl+D** | discuss the card in Claude Code (kitty), Socratic mode, with your answer and the suggestion |
+| **Ctrl+Q** | check the card's quality in the background: Claude Code (`/study-card-check`, headless) fixes it if it is flawed, and a toast says what it did |
 | **Ctrl+S** | skip; the card stays due |
 | **Esc** | end the session; what was rated counts, and the summary follows |
 | **Del** | delete the card, after a confirm dialog; the session goes on. With an answer typed, Del edits it. Also on Cards, for the card on the stage |
 | Enter | a newline: answers are often code |
 
 Shift+digit is matched on the physical key, so it works on US and German layouts alike
-(`StudyKeys.js` explains why). The grader's rubric is `/study`'s, fixed; it can also flag a
-card's own problem ("asks two things"), with a **fix in claude** action. The keys that work
+(`StudyKeys.js` explains why). The grader's rubric is `/study`'s, fixed, and it only rates.
+**Ctrl+Q** checks the card's own quality instead: the study repo's `/study-card-check` runs
+headless, fixes a flawed card (corrects, rewrites, or splits it, keeping its schedule) and says
+what it did in a toast, while you study on. The keys that work
 at each moment are on the status line at the bottom of the window, and each is also a button
 there; after the reveal the four ratings are keycaps under the card.
 

@@ -33,6 +33,14 @@ QtObject {
   // Quitting waits this long at most for a pending session log entry: it
   // must never hang on the wiki service (App.qml).
   readonly property int quitDeadline: 2000
+  // ... and this long at most for running Ctrl+Q card checks (CardCheck.qml),
+  // with the window already gone: a check is a Sonnet session that may be
+  // splitting a card, and one killed halfway leaves the parts and the
+  // original both in the deck.
+  readonly property int cardCheckQuitDeadline: 180000
+
+  // Ctrl+Q card checks running at once (CardCheck.qml).
+  readonly property int cardCheckLimit: 2
 
   // ---- data limits ----------------------------------------------------------------------
   // Home's past sessions: the newest few (Store.loadSessions).

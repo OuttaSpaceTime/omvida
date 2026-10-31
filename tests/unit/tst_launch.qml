@@ -41,7 +41,7 @@ TestCase {
     verify(tools.indexOf("Bash") === -1)
     verify(tools.indexOf("Write(logs/**)") !== -1)
     verify(tools.indexOf("Edit") === -1)
-    compare(argv[argv.length - 1], "What is HSTS?")
+    compare(argv.slice(0, 3), ["claude", "-p", "What is HSTS?"], "the prompt before --allowedTools, which would take it as a tool")
   }
 
   function test_parse_ask_stream() {
@@ -53,6 +53,26 @@ TestCase {
     compare(L.parseAskLine('{"type":"result","is_error":true,"result":"boom"}'), { done: true, error: "boom" })
     compare(L.parseAskLine("not json"), {})
     compare(L.toolLabel("mcp__qmd__query"), "searching the wiki")
+  }
+
+  // Ctrl+Q: the study repo's skill, headless, with the card writes it may
+  // make and no shell; its last line is the result.
+  function test_card_check_runs_the_skill_headless() {
+    var argv = L.cardCheckArgv("c1")
+    compare(argv.slice(0, 3), ["claude", "-p", "/study-card-check c1"])
+    compare(argv[argv.indexOf("--model") + 1], "sonnet")
+    var tools = argv[argv.indexOf("--allowedTools") + 1].split(",")
+    verify(tools.indexOf("mcp__flashcard-mcp__update_card") !== -1)
+    verify(tools.indexOf("mcp__flashcard-mcp__create_card") !== -1)
+    verify(tools.indexOf("Bash") === -1)
+    verify(tools.indexOf("mcp__flashcard-mcp__submit_review") === -1)
+  }
+
+  function test_parse_card_check() {
+    compare(L.parseCardCheck('{"type":"result","subtype":"success","is_error":false,"result":"Looked at it.\\n\\nNo change: precise."}'), { ok: true, text: "No change: precise." })
+    compare(L.parseCardCheck('{"type":"result","subtype":"error_max_turns","is_error":true,"result":"Unchanged: ran out"}'), { ok: false, text: "Unchanged: ran out" })
+    compare(L.parseCardCheck('{"type":"result","subtype":"success","is_error":false,"result":""}'), { ok: false, text: "" })
+    compare(L.parseCardCheck(""), { ok: false, text: "" })
   }
 
   // Fix noted cards: one session, through the study repo's skill, which

@@ -108,8 +108,22 @@ Scope {
     store: dataStore
     onToastRequested: function(text) { root.toast(text) }
     onLaunchRequested: function(argv, note) { root.launch(argv, note) }
-    onNoteAsked: function(card, prefill) { root.openNote(card, prefill) }
+    onNoteAsked: function(card) { root.openNote(card) }
     onDeleteAsked: function(card) { root.confirmDeleteCard(card, function() { studySession.deleteCard(card) }) }
+    onCardCheckRequested: function(card) {
+      var r = checks.run(card)
+      root.toast(r === "started" ? "Checking the card's quality in the background"
+                 : r === "checking" ? "This card is already being checked"
+                 : "Card checks are busy: try again when one is done")
+    }
+  }
+
+  // Ctrl+Q's checks (CardCheck.qml); their one-line results as toasts.
+  readonly property alias cardCheck: checks
+  CardCheck {
+    id: checks
+    onFinished: function(card, text, ok) { root.toast(ok ? "Card check: " + text : "Card check failed: " + text) }
+    onCountChanged: root.quitIfDone()
   }
 
   // ---- IPC: bin/omvida and the bar widget ----------------------------------------
@@ -143,16 +157,22 @@ Scope {
   // Closing the window ends the app (Omvision's lesson: Quickshell otherwise
   // outlives its windows, and each launch left another one behind).
   // A finished session's pending log entry is written first, within
-  // Config.quitDeadline.
+  // Config.quitDeadline, and running card checks are let finish, within
+  // Config.cardCheckQuitDeadline: killed, one could leave a split half-done.
+  property bool quitting: false
+  property bool logWritten: false
+  function quitIfDone() { if (root.quitting && root.logWritten && checks.count === 0) Qt.quit() }
   Connections {
     target: Quickshell
     function onLastWindowClosed() {
-      if (!studySession.logPending) { Qt.quit(); return }
+      root.quitting = true
+      quitDeadline.interval = checks.count > 0 ? Config.cardCheckQuitDeadline : Config.quitDeadline
       quitDeadline.start()
-      studySession.writeLog(function() { Qt.quit() })
+      if (!studySession.logPending) { root.logWritten = true; root.quitIfDone(); return }
+      studySession.writeLog(function() { root.logWritten = true; root.quitIfDone() })
     }
   }
-  Timer { id: quitDeadline; interval: Config.quitDeadline; onTriggered: Qt.quit() }
+  Timer { id: quitDeadline; onTriggered: Qt.quit() }
 
   FloatingWindow {
     id: window
@@ -354,6 +374,7 @@ Scope {
 
       Toast {
         id: toastItem
+        objectName: "toast"
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: statusLine.top
         anchors.bottomMargin: Theme.spaceXl

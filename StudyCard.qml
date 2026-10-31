@@ -247,32 +247,6 @@ Column {
       text: "<b><font color=\"" + verdictColor + "\">" + Format.escapeHtml(verdict) + "</font></b>"
         + (reason !== "" ? " — " + Format.escapeHtml(reason) : "")
     }
-
-    // A card the grader flagged (two questions in one, a vague front): a
-    // quiet line, and Claude Code to fix it. The button's width is reserved,
-    // the text takes the rest (layout rule 4).
-    Row {
-      visible: root.session.suggestion !== null && root.session.suggestion.quality !== null
-      width: parent.width
-      spacing: Theme.spaceSm
-      Glyph { id: issueGlyph; icon: "alert"; color: Theme.orangeText; font.pixelSize: Theme.bodySmallSize; anchors.verticalCenter: parent.verticalCenter }
-      UiText {
-        width: parent.width - issueGlyph.implicitWidth - fixButton.width - Theme.spaceSm * 2
-        wrapMode: Text.Wrap
-        text: root.session.suggestion ? Format.cardIssue(root.session.suggestion.quality) : ""
-        font.pixelSize: Theme.bodySmallSize
-        color: Theme.orangeText
-        anchors.verticalCenter: parent.verticalCenter
-      }
-      PlainButton {
-        id: fixButton
-        objectName: "fixCardButton"
-        anchors.verticalCenter: parent.verticalCenter
-        label: "fix in claude"
-        tint: Theme.accentColor
-        onActivated: root.session.fixCard()
-      }
-    }
   }
 
   // ---- the rating keycaps -----------------------------------------------------------

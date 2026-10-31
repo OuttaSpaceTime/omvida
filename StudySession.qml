@@ -3,7 +3,6 @@ import QtQuick
 import "StudyKeys.js" as StudyKeys
 import "Launch.js" as Launch
 import "Session.js" as Session
-import "Format.js" as Format
 
 // A study session: the /study skill's loop, as state and actions with no view.
 // StudyScreen draws it; App.qml owns it (app.study), beside the store, so the
@@ -109,10 +108,12 @@ QtObject {
   signal toastRequested(string text)
   // Claude Code in kitty (Launch.js has every argv), with a toast.
   signal launchRequested(var argv, string note)
-  // The note dialog on `card`; `prefill` starts a new note.
-  signal noteAsked(var card, string prefill)
+  // The note dialog on `card`.
+  signal noteAsked(var card)
   // The delete confirm for `card`; its accept calls deleteCard(card).
   signal deleteAsked(var card)
+  // Ctrl+Q: check `card`'s quality in the background (CardCheck.qml).
+  signal cardCheckRequested(var card)
 
   // The view empties the answer box: a new card is on its way.
   signal answerReset()
@@ -348,20 +349,21 @@ QtObject {
                     "Discussing in Claude Code. Rate the card when you're back.")
   }
 
-  function fixCard() {
-    if (!root.card || !root.suggestion || !root.suggestion.quality) return
-    root.launchRequested(Launch.fixCardArgv(Paths.studyDir, root.card, root.suggestion.quality), "Opened Claude Code to fix the card")
+  // Ctrl+Q: the card's quality checked, and the card fixed if it is flawed,
+  // by Claude Code in the background (CardCheck.qml, which the window runs).
+  // The session goes on meanwhile, and catches up if the card changes.
+  function checkCard() {
+    if (!root.card) return
+    root.cardCheckRequested(root.card)
   }
 
   // Note the card for later (NoteDialog.qml), and go on studying: a fix
-  // session takes every note at once (Launch.fixNotesArgv). A card the
-  // grader flagged starts its note with the flag, so "fix in claude" need
-  // not break the session. The answer box keeps what was typed; the window
-  // hands the keyboard back to it when the dialog closes.
+  // session takes every note at once (Launch.fixNotesArgv). The answer box
+  // keeps what was typed; the window hands the keyboard back to it when the
+  // dialog closes.
   function note() {
     if (!root.card) return
-    var q = root.suggestion ? root.suggestion.quality : null
-    root.noteAsked(root.card, q ? "> " + Format.cardIssue(q) + "\n\n" : "")
+    root.noteAsked(root.card)
   }
 
   // Delete the card on screen, once the window's confirm dialog says so
@@ -402,6 +404,7 @@ QtObject {
     case "discuss": root.discuss(); break
     case "skip": root.skip(); break
     case "note": root.note(); break
+    case "check": root.checkCard(); break
     case "delete": root.askDelete(); break
     case "end": root.endNow(); break
     case "start": root.start(); break

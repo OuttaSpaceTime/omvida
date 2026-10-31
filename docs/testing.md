@@ -36,11 +36,13 @@ and stops.
 - A fake Claude API, `tests/fixtures/fake-anthropic.py`, on a free local port, with
   `ANTHROPIC_BASE_URL` and a fake `ANTHROPIC_API_KEY` set for the deck server (so
   `bin/omvida-deck` never looks in the keyring). It grades 3, or 1 for "wrong", 4 for "perfect",
-  flags a card issue for "flagme", fails with a 400 for "failme", takes 2s over "slowly"
+  fails with a 400 for "failme", takes 2s over "slowly"
   (`FAKE_GRADE_DELAY` otherwise, default 0.3s); records each prompt in `out/grades.jsonl`
   (`gradeCalls()`) and each grade the deck server aborted while it waited in
   `out/grade-aborts.jsonl` (`gradeAborts()`). It exits with the app.
-- `tests/fixtures/bin` first on PATH: `claude` (streams a short answer for Ask), `kitty`, `qmd`,
+- `tests/fixtures/bin` first on PATH: `claude` (streams a short answer for Ask; answers a
+  `/study-card-check` with "No change" after 0.5s, or 3s while `out/slow-card-check` exists),
+  `kitty`, `qmd`,
   `omarchy-shell` (records the overviews handed to the bar, so a test never reaches the real one) and
   `omarchy-launch-webapp` (records the explorables opened, `webappCalls()`).
 
@@ -80,8 +82,9 @@ and stops.
 | `add:flashcard`, `add:wiki`, `topicField`, `topicSubmit` | the Add menu and its dialog |
 | `confirmDialog`, `confirmQuote`, `confirmAccept`, `confirmCancel` (`app.confirmOpen` says whether it is up) | the confirm dialog (Del on Cards and in Study) |
 | `statusLine`, `statusMode`, `statusSegment:<i>`, `statusHints` (their row), `statusHint:<label>`, `statusAlert:<i>` | the status line (each has a plain `text`; hints are buttons: `statusHint:keys` on Study, `statusHint:delete` on Cards...) |
-| `keyHelp:<label>` | Study's key list (Alt+?), its rows: `keyHelp:reveal`, `keyHelp:skip`... |
-| `studyCard` (its `opacity` fades between rated cards), `answerField`, `cardFront`, `cardRecap`, `cardBack`, `suggestionBox`, `suggestionLine` (`verdict`, `reason`), `fixCardButton` | the study card |
+| `keyHelp:<label>` | Study's key list (Alt+?), its rows: `keyHelp:reveal`, `keyHelp:skip`, `keyHelp:check quality`... |
+| `toast` (its `text`) | the window's toast |
+| `studyCard` (its `opacity` fades between rated cards), `answerField`, `cardFront`, `cardRecap`, `cardBack`, `suggestionBox`, `suggestionLine` (`verdict`, `reason`) | the study card |
 | `rate:<1-4>` (`suggested`, `marked` (picked or taken), `chosen`; its `interval` label), `startSessionButton`, `studyAgainButton` | the study controls |
 | `leechRewrite`, `leechSplit`, `leechDrop`, `leechDropConfirm`, `leechKeep`, `leechContinue` | a leech |
 | `summary`, `summaryLine`, `related:<path>` | the session summary |

@@ -86,8 +86,7 @@ while it fits.
 - Revealed: the front cut to a dim three-line recap; a box split by a hairline, "› you" with
   the typed answer (or "(nothing typed)") beside "back" on a faint fill; Claude's verdict as
   one line ("claude: good — reason", the verdict in its rating's colour; "claude: grading…"
-  while it runs; the grader's error if it failed); a card issue as a quiet orange line with
-  "fix in claude"; then four keycaps, `1 again 1m` `2 hard 2d` `3 good ◂ 4d` `4 easy 12d`,
+  while it runs; the grader's error if it failed); then four keycaps, `1 again 1m` `2 hard 2d` `3 good ◂ 4d` `4 easy 12d`,
   the interval dim and taken from the deck server's preview, the suggested one outlined at
   2px in its colour.
 - Status line: STUDY (accent) while answering, RATE after the reveal in the suggested rating's
@@ -96,10 +95,10 @@ while it fits.
   (KeyHelp.qml), a modal of the keys that work now, each row clickable; Esc or Alt+? closes it.
   Keys are spelled out (`ctrl+`, `shift+`, `alt+`, `enter`), not as Mac glyphs.
   Answering it lists `shift+enter reveal`, `alt+enter reveal+accept`, `shift+1-4 reveal and pick`,
-  `ctrl+D discuss`, `ctrl+N note`, `ctrl+S skip`, `esc end`, `del delete`; revealed
+  `ctrl+D discuss`, `ctrl+N note`, `ctrl+Q check quality`, `ctrl+S skip`, `esc end`, `del delete`; revealed
   `shift+enter <picked rating>` once Shift+digit picked one, `alt+enter take <rating>` (or
   `shift+enter good` with no suggestion and no pick), `shift+1-4 pick, twice to rate` as a legend,
-  discuss, note, skip, end, delete. Shift+digit never moves on at the first press. A noted card says
+  discuss, note, check quality, skip, end, delete. Shift+digit never moves on at the first press. A noted card says
   `noted` (accent) among the segments. Del asks in the
   confirm dialog, then deletes the card and the session goes on; with an answer typed and not
   yet revealed, Del edits the answer instead. Alerts: the pressure verdict when

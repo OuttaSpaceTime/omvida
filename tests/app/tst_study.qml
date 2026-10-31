@@ -2,8 +2,8 @@ import QtQuick
 
 // The study loop's keys and what each one writes to the deck. The fixture
 // deck has three review cards due and one new card. The fake grader rates 3,
-// or 1 for an answer containing "wrong", 4 for "perfect", flags a card issue
-// for "flagme", fails for "failme", and takes two seconds over "slowly".
+// or 1 for an answer containing "wrong", 4 for "perfect", fails for
+// "failme", and takes two seconds over "slowly".
 OmvidaTest {
   name: "study"
 
@@ -273,17 +273,45 @@ OmvidaTest {
     compare(item("answerField").text, "line one\nline two")
   }
 
-  function test_a_flagged_card_offers_a_fix_in_claude() {
+  // Ctrl+Q hands the card to the study repo's /study-card-check, headless,
+  // and the session goes on; its one-line result comes back as a toast. A
+  // second Ctrl+Q while it runs starts no second check.
+  function test_ctrl_q_checks_the_card_in_the_background() {
     startSession()
-    type("flagme")
-    key(Qt.Key_Return, Qt.ShiftModifier)
-    tryVerify(function() { return study.suggestion !== null && study.suggestion.quality !== null }, 8000)
-    var before = kittyCalls().length
-    click("fixCardButton")
-    tryVerify(function() { return kittyCalls().length === before + 1 }, 3000)
-    var argv = kittyCalls()[before]
-    compare(argv.slice(0, 2), ["--directory", studyDir])
-    verify(argv[argv.length - 1].indexOf("two questions") !== -1, "the issue goes along")
+    var id = study.card.id
+    var before = cardCheckCalls().length
+    key(Qt.Key_Q, Qt.ControlModifier)
+    compare(item("toast").text, "Checking the card's quality in the background")
+    compare(study.phase, "answering", "the session goes on")
+    key(Qt.Key_Q, Qt.ControlModifier)
+    compare(item("toast").text, "This card is already being checked")
+    tryVerify(function() { return item("toast").text.indexOf("Card check: ") === 0 }, 8000, "the result: " + item("toast").text)
+    compare(item("toast").text, "Card check: No change: fixture card " + id + " is sound.")
+    var calls = cardCheckCalls().slice(before)
+    compare(calls.length, 1, "one check")
+    compare(calls[0][calls[0].indexOf("-p") + 1], "/study-card-check " + id)
+    compare(app.cardCheck.count, 0, "none left running")
+  }
+
+  // At most Config.cardCheckLimit (2) checks run at once: a third Ctrl+Q,
+  // on a third card, is refused until one is done.
+  function test_card_checks_are_capped() {
+    run(["touch", outDir + "/slow-card-check"])
+    startSession()
+    var seen = []
+    for (let i = 0; i < 3; i++) {
+      tryVerify(function() { return study.phase === "answering" && seen.indexOf(study.card.id) === -1 }, 8000, "a new card")
+      seen.push(study.card.id)
+      key(Qt.Key_Q, Qt.ControlModifier)
+      if (i < 2) {
+        compare(item("toast").text, "Checking the card's quality in the background")
+        key(Qt.Key_S, Qt.ControlModifier)
+      }
+    }
+    compare(item("toast").text, "Card checks are busy: try again when one is done")
+    compare(app.cardCheck.count, 2)
+    run(["rm", "-f", outDir + "/slow-card-check"])
+    tryVerify(function() { return app.cardCheck.count === 0 }, 10000, "both finish")
   }
 
   function test_discuss_opens_claude_in_kitty_with_the_card_and_answer() {

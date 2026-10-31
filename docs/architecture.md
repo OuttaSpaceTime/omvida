@@ -55,11 +55,13 @@ unit-tested the same way.
 It runs for the app's whole life rather than per call: a tsx start costs about a second, and
 the session cache lives in it (queues are also saved in the deck, so a restart resumes them). It derives `maxNewCards` from the pressure verdict and returns a leech block as
 data; flashcard-mcp's CLAUDE.md has the method table and the why. `grade` calls the Claude API
-(Sonnet, structured output, no tools, thinking off) with /study's fixed rubric, and only
-suggests: `review` writes whatever rating the developer chose. It used `claude -p` until
-2026-10-30, at about three seconds a grade; the API takes 1.5–2.5s (measured 2026-10-30). The API key lives in the
-login keyring (`service anthropic account omvida-grading`), and `bin/omvida-deck` hands it to the
-server at start. Every other Claude run stays Claude Code: in kitty, or headless for Ask.
+(Haiku, structured output, no tools, effort low) with /study's fixed rubric, once per card on the
+reveal, and only suggests: `review` writes whatever rating the developer chose. It only rates:
+until 2026-10-31 it also flagged the card's quality, with a "fix in claude" button; that moved
+to Ctrl+Q and to the study repo's write-time gate (below). It used `claude -p` until
+2026-10-30, at about three seconds a grade. The API key lives in the login keyring (`service
+anthropic account omvida-grading`), and `bin/omvida-deck` hands it to the server at start.
+Every other Claude run stays Claude Code: in kitty, or headless for Ask and the card check.
 
 **The wiki service** is `backend/omvida_backend` (Python, uv venv in this repo), started by
 `bin/omvida-wiki`. It ports the Next.js viewer's `lib/wiki.ts` (links both ways, the tree, the
@@ -79,7 +81,7 @@ hand, for nothing the app needs. The CLI per call was rejected for its second-lo
 **Claude Code** does everything that writes cards or pages, in kitty, in the study repo where
 the skills and AGENTS.md live: Discuss (Socratic mode on one card), Add → Flashcards
 (`/study-flashcard`), Add → Wiki entry (`/study-walkthrough --write`), a leech rewrite or split,
-fixing a flagged card, "Continue in Claude" after an Ask. Their results show up on their own.
+"Continue in Claude" after an Ask; and Ctrl+Q's card check, headless (below). Their results show up on their own.
 The wiki: the app polls the wiki service's stamp. The deck: the study repo's PostToolUse hook
 runs `bin/omvida-deck-changed` after every flashcard-mcp tool that writes a card, which calls
 the app's `deckChanged` IPC, so the card shows the moment it is saved, even with the window in
@@ -94,8 +96,13 @@ except during a study session, when each rating reloads only the overview (the d
 bar) and the cards' scheduling waits for the session's end: it was a whole-deck read per rating
 for nothing on screen. A study session catches up with the card on screen (`StudySession.catchUp`): a rewritten card replaces the shown one
 and drops the stale suggestion, a deleted one moves the session on, and a fixed leech lifts
-the block. The only headless run with tools is Ask: `claude -p` under the Query Protocol, with only
-read-only lookups and `Edit/Write(logs/**)` pre-allowed.
+the block. Two runs are headless, with tools pre-allowed: Ask, `claude -p` under the Query
+Protocol, with only read-only lookups and `Edit/Write(logs/**)`; and Ctrl+Q's card check
+(`CardCheck.qml`), `claude -p "/study-card-check <id>"` (Sonnet), which may write that card and
+its split parts (`Launch.CARD_CHECK_TOOLS`), and toasts its one-line result. Every card write in
+the study repo, the check's included, passes the repo's card-quality gate, a PreToolUse hook that
+judges the card with `claude -p` and refuses a flawed one, so a flaw is stopped before a review
+ever shows it.
 
 **Card notes** are the one thing the app writes about a card without changing it. Ctrl+N in
 Study (N on the Cards stage) notes what should change about a card, or what to understand

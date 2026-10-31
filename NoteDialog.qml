@@ -31,8 +31,8 @@ Modal {
   title: existing ? "Note on this card" : "Note this card"
   cardWidth: Theme.noteDialogWidth
 
-  // `prefill` starts a new note (the grader's flag, when there is one); an
-  // existing note is opened as it is.
+  // `prefill` starts a new note (the screenshots' sample text); an existing
+  // note is opened as it is.
   function open(card, prefill) {
     if (!card) return
     var note = app.store.notes[card.id]

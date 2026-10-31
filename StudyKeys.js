@@ -26,6 +26,10 @@
 //                 so the session goes on. Elsewhere Ctrl+N is the window's
 //                 Add; on a card, noting it is what the hand wants, and Add
 //                 is still the top bar's button.
+//   Ctrl+Q        check the card's quality: Claude Code judges it in the
+//                 background and fixes it if it is flawed (CardCheck.qml),
+//                 while the session goes on. Not Shift+Q: that types a Q
+//                 into the answer.
 //   Del           delete the card, after the window's confirm dialog asks.
 //                 Not while an answer is typed and not yet revealed, for
 //                 Esc's reason below: there Del edits the answer, as in any
@@ -58,7 +62,7 @@ var KEY = {
   Return: 0x01000004, Enter: 0x01000005, Escape: 0x01000000, Delete: 0x01000007,
   K1: 0x31, K2: 0x32, K3: 0x33, K4: 0x34,
   Exclam: 0x21, At: 0x40, QuoteDbl: 0x22, NumberSign: 0x23, Section: 0xa7, Dollar: 0x24,
-  D: 0x44, S: 0x53, N: 0x4e, Question: 0x3f, Slash: 0x2f
+  D: 0x44, S: 0x53, N: 0x4e, Q: 0x51, Question: 0x3f, Slash: 0x2f
 }
 var MOD = { Shift: 0x02000000, Control: 0x04000000, Alt: 0x08000000, Meta: 0x10000000 }
 
@@ -93,7 +97,7 @@ function isEnter(key) { return key === KEY.Return || key === KEY.Enter }
 //   acceptLater    the grader is still running: submit its rating on arrival
 //   pick           reveal if need be, and pick `rating` without submitting
 //   submit         submit `rating`
-//   discuss, skip, note, end, delete
+//   discuss, skip, note, check, end, delete
 //   help           show the keys (Alt+?, in every phase)
 //   start          a new session (Enter with no card up: idle, done, error)
 //   continue       go on past a leech (Enter on one)
@@ -120,6 +124,7 @@ function action(state, key, modifiers, scanCode) {
   if (ctrl && !alt && !shift && key === KEY.D) return { action: "discuss" }
   if (ctrl && !alt && !shift && key === KEY.S) return { action: "skip" }
   if (ctrl && !alt && !shift && key === KEY.N) return { action: "note" }
+  if (ctrl && !alt && !shift && key === KEY.Q) return { action: "check" }
   if (key === KEY.Escape && !ctrl && !alt && !shift && !(modifiers & MOD.Meta)) {
     if (phase === "answering" && !state.answerEmpty) return { action: "none" }
     return { action: "end" }

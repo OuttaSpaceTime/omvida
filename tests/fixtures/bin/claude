@@ -4,6 +4,9 @@
 # $OMVIDA_TEST_OUT/claude-calls.jsonl. (Grading is not claude's: the deck
 # server calls the API, faked by tests/fixtures/fake-anthropic.py.)
 #
+#   a card check (`/study-card-check <id>`, Ctrl+Q): one json result whose
+#     last line says the card is sound, after 0.5s (3s while the file
+#     $OMVIDA_TEST_OUT/slow-card-check exists)
 #   asking (stream-json): a short streamed answer with a wikilink, one tool
 #     call, and a result carrying a session id; 2s first for a question with
 #     "slowly"
@@ -11,6 +14,12 @@ set -euo pipefail
 out="${OMVIDA_TEST_OUT:-/tmp}"
 python3 -c 'import json,sys; print(json.dumps(sys.argv[1:]))' "$@" >>"$out/claude-calls.jsonl"
 case " $* " in
+  *" /study-card-check "*)
+    if [ -e "$out/slow-card-check" ]; then sleep 3; else sleep 0.5; fi
+    prompt="$2"   # claude -p <prompt> ...
+    id="${prompt#/study-card-check }"
+    python3 -c 'import json,sys; print(json.dumps({"type": "result", "subtype": "success", "is_error": False, "result": "Read the rubric.\n\nNo change: fixture card " + sys.argv[1] + " is sound."}))' "$id"
+    ;;
   *" stream-json "*)
     case "$*" in *slowly*) sleep 2 ;; esac
     printf '%s\n' '{"type":"system","subtype":"init","session_id":"fake-session-1"}'

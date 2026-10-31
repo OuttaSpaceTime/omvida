@@ -120,4 +120,15 @@ TestCase {
     compare(K.action(st("done"), Qt.Key_N, Qt.ControlModifier, 0), null)
     compare(K.action(st("answering"), Qt.Key_N, Qt.NoModifier, 0), null, "a plain n is typed")
   }
+
+  // Ctrl+Q checks the card's quality, in every phase a card is up, an
+  // answer typed or not; Shift+Q is a capital Q in the answer.
+  function test_ctrl_q_checks_the_card() {
+    compare(K.action(st("answering"), Qt.Key_Q, Qt.ControlModifier, 0), { action: "check" })
+    compare(K.action(st("answering", { answerEmpty: true }), Qt.Key_Q, Qt.ControlModifier, 0), { action: "check" })
+    compare(K.action(st("grading"), Qt.Key_Q, Qt.ControlModifier, 0), { action: "check" })
+    compare(K.action(st("revealed"), Qt.Key_Q, Qt.ControlModifier, 0), { action: "check" })
+    compare(K.action(st("done"), Qt.Key_Q, Qt.ControlModifier, 0), null)
+    compare(K.action(st("answering"), Qt.Key_Q, Qt.ShiftModifier, 0), null, "Shift+Q types a Q")
+  }
 }

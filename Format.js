@@ -156,9 +156,3 @@ function sessionWhen(iso, now) {
   if (days > 1 && days < 7) return WEEKDAYS[d.getDay()] + " " + time
   return day
 }
-
-// The grader's flag on a card (a suggestion's `quality`), as one line: the
-// study card's orange flag, and the start of a note on a flagged card.
-function cardIssue(q) {
-  return q ? "card issue, " + q.issue.replace(/_/g, " ") + ": " + (q.detail || "") : ""
-}

@@ -92,10 +92,4 @@ TestCase {
     compare(F.sessionWhen(new Date(2026, 8, 28, 7, 0).toISOString(), now), "2026-09-28")
     compare(F.sessionWhen("", now), "")
   }
-
-  function test_card_issue() {
-    compare(F.cardIssue({ issue: "too_vague", detail: "which header?" }), "card issue, too vague: which header?")
-    compare(F.cardIssue({ issue: "ambiguous" }), "card issue, ambiguous: ")
-    compare(F.cardIssue(null), "")
-  }
 }

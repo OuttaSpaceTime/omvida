@@ -9,8 +9,8 @@ exits once <owner-pid> is gone: bin/sandbox starts it and then execs the app
 in its own process, so the owner is the app.
 
 Each grade's prompt goes to grades.jsonl as [prompt]. It rates 1 when the
-answer has "wrong" in it, 4 for "perfect", else 3; flags a card issue for
-"flagme"; fails with a 400 for "failme"; waits FAKE_GRADE_DELAY seconds first
+answer has "wrong" in it, 4 for "perfect", else 3; fails with a 400 for
+"failme"; waits FAKE_GRADE_DELAY seconds first
 (default 0.3), 2 for an answer with "slowly". A grade the client aborts while
 it waits (the deck server ending a superseded grade) goes to
 grade-aborts.jsonl as [prompt].
@@ -74,9 +74,7 @@ class Handler(BaseHTTPRequestHandler):
             rating, reason = 1, "Fixture grader: that misses the concept. The back says what was needed."
         elif "perfect" in answer:
             rating, reason = 4, "Fixture grader: complete and precise."
-        verdict = {"rating": rating, "reason": reason,
-                   "quality_issue": "two_questions" if "flagme" in answer else "none",
-                   "quality_detail": "Asks two things."}
+        verdict = {"rating": rating, "reason": reason}
         self.reply(200, {
             "id": "msg_fixture", "type": "message", "role": "assistant", "model": body.get("model"),
             "content": [{"type": "text", "text": json.dumps(verdict)}],

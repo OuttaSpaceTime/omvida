@@ -64,19 +64,6 @@ OmvidaTest {
     tryVerify(function() { return notes().length === 0 }, 5000)
   }
 
-  // A card the grader flagged starts its note with the flag, so "fix in
-  // claude" can wait for the fix session.
-  function test_a_flagged_card_starts_its_note_with_the_flag() {
-    startSession()
-    type("flagme")
-    key(Qt.Key_Return, Qt.ShiftModifier)
-    tryVerify(function() { return study.suggestion !== null && study.suggestion.quality !== null }, 8000)
-    key(Qt.Key_N, Qt.ControlModifier)
-    tryVerify(function() { return app.noteOpen }, 3000)
-    verify(item("noteEditor").text.indexOf("> card issue, ") === 0, item("noteEditor").text)
-    verify(item("notePreview").visible, "the markdown is previewed")
-  }
-
   // The summary counts the noted cards and fixes them; its related pages
   // stay in the wiki's side panel once one is open.
   function test_z_the_summary_offers_the_fix_and_keeps_its_pages_in_the_wiki() {

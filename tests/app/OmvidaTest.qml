@@ -18,7 +18,7 @@ import Quickshell.Io
 //   readFile(path), sandbox       files in the sandbox
 //   sql(query)                    rows from the fixture deck, as arrays
 //   kittyCalls(), claudeCalls()   what the fake kitty and claude were run with
-//   askCalls()                    the claude calls that were Ask runs
+//   askCalls(), cardCheckCalls()  the claude calls that were Ask runs; Ctrl+Q's card checks
 //   webappCalls()                 the explorables opened (fake omarchy-launch-webapp)
 //   gradeCalls(), gradeAborts()   what the fake API was sent to grade; the grades aborted
 //   barOverviews()                what was handed to the bar (fake omarchy-shell)
@@ -232,8 +232,10 @@ TestCase {
       .map(function(a) { return JSON.parse(a[3]) })
   }
   function claudeCalls() { return jsonLines(base.outDir + "/claude-calls.jsonl") }
-  // The Ask runs: the headless claude calls.
-  function askCalls() { return claudeCalls().filter(function(a) { return a.indexOf("-p") !== -1 }) }
+  // The headless claude calls: Ctrl+Q's card checks, and the Ask runs (the rest).
+  function isCardCheck(a) { return a.indexOf("-p") !== -1 && String(a[a.indexOf("-p") + 1]).indexOf("/study-card-check ") === 0 }
+  function cardCheckCalls() { return claudeCalls().filter(base.isCardCheck) }
+  function askCalls() { return claudeCalls().filter(function(a) { return a.indexOf("-p") !== -1 && !base.isCardCheck(a) }) }
   // The prompts the fake Claude API was sent to grade, one [prompt] each.
   function gradeCalls() { return jsonLines(base.outDir + "/grades.jsonl") }
   // The grades the deck server aborted while the fake API was still at them.

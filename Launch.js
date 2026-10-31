@@ -14,9 +14,9 @@
 // The app sees what they saved by polling the deck (Store.checkDeck), and
 // a session catches up with the card it is showing (StudySession.catchUp).
 //
-// The question box is the one place Claude runs headless (askArgv): an
-// answer streams into the app, and "continue in Claude" resumes the same
-// session in kitty.
+// Two runs are headless: the question box (askArgv), whose answer streams
+// into the app and "continue in Claude" resumes in kitty; and Ctrl+Q's card
+// check (cardCheckArgv), a skill that fixes the card unattended.
 
 // `studyDir` is where Claude runs; `title` names the kitty window.
 function kittyArgv(studyDir, title, claudeArgs) {
@@ -76,12 +76,47 @@ function leechArgv(studyDir, card, lapses, how) {
   return kittyArgv(studyDir, "Omvida · Fix leech", [leechPrompt(card, lapses, how)])
 }
 
-// Fix a card the grader flagged.
-function fixCardArgv(studyDir, card, quality) {
-  var p = "The grader flagged this flashcard: " + quality.issue.replace(/_/g, " ") + ". " + (quality.detail || "")
-    + "\nPropose a fix (update_card to tighten it, or a split with inheritFrom), following /study-flashcard's format and size rules. Show me the draft before writing it.\n\n"
-    + cardBlock(card)
-  return kittyArgv(studyDir, "Omvida · Fix card", [p])
+// A headless claude: the prompt right after -p, then the flags. Never the
+// prompt last: --allowedTools (and --tools) take any number of values, so a
+// prompt after them is read as one more tool, and claude runs with no prompt
+// at all ("Input must be provided", Claude Code 2.1.310).
+function headlessArgv(prompt, flags) {
+  return ["claude", "-p", prompt].concat(flags)
+}
+
+// Ctrl+Q: the study repo's /study-card-check on one card, headless
+// (CardCheck.qml runs it in the study repo): it judges the card against
+// references/card-quality.md and fixes a flawed one unattended, correcting,
+// rewriting or splitting it. Sonnet, the model that caught the subtle flaws
+// when Sonnet and Haiku were compared (2026-10-30). The tools: what the skill
+// reads, the card writes it may make, and the wiki and web to check a fact.
+// Its writes still pass the study repo's card-quality gate (a hook there).
+var CARD_CHECK_TOOLS = [
+  "Read", "Glob", "Grep",
+  "mcp__flashcard-mcp__get_card", "mcp__flashcard-mcp__find_similar_cards",
+  "mcp__flashcard-mcp__update_card", "mcp__flashcard-mcp__create_card", "mcp__flashcard-mcp__delete_card",
+  "mcp__qmd__query", "mcp__qmd__search", "mcp__qmd__get",
+  "WebSearch", "WebFetch"
+]
+
+function cardCheckArgv(cardId) {
+  return headlessArgv("/study-card-check " + cardId, [
+    "--model", "sonnet",
+    "--output-format", "json",
+    "--allowedTools", CARD_CHECK_TOOLS.join(",")
+  ])
+}
+
+// claude's json result -> { ok, text }: the skill's last line, which says
+// what it did; on a failed run, why, when claude said.
+function parseCardCheck(out) {
+  var ev
+  try { ev = JSON.parse(String(out).trim()) } catch (e) { return { ok: false, text: "" } }
+  if (!ev || typeof ev !== "object") return { ok: false, text: "" }
+  var lines = String(ev.result || "").trim().split("\n").filter(function(l) { return l.trim() !== "" })
+  var text = lines.length ? lines[lines.length - 1].trim() : ""
+  if (ev.is_error || ev.subtype !== "success") return { ok: false, text: text }
+  return { ok: text !== "", text: text }
 }
 
 // Fix noted cards: one Claude Code session for them, through the study repo's
@@ -132,14 +167,12 @@ var ASK_SYSTEM = "You are answering a question typed into Omvida, a study app, a
   + "Never narrate tool calls, and never print file contents or JSON."
 
 function askArgv(question) {
-  return [
-    "claude", "-p",
+  return headlessArgv(question, [
     "--output-format", "stream-json", "--verbose", "--include-partial-messages",
     "--model", "sonnet",
     "--append-system-prompt", ASK_SYSTEM,
-    "--allowedTools", ASK_TOOLS.join(","),
-    question
-  ]
+    "--allowedTools", ASK_TOOLS.join(",")
+  ])
 }
 
 // One stream-json line -> { text?, sessionId?, done?, error? }. Text comes as
