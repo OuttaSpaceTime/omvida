@@ -34,7 +34,7 @@ and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
   (`backend/omvida_backend/wiki.py` says which rules). Show verdicts verbatim; never recompute.
 - The app never edits cards or wiki pages. Those go through Claude Code skills in kitty
   (`Launch.js`), which own the content rules; Ctrl+Q's quality check is the same, a skill
-  (`/study-card-check`) run headless (`CardCheck.qml`). The only writes the app makes are reviews,
+  (`/study-card-check`) run headless (`CardCheck.qml`). The only writes the app makes are reviews (and undoing them, Ctrl+Z in Study),
   leech decisions (keep, delete), deleting a card (Del on Cards or in Study) and card notes
   (Ctrl+N in Study, N on Cards: what to fix later, never the card itself) through the deck
   server, and the study log entry through the wiki service. Fixing a noted card is a skill's

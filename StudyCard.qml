@@ -59,13 +59,16 @@ Column {
     // next card comes in. A first card, or one after a skip, is already
     // there at full opacity. A card that arrives while `leave` is still in
     // its pause (opacity 1 yet) comes in too, or the fade would run on and
-    // leave it invisible.
+    // leave it invisible. A card an undo brings back arrives revealed, and
+    // needs the same if the session's end had faded the last one out.
     function onPhaseChanged() {
-      if (root.session.phase !== "answering" || (root.opacity === 1 && !leave.running)) return
+      var p = root.session.phase
+      if ((p !== "answering" && p !== "revealed") || (root.opacity === 1 && !leave.running)) return
       leave.stop()
       enter.start()
     }
     function onAnswerReset() { answer.text = "" }
+    function onAnswerRestored(text) { answer.text = text }
   }
 
   Binding { target: root.session; property: "answer"; value: answer.text }

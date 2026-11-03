@@ -32,6 +32,20 @@ TestCase {
     compare(S.shown(S.shown(b, 9), 20).firstShownMs, 9)
   }
 
+  function test_unrated_takes_the_last_rating_back() {
+    var one = S.rated(S.shown(S.empty(), 0), card("a"), 3, 3, false, 100)
+    var two = S.rated(S.leech(one, card("a"), 6, "kept"), card("b"), 1, 0, false, 200)
+    var back = S.unrated(two, 0)
+    compare(back.reviews.length, 1)
+    compare(back.reviews[0].cardId, "a")
+    compare(back.lastRatedMs, 100, "the rating before it is the last again")
+    compare(back.leeches, [], "a leech dealt with since comes up again")
+    compare(two.reviews.length, 2, "the record it was given is untouched")
+    compare(S.unrated(S.unrated(two, 0), 0).reviews, [])
+    compare(S.unrated(S.unrated(two, 0), 0).lastRatedMs, 0)
+    compare(S.unrated(two, 1).leeches.length, 1, "lines from before the rating stay")
+  }
+
   function test_studied_cards_marks_lapsed_once() {
     var r = S.rated(S.rated(S.empty(), card("a", ["web"]), 1, 0, false, 1), card("a", ["web"]), 3, 0, true, 2)
     compare(S.studiedCards(r), [{ id: "a", tags: ["web"], lapsed: true }])

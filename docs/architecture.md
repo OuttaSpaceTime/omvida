@@ -56,7 +56,9 @@ It runs for the app's whole life rather than per call: a tsx start costs about a
 the session cache lives in it (queues are also saved in the deck, so a restart resumes them). It derives `maxNewCards` from the pressure verdict and returns a leech block as
 data; flashcard-mcp's CLAUDE.md has the method table and the why. `grade` calls the Claude API
 (Haiku, structured output, no tools, effort low) with /study's fixed rubric, once per card on the
-reveal, and only suggests: `review` writes whatever rating the developer chose. It only rates:
+reveal, and only suggests: `review` writes whatever rating the developer chose, and `undoReview`
+takes the session's newest one back (Ctrl+Z, as many times as there are ratings), scheduling, review
+row, counters and queue, while the app keeps only what the card showed. Redo is `review` again. It only rates:
 until 2026-10-31 it also flagged the card's quality, with a "fix in claude" button; that moved
 to Ctrl+Q and to the study repo's write-time gate (below). It used `claude -p` until
 2026-10-30, at about three seconds a grade. The API key lives in the login keyring (`service

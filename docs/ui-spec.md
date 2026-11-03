@@ -98,7 +98,11 @@ while it fits.
   `ctrl+D discuss`, `ctrl+N note`, `ctrl+Q check quality`, `ctrl+S skip`, `esc end`, `del delete`; revealed
   `shift+enter <picked rating>` once Shift+digit picked one, `alt+enter take <rating>` (or
   `shift+enter good` with no suggestion and no pick), `shift+1-4 pick, twice to rate` as a legend,
-  discuss, note, check quality, skip, end, delete. Shift+digit never moves on at the first press. A noted card says
+  discuss, note, check quality, skip, end, delete. On a card `ctrl+Z undo rating` and `ctrl+shift+Z redo rating`
+  end the list, as buttons when there is one to take and as a legend otherwise, and not with an answer
+  typed, when Ctrl+Z edits it; a leech and the summary list undo when there is one. An undone card comes
+  back revealed, its answer and verdict in place and its rating's keycap filled, as a pick is.
+  Shift+digit never moves on at the first press. A noted card says
   `noted` (accent) among the segments. Del asks in the
   confirm dialog, then deletes the card and the session goes on; with an answer typed and not
   yet revealed, Del edits the answer instead. Alerts: the pressure verdict when

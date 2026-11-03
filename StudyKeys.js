@@ -34,6 +34,13 @@
 //                 Not while an answer is typed and not yet revealed, for
 //                 Esc's reason below: there Del edits the answer, as in any
 //                 text box.
+//   Ctrl+Z        undo the last rating, again for the one before, and so on:
+//                 the card comes back revealed, as it was rated (StudySession's
+//                 undo). Also on a leech and on the summary, and between cards,
+//                 where the press waits for the card. Not while an answer is
+//                 typed and not yet revealed, for Del's reason: there it is
+//                 the box's own undo.
+//   Ctrl+Shift+Z  redo a rating undone, the same way round.
 //   Alt+?         the list of keys that work now (KeyHelp.qml), in any
 //                 phase: the status line names only this one.
 //   Esc           end the session: what was rated still counts, and the
@@ -62,7 +69,7 @@ var KEY = {
   Return: 0x01000004, Enter: 0x01000005, Escape: 0x01000000, Delete: 0x01000007,
   K1: 0x31, K2: 0x32, K3: 0x33, K4: 0x34,
   Exclam: 0x21, At: 0x40, QuoteDbl: 0x22, NumberSign: 0x23, Section: 0xa7, Dollar: 0x24,
-  D: 0x44, S: 0x53, N: 0x4e, Q: 0x51, Question: 0x3f, Slash: 0x2f
+  D: 0x44, S: 0x53, N: 0x4e, Q: 0x51, Z: 0x5a, Question: 0x3f, Slash: 0x2f
 }
 var MOD = { Shift: 0x02000000, Control: 0x04000000, Alt: 0x08000000, Meta: 0x10000000 }
 
@@ -85,6 +92,11 @@ function shiftDigit(key, modifiers, scanCode) {
 
 function isEnter(key) { return key === KEY.Return || key === KEY.Enter }
 
+// Where Ctrl+Z and Ctrl+Shift+Z mean a rating. Not the sync or the session's
+// start, which have rated nothing yet, nor an error, where the session's state
+// is in doubt. Whether there is one to take back is the session's to say.
+var HISTORY_PHASES = ["answering", "grading", "revealed", "submitting", "loading", "blocked", "done"]
+
 // state: { phase, hasSuggestion, answerEmpty, picked }
 //   picked: the rating Shift+digit picked on this card, 1..4, else 0
 //   phase: "idle" | "loading" | "answering" | "grading" | "revealed" | "submitting" |
@@ -98,6 +110,7 @@ function isEnter(key) { return key === KEY.Return || key === KEY.Enter }
 //   pick           reveal if need be, and pick `rating` without submitting
 //   submit         submit `rating`
 //   discuss, skip, note, check, end, delete
+//   undo, redo     take back the last rating, or give back one taken back
 //   help           show the keys (Alt+?, in every phase)
 //   start          a new session (Enter with no card up: idle, done, error)
 //   continue       go on past a leech (Enter on one)
@@ -106,6 +119,9 @@ function action(state, key, modifiers, scanCode) {
   // "?" is Shift+/ on most layouts; some report the slash with Shift held.
   if ((modifiers & MOD.Alt) && (key === KEY.Question || (key === KEY.Slash && (modifiers & MOD.Shift))))
     return { action: "help" }
+  if ((modifiers & MOD.Control) && !(modifiers & (MOD.Alt | MOD.Meta)) && key === KEY.Z
+      && HISTORY_PHASES.indexOf(phase) !== -1 && (phase !== "answering" || state.answerEmpty))
+    return { action: (modifiers & MOD.Shift) ? "redo" : "undo" }
   if (phase === "idle" || phase === "done" || phase === "error") return isEnter(key) ? { action: "start" } : null
   if (phase === "blocked") {
     if (isEnter(key)) return { action: "continue" }

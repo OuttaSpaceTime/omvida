@@ -76,6 +76,10 @@ QtObject {
   property var rec: Session.empty()
   property double shownAt: 0
   property double revealedAt: 0
+  // How long the answer took: from the card shown to the reveal. Kept apart
+  // from those two, since a card back from an undo is shown anew (its intervals
+  // are counted from then) and keeps the time it took the first time.
+  property double responseMs: 0
   property var blocked: null     // { card, lapses }
   readonly property var summaryData: phase === "done" ? Session.summary(rec) : null
   property var related: []
@@ -103,6 +107,25 @@ QtObject {
   // does not flicker through a third set of keys on every card), or a delete
   // from the answer on its way.
   readonly property bool frontShown: phase === "answering" || phase === "loading" || (phase === "submitting" && !backShown)
+  // Nothing on its way: what the session shows now is what the deck has.
+  readonly property bool atRest: phase === "answering" || phase === "grading" || phase === "revealed" || phase === "blocked" || phase === "done"
+
+  // ---- undo and redo: the state --------------------------------------------------
+  // The session's ratings, oldest first, each with what its card showed when it
+  // was given: { cardId, rating, answer, suggestion, gradeError, responseMs, leeches }
+  // (leeches: the record's leech lines by then, Session.unrated). What a rating
+  // changed in the deck is the deck server's to put back (undoReview); these
+  // bring the view back, so an undo asks the grader nothing and bills nothing.
+  property var rated: []
+  // The ratings undone, the next to redo last. The top one's card is shown again
+  // revealed (showNext), and rating it the same way is the redo (submit).
+  property var undone: []
+  // Undo and redo pressed while a card was on its way, in order (moveLater).
+  property var moves: []
+  // Once the log entry is written, or Anki synced after it, the ratings are out
+  // of this session's hands. That is the summary leaving the screen.
+  readonly property bool canUndo: rated.length > 0 && (phase === "done" ? logPending : sessionId !== "")
+  readonly property bool canRedo: undone.length > 0 && inCard && card !== null && undone[undone.length - 1].cardId === card.id
 
   // What it asks of the window (App.qml wires each).
   signal toastRequested(string text)
@@ -117,6 +140,9 @@ QtObject {
 
   // The view empties the answer box: a new card is on its way.
   signal answerReset()
+  // An undo brought a card back: the answer box shows what was typed on it, and
+  // takes the keyboard, which the summary's or a leech's screen may hold.
+  signal answerRestored(string text)
   // Alt+?: the view shows the list of keys (KeyHelp.qml).
   signal keysWanted()
 
@@ -146,6 +172,9 @@ QtObject {
   function start() {
     root.phase = "syncing"   // first: leaving the summary writes its log entry
     root.rec = Session.empty()
+    root.rated = []
+    root.undone = []
+    root.moves = []
     root.related = []
     root.syncNote = ""
     sync.run(function(r) {
@@ -202,9 +231,30 @@ QtObject {
     root.blocked = null
     root.next = res
     root.shownAt = Date.now()
-    root.revealedAt = 0
+    root.responseMs = 0
     root.rec = Session.shown(root.rec, root.shownAt)
+    var u = root.undone[root.undone.length - 1]
+    if (u && u.cardId === res.card.id) {
+      root.showAsRated(u)
+      return
+    }
+    root.revealedAt = 0
     root.phase = "answering"
+  }
+
+  // A card whose rating was undone comes back as it was rated: revealed, its
+  // answer and Claude's verdict in place, its rating picked. Back on the front
+  // instead, as Anki does, the answer would be gone and the reveal would bill
+  // another grade, for the sake of fixing a slipped key. A repeat Shift+digit or
+  // Shift+Enter gives the same rating, another digit changes it.
+  function showAsRated(u) {
+    root.revealedAt = root.shownAt
+    root.responseMs = u.responseMs
+    root.suggestion = u.suggestion
+    root.gradeError = u.gradeError
+    root.picked = u.rating
+    root.answerRestored(u.answer)
+    root.phase = "revealed"
   }
 
   // The next card after a rating, once it is in and settleMs are over.
@@ -229,6 +279,7 @@ QtObject {
   }
 
   function fail(msg) {
+    root.moves = []
     root.errorText = String(msg)
     root.phase = "error"
   }
@@ -237,6 +288,7 @@ QtObject {
   function reveal(thenAccept) {
     if (root.phase !== "answering") return
     root.revealedAt = Date.now()
+    root.responseMs = root.revealedAt - root.shownAt
     if (root.answer.trim() === "") {
       root.phase = "revealed"
       return
@@ -279,14 +331,22 @@ QtObject {
     var c = root.card
     var repeat = root.next.repeat
     var suggested = root.suggestion ? root.suggestion.rating : 0
-    var responseMs = (root.revealedAt || Date.now()) - root.shownAt
+    var responseMs = root.responseMs || Date.now() - root.shownAt
     var seq = root.cardSeq
+    var given = { cardId: c.id, rating: rating, answer: root.answer, suggestion: root.suggestion,
+                  gradeError: root.gradeError, responseMs: responseMs, leeches: 0 }
+    // The rating undone given again is the redo, and the ones after it can
+    // follow. Any other rating is a new history, as in an editor.
+    var top = root.undone[root.undone.length - 1]
+    root.undone = top && top.cardId === c.id && top.rating === rating ? root.undone.slice(0, -1) : []
     root.forgetGrade()
     root.chosen = rating
     root.phase = "submitting"
     settleTimer.restart()
     deck.call("review", { sessionId: root.sessionId, cardId: c.id, rating: rating, responseMs: responseMs }, function(err) {
       if (err) { root.fail(err); return }
+      given.leeches = root.rec.leeches.length
+      root.rated = root.rated.concat([given])
       root.rec = Session.rated(root.rec, c, rating, suggested, repeat, Date.now())
       if (seq !== root.cardSeq || root.phase !== "submitting") return
       deck.call("nextCard", { sessionId: root.sessionId }, function(err, res) {
@@ -295,6 +355,98 @@ QtObject {
       })
     })
   }
+
+  // ---- undo and redo ------------------------------------------------------------
+  // Ctrl+Z takes the last rating back, as often as there are ratings; Ctrl+Shift+Z
+  // gives them back. The deck server undoes the review, position included, so
+  // nextCard serves that card again, and showNext shows it as it was rated. Redo
+  // needs nothing of its own: it is that rating submitted again.
+  //
+  // From the summary it reopens the session, until the log entry is written:
+  // the slip most likely to be noticed is on the last card, and the summary is
+  // what follows it. finish() closes it again and writes the entry anew.
+  function undo() {
+    if (root.moveLater("undo")) return
+    if (!root.canUndo) { root.toastRequested("Nothing to undo"); return }
+    var ended = root.phase === "done"
+    if (ended) {
+      // First: leaving the summary writes the log entry (StudyScreen).
+      root.logPending = false
+      root.related = []
+      root.sessionId = root.endedId
+      root.endedId = ""
+    }
+    root.clearCard()
+    deck.call("undoReview", { sessionId: root.sessionId }, function(err, res) {
+      if (err) { root.fail(err); return }
+      if (root.phase !== "loading") return
+      root.takeBack(res)
+      if (res) {
+        deck.call("nextCard", { sessionId: root.sessionId }, root.showNext)
+        return
+      }
+      // The deck server has nothing to undo: it restarted since, so the ratings
+      // stand. Back to where this was.
+      root.toastRequested("Nothing to undo")
+      if (ended) root.finish()
+      else root.loadNext()
+    })
+  }
+
+  // The rating the server undid moves over to the redos. Ratings it passed over,
+  // their cards deleted since, go for good. No answer from it: none of them can
+  // be undone any more.
+  function takeBack(res) {
+    var left = root.rated.slice()
+    var rec = root.rec
+    while (res && left.length > 0) {
+      let r = left.pop()
+      rec = Session.unrated(rec, r.leeches)
+      if (r.cardId !== res.cardId) continue
+      root.undone = root.undone.concat([r])
+      root.rated = left
+      root.rec = rec
+      return
+    }
+    root.rated = []
+  }
+
+  function redo() {
+    if (root.moveLater("redo")) return
+    if (!root.canRedo) { root.toastRequested("Nothing to redo"); return }
+    root.submit(root.undone[root.undone.length - 1].rating)
+  }
+
+  // A card on its way: the press waits for it, so a quick Ctrl+Z, Ctrl+Z loses
+  // neither, and a slip noticed the moment the key goes down needs no timing. The
+  // settling a rating shows is cut short, since the card it leads to is not
+  // wanted for long. True when the move was kept for later.
+  function moveLater(move) {
+    if (root.atRest) return false
+    root.moves = root.moves.concat([move])
+    if (root.phase === "submitting") {
+      settleTimer.stop()
+      root.showHeld()
+    }
+    return true
+  }
+
+  function nextMove() {
+    if (!root.atRest || root.moves.length === 0) return
+    var move = root.moves[0]
+    root.moves = root.moves.slice(1)
+    if (move === "undo") root.undo()
+    else root.redo()
+  }
+
+  // On atRest's change, not the phase's: a handler on `phase` can run before the
+  // binding on it has caught up, and read atRest stale. Then after that change
+  // has run its course, not inside it: showNext is still setting the card up.
+  property Timer moveTimer: Timer {
+    interval: 0
+    onTriggered: root.nextMove()
+  }
+  onAtRestChanged: if (root.atRest && root.moves.length > 0) moveTimer.restart()
 
   // ---- a card changed in Claude Code ----------------------------------------------
   // Discuss, Fix card and a leech's Rewrite or Split hand the card to Claude
@@ -406,6 +558,8 @@ QtObject {
     case "note": root.note(); break
     case "check": root.checkCard(); break
     case "delete": root.askDelete(); break
+    case "undo": root.undo(); break
+    case "redo": root.redo(); break
     case "end": root.endNow(); break
     case "start": root.start(); break
     case "continue": root.loadNext(); break

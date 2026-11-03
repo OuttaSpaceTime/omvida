@@ -82,7 +82,7 @@ and stops.
 | `add:flashcard`, `add:wiki`, `topicField`, `topicSubmit` | the Add menu and its dialog |
 | `confirmDialog`, `confirmQuote`, `confirmAccept`, `confirmCancel` (`app.confirmOpen` says whether it is up) | the confirm dialog (Del on Cards and in Study) |
 | `statusLine`, `statusMode`, `statusSegment:<i>`, `statusHints` (their row), `statusHint:<label>`, `statusAlert:<i>` | the status line (each has a plain `text`; hints are buttons: `statusHint:keys` on Study, `statusHint:delete` on Cards...) |
-| `keyHelp:<label>` | Study's key list (Alt+?), its rows: `keyHelp:reveal`, `keyHelp:skip`, `keyHelp:check quality`... |
+| `keyHelp:<label>` | Study's key list (Alt+?), its rows: `keyHelp:reveal`, `keyHelp:skip`, `keyHelp:check quality`, `keyHelp:undo rating`, `keyHelp:redo rating`... |
 | `toast` (its `text`) | the window's toast |
 | `studyCard` (its `opacity` fades between rated cards), `answerField`, `cardFront`, `cardRecap`, `cardBack`, `suggestionBox`, `suggestionLine` (`verdict`, `reason`) | the study card |
 | `rate:<1-4>` (`suggested`, `marked` (picked or taken), `chosen`; its `interval` label), `startSessionButton`, `studyAgainButton` | the study controls |

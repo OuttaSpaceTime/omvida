@@ -24,6 +24,8 @@ A card's front, and the answer box already focused. Type an answer, or don't.
 | **Ctrl+D** | discuss the card in Claude Code (kitty), Socratic mode, with your answer and the suggestion |
 | **Ctrl+Q** | check the card's quality in the background: Claude Code (`/study-card-check`, headless) fixes it if it is flawed, and a toast says what it did |
 | **Ctrl+S** | skip; the card stays due |
+| **Ctrl+Z** | undo the last rating, and again for the one before: the card comes back revealed, with your answer and Claude's verdict, and no new grade. It also works on a leech and on the summary, which it reopens, until the session's log entry is written. With an answer typed, Ctrl+Z edits it |
+| **Ctrl+Shift+Z** | redo a rating undone, one at a time. Rating the card differently starts over: the redos are gone |
 | **Esc** | end the session; what was rated counts, and the summary follows |
 | **Del** | delete the card, after a confirm dialog; the session goes on. With an answer typed, Del edits it. Also on Cards, for the card on the stage |
 | Enter | a newline: answers are often code |

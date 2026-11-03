@@ -9,7 +9,7 @@
 function empty() {
   return {
     firstShownMs: 0, lastRatedMs: 0,
-    reviews: [],      // { cardId, front, tags, rating, suggested, repeat }
+    reviews: [],      // { cardId, front, tags, rating, suggested, repeat, ratedMs }
     leeches: [],      // "front (N lapses) -> action"
     wikiExplored: []
   }
@@ -25,9 +25,21 @@ function shown(rec, nowMs) {
 function rated(rec, card, rating, suggested, repeat, nowMs) {
   var review = {
     cardId: card.id, front: Format.stripHtml(card.front), tags: card.tags || [],
-    rating: rating, suggested: suggested || 0, repeat: !!repeat
+    rating: rating, suggested: suggested || 0, repeat: !!repeat, ratedMs: nowMs
   }
   return patch(rec, { reviews: rec.reviews.concat([review]), lastRatedMs: nowMs })
+}
+
+// The last rating taken back (Ctrl+Z). `leechCount` is how many leech lines the
+// record had when it was given: a leech dealt with since comes up again, so its
+// line goes too. Pages explored stay: they were read all the same.
+function unrated(rec, leechCount) {
+  var reviews = rec.reviews.slice(0, -1)
+  return patch(rec, {
+    reviews: reviews,
+    leeches: rec.leeches.slice(0, leechCount),
+    lastRatedMs: reviews.length ? reviews[reviews.length - 1].ratedMs : 0
+  })
 }
 
 function leech(rec, card, lapses, what) {

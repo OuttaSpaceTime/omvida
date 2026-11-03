@@ -33,6 +33,30 @@ OmvidaTest {
     compare(sql("SELECT leechDeferredLapses FROM Card WHERE id = 'fixturecard0003'")[0][0], 6, "kept at 6 lapses")
   }
 
+  // The rating that led to the block can be taken back from it: the leech,
+  // flagged when it was served, must not block its own card. It is flagged
+  // again as it comes back.
+  function test_a_rating_can_be_undone_from_the_block() {
+    // Flagged by the test before, the session would open blocked, unrated.
+    sqlWrite("UPDATE Card SET leechFlaggedAt = NULL WHERE id = 'fixturecard0003'")
+    blockOnLeech("fixturecard0003")
+    verify(study.canUndo, "blocked by the rating just given")
+    var count = sql("SELECT COUNT(*) FROM Review WHERE cardId = 'fixturecard0003'")[0][0]
+    wait(100)
+    key(Qt.Key_Z, Qt.ControlModifier)
+    tryCompare(study, "phase", "revealed", 8000)
+    compare(study.card.id, "fixturecard0003")
+    compare(study.blocked, null)
+    verify(study.next.leech !== null && study.next.leech !== undefined, "still told it is a leech")
+    compare(sql("SELECT COUNT(*) FROM Review WHERE cardId = 'fixturecard0003'")[0][0], count - 1, "the review is gone")
+    tryVerify(function() { return item("answerField").activeFocus }, 3000, "the keyboard is back on the card")
+    key(Qt.Key_Z, Qt.ControlModifier | Qt.ShiftModifier)
+    tryCompare(study, "phase", "blocked", 8000)
+    study.endNow()
+    tryCompare(study, "phase", "done", 3000)
+    sqlWrite("UPDATE Card SET leechFlaggedAt = NULL, lapses = 0 WHERE id = 'fixturecard0003'")
+  }
+
   // Enter continues and Esc ends while a leech blocks (no answer box then:
   // the screen's key catcher has the keyboard).
   function test_b_enter_continues_and_esc_ends_a_blocked_session() {

@@ -392,6 +392,220 @@ OmvidaTest {
     compare(study.phase, "answering")
   }
 
+  function scheduleOf(id) { return sql("SELECT due, reps, state, stability FROM Card WHERE id = '" + id + "'")[0] }
+  function nextCardAfter(id) {
+    tryVerify(function() { return study.card && study.card.id !== id && study.phase === "answering" }, 8000, "next card")
+    var field = item("answerField")
+    tryVerify(function() { return field.activeFocus }, 3000, "the answer box has the keyboard")
+  }
+
+  // Ctrl+Z from the next card: the rating is gone from the deck and the card is
+  // back as it was rated, with no second grade to pay for.
+  function test_ctrl_z_brings_the_card_back_as_it_was_rated() {
+    startSession()
+    var cardId = study.card.id
+    var schedule = scheduleOf(cardId)
+    var position = item("statusSegment:0").text
+    var count = reviews().length
+    type("a perfect answer")
+    key(Qt.Key_Return, Qt.ShiftModifier)
+    tryVerify(function() { return study.suggestion !== null }, 8000)
+    var grades = gradeCalls().length
+    rate(2)
+    nextCardAfter(cardId)
+    compare(reviews().length, count + 1)
+    verify(JSON.stringify(scheduleOf(cardId)) !== JSON.stringify(schedule), "the rating moved the card")
+
+    key(Qt.Key_Z, Qt.ControlModifier)
+    tryCompare(study, "phase", "revealed", 8000)
+    compare(study.card.id, cardId)
+    compare(reviews().length, count, "the review is gone")
+    compare(scheduleOf(cardId), schedule, "the card is scheduled as before")
+    compare(item("statusSegment:0").text, position, "back at its place in the queue")
+    compare(item("answerField").text, "a perfect answer")
+    compare(study.suggestion.rating, 4, "Claude's verdict is back")
+    verify(item("rate:4").suggested)
+    compare(study.picked, 2, "the rating given is picked")
+    verify(item("rate:2").marked)
+    verify(item("cardBack").visible)
+    tryCompare(item("studyCard"), "opacity", 1, 2000)
+    tryVerify(function() { return item("answerField").activeFocus }, 3000)
+    wait(300)
+    compare(gradeCalls().length, grades, "not graded again")
+
+    key(Qt.Key_4, Qt.ShiftModifier)
+    compare(study.picked, 4, "another digit changes it")
+    key(Qt.Key_4, Qt.ShiftModifier)
+    nextCardAfter(cardId)
+    var r = reviews()
+    compare(r[r.length - 1], [cardId, 4], "and rates it")
+    compare(reviews().length, count + 1)
+  }
+
+  // Several back, several forward, each key press one rating.
+  function test_several_ratings_undo_and_redo() {
+    startSession()
+    var count = reviews().length
+    var a = study.card.id
+    rate(4)
+    nextCardAfter(a)
+    var b = study.card.id
+    rate(3)
+    nextCardAfter(b)
+    var c = study.card.id
+    compare(reviews().length, count + 2)
+
+    key(Qt.Key_Z, Qt.ControlModifier)
+    tryVerify(function() { return study.phase === "revealed" && study.card.id === b }, 8000)
+    compare(study.picked, 3)
+    key(Qt.Key_Z, Qt.ControlModifier)
+    tryVerify(function() { return study.phase === "revealed" && study.card.id === a }, 8000)
+    compare(study.picked, 4)
+    compare(reviews().length, count)
+    key(Qt.Key_Z, Qt.ControlModifier)
+    compare(item("toast").text, "Nothing to undo")
+    compare(study.card.id, a)
+
+    key(Qt.Key_Z, Qt.ControlModifier | Qt.ShiftModifier)
+    tryVerify(function() { return study.phase === "revealed" && study.card.id === b }, 8000, "redo goes to the next one undone")
+    compare(study.picked, 3)
+    key(Qt.Key_Z, Qt.ControlModifier | Qt.ShiftModifier)
+    nextCardAfter(b)
+    compare(study.card.id, c)
+    var r = reviews()
+    compare(r.slice(count), [[a, 4], [b, 3]], "the same ratings are written again")
+    key(Qt.Key_Z, Qt.ControlModifier | Qt.ShiftModifier)
+    compare(item("toast").text, "Nothing to redo")
+  }
+
+  // Quicker than the cards come: no press is lost.
+  function test_quick_presses_wait_for_the_card() {
+    startSession()
+    var count = reviews().length
+    var a = study.card.id
+    rate(4)
+    nextCardAfter(a)
+    var b = study.card.id
+    rate(4)
+    compare(study.phase, "submitting")
+    key(Qt.Key_Z, Qt.ControlModifier)
+    key(Qt.Key_Z, Qt.ControlModifier)
+    tryVerify(function() { return study.phase === "revealed" && study.card.id === a }, 8000)
+    compare(reviews().length, count, "both undone")
+    tryCompare(item("studyCard"), "opacity", 1, 2000, "the card is not left faded out")
+    key(Qt.Key_Z, Qt.ControlModifier | Qt.ShiftModifier)
+    key(Qt.Key_Z, Qt.ControlModifier | Qt.ShiftModifier)
+    tryVerify(function() { return study.phase === "answering" && study.card.id !== a && study.card.id !== b }, 8000)
+    compare(reviews().slice(count), [[a, 4], [b, 4]], "both given back")
+  }
+
+  // Another rating after an undo is a new history.
+  function test_a_different_rating_drops_the_redos() {
+    startSession()
+    var a = study.card.id
+    rate(4)
+    nextCardAfter(a)
+    key(Qt.Key_Z, Qt.ControlModifier)
+    tryVerify(function() { return study.phase === "revealed" && study.card.id === a }, 8000)
+    verify(study.canRedo)
+    study.submit(2)
+    nextCardAfter(a)
+    verify(!study.canRedo)
+    compare(study.undone, [])
+  }
+
+  // With an answer typed, Ctrl+Z is the box's.
+  function test_ctrl_z_with_a_typed_answer_leaves_the_ratings_alone() {
+    startSession()
+    var a = study.card.id
+    rate(4)
+    nextCardAfter(a)
+    var count = reviews().length
+    var b = study.card.id
+    verify(studyView.keyList.some(function(h) { return h.label === "undo rating" }), "listed while the box is empty")
+    type("half")
+    verify(!studyView.keyList.some(function(h) { return h.label === "undo rating" }), "not listed while typed")
+    key(Qt.Key_Z, Qt.ControlModifier)
+    wait(300)
+    compare(study.card.id, b)
+    compare(study.phase, "answering")
+    compare(reviews().length, count)
+  }
+
+  // The slip most likely noticed is on the last card, on the summary: Ctrl+Z
+  // reopens the session, and no log entry is written for what it takes back.
+  function test_ctrl_z_on_the_summary_reopens_the_session() {
+    startSession()
+    var a = study.card.id
+    rate(4)
+    nextCardAfter(a)
+    var count = reviews().length
+    key(Qt.Key_Escape)
+    tryCompare(study, "phase", "done", 3000)
+    verify(study.logPending)
+    verify(studyView.keyList.some(function(h) { return h.label === "undo rating" }), "listed on the summary")
+    tryVerify(function() { return studyView.takeFocus() }, 1000)
+
+    key(Qt.Key_Z, Qt.ControlModifier)
+    tryVerify(function() { return study.phase === "revealed" && study.card.id === a }, 8000)
+    compare(study.logPending, false, "nothing logged for it")
+    compare(reviews().length, count - 1)
+    tryCompare(item("studyCard"), "opacity", 1, 2000, "the card shows")
+    tryVerify(function() { return item("answerField").activeFocus }, 3000, "and has the keyboard")
+    compare(sql("SELECT endTime FROM StudySession WHERE id = '" + study.sessionId + "'")[0][0], null, "open again")
+
+    key(Qt.Key_4, Qt.ShiftModifier)
+    compare(study.picked, 4)
+    key(Qt.Key_Return, Qt.ShiftModifier)
+    nextCardAfter(a)
+    key(Qt.Key_Escape)
+    tryCompare(study, "phase", "done", 3000)
+    verify(study.logPending, "ended again, it logs")
+    var r = reviews()
+    compare(r[r.length - 1], [a, 4])
+  }
+
+  // Once the summary's entry is in the log, the ratings stand.
+  function test_no_undo_once_the_log_is_written() {
+    startSession()
+    var a = study.card.id
+    rate(4)
+    nextCardAfter(a)
+    var count = reviews().length
+    key(Qt.Key_Escape)
+    tryCompare(study, "phase", "done", 3000)
+    study.writeLog()
+    verify(!study.canUndo)
+    study.undo()
+    compare(item("toast").text, "Nothing to undo")
+    compare(study.phase, "done")
+    compare(reviews().length, count)
+  }
+
+  function test_the_key_list_offers_undo_and_redo() {
+    startSession()
+    var row = function(label) { return studyView.keyList.filter(function(h) { return h.label === label })[0] }
+    var clickable = function(label) { return typeof row(label).run === "function" }
+    // Listed from the first card on, so they can be found before they are needed.
+    verify(row("undo rating") && row("redo rating"), "on the first card")
+    verify(!clickable("undo rating") && !clickable("redo rating"), "as a legend: nothing to take back yet")
+    var a = study.card.id
+    rate(4)
+    nextCardAfter(a)
+    verify(clickable("undo rating"))
+    verify(!clickable("redo rating"))
+    click("statusHint:keys")
+    click("keyHelp:undo rating")
+    tryVerify(function() { return study.phase === "revealed" && study.card.id === a }, 8000)
+    verify(clickable("redo rating"))
+    verify(!clickable("undo rating"), "that was the only one")
+    click("statusHint:keys")
+    click("keyHelp:redo rating")
+    nextCardAfter(a)
+    var r = reviews()
+    compare(r[r.length - 1], [a, 4])
+  }
+
   // A failed Anki sync is an alert on the status line, its message on hover.
   function test_a_sync_failure_shows_on_the_status_line() {
     startSession()

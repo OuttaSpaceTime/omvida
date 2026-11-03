@@ -67,6 +67,23 @@ Rectangle {
         if (a === "accept") whenPhase.run("revealed", function() { driver.study.submit(parseInt(arg || "3")) })
       })
     }
+    // Rated Hard, on to the next card, and undone: the card back as it was
+    // rated; with undokeys, the key list over it.
+    else if (a === "undo" || a === "undokeys") {
+      study.start()
+      whenPhase.run("answering", function() {
+        var first = driver.study.card.id
+        driver.studyView.answerField.text = driver.sampleAnswer
+        driver.study.reveal(false)
+        whenPhase.run("revealed", function() {
+          driver.study.submit(2)
+          whenPhase.run("answering", function() {
+            driver.study.undo()
+            whenPhase.run("revealed", function() { if (a === "undokeys") driver.study.keysWanted() })
+          })
+        })
+      })
+    }
     else if (a === "pagecards") driver.wiki.openPageCards()
     // On Cards: page the stage forward n cards (default 3) as → would, or
     // flip its card as Space would.

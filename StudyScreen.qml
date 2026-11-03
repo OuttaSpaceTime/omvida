@@ -34,6 +34,9 @@ Item {
       var p = root.session.phase
       if (p === "answering" || p === "blocked" || p === "done" || p === "error") Qt.callLater(root.takeFocus)
     }
+    // Not on every "revealed": a grade coming in under the note dialog must not
+    // take the keyboard from it. A card back from an undo was asked for, by key.
+    function onAnswerRestored() { Qt.callLater(root.takeFocus) }
   }
 
   // The summary's log entry is written once it is no longer shown: by then
@@ -110,13 +113,26 @@ Item {
     var check = { keys: "ctrl+Q", label: "check quality", run: function() { s.checkCard() } }
     var end = { keys: "esc", label: "end", run: function() { s.endNow() } }
     var del = { keys: "del", label: "delete", run: function() { s.askDelete() } }
+    // On a card both are always listed, so the keys can be found before the
+    // slip they are for: hidden until there was a rating to take back, the list
+    // of a session's first card didn't have them, and looked like they were
+    // missing. With none to take, a row is a legend, not a button (the key says
+    // so in a toast). With an answer typed Ctrl+Z is the box's (StudyKeys.js),
+    // so it isn't listed as a rating's. A leech or the summary has no card to
+    // redo on, and offers undo only when it would do something.
+    var undoRow = { keys: "ctrl+Z", label: "undo rating" }
+    if (s.canUndo) undoRow.run = function() { s.undo() }
+    var redoRow = { keys: "ctrl+shift+Z", label: "redo rating" }
+    if (s.canRedo) redoRow.run = function() { s.redo() }
+    var history = phase === "answering" && s.answer.trim() !== "" ? [] : [undoRow, redoRow]
+    var undoOnly = s.canUndo ? [undoRow] : []
     if (s.frontShown) return [
       { keys: "shift+enter", label: "reveal", run: function() { s.reveal(false) } },
       { keys: "alt+enter", label: "reveal+accept", run: function() { s.reveal(true) } },
       // The mouse has no Shift: a click reveals, where the keycaps are.
       { keys: "shift+1-4", label: "reveal and pick", run: function() { s.reveal(false) } },
       discuss, note, check, skip, end, del
-    ]
+    ].concat(history)
     if (root.session.backShown) {
       // A picked rating goes first: shift+enter submits it, and claude's
       // rating stays a key away.
@@ -128,18 +144,18 @@ Item {
       else if (!picked) rows.push({ keys: "shift+enter", label: "good", run: function() { s.submit(3) } })
       // shift+1-4 is a legend here: the keycaps above are its buttons. The
       // first press picks, the second submits.
-      return rows.concat([{ keys: "shift+1-4", label: "pick, twice to rate" }, discuss, note, check, skip, end, del])
+      return rows.concat([{ keys: "shift+1-4", label: "pick, twice to rate" }, discuss, note, check, skip, end, del], history)
     }
     switch (phase) {
     case "idle": return [{ keys: "enter", label: "start", run: function() { s.start() } }]
     case "syncing": return [{ keys: "", label: "skip the sync", run: function() { s.skipSync() } }]
-    case "blocked": return [{ keys: "enter", label: "continue", run: function() { s.loadNext() } }, end]
+    case "blocked": return [{ keys: "enter", label: "continue", run: function() { s.loadNext() } }, end].concat(undoOnly)
     case "error": return [{ keys: "enter", label: "try again", run: function() { s.start() } }]
     case "done": return [
       { keys: "enter", label: "study again", run: function() { s.start() } },
       { keys: "", label: "wiki", run: function() { root.app.nav.setScreen("wiki") } },
       { keys: "", label: "home", run: function() { root.app.nav.setScreen("home") } }
-    ]
+    ].concat(undoOnly)
     }
     return []
   }

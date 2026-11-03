@@ -93,6 +93,27 @@ TestCase {
     compare(K.action(st("done"), Qt.Key_Delete, Qt.NoModifier, 0), null)
   }
 
+  // Ctrl+Z and Ctrl+Shift+Z are the ratings', everywhere a rating can be taken
+  // back, unless an answer is typed: there they are the box's own.
+  function test_ctrl_z_undoes_and_ctrl_shift_z_redoes() {
+    var undo = Qt.ControlModifier, redo = Qt.ControlModifier | Qt.ShiftModifier
+    var phases = ["grading", "revealed", "submitting", "loading", "blocked", "done"]
+    for (let i = 0; i < phases.length; i++) {
+      compare(K.action(st(phases[i]), Qt.Key_Z, undo, 0), { action: "undo" }, phases[i])
+      compare(K.action(st(phases[i]), Qt.Key_Z, redo, 0), { action: "redo" }, phases[i])
+    }
+    compare(K.action(st("answering", { answerEmpty: true }), Qt.Key_Z, undo, 0), { action: "undo" })
+    compare(K.action(st("answering", { answerEmpty: true }), Qt.Key_Z, redo, 0), { action: "redo" })
+    compare(K.action(st("answering"), Qt.Key_Z, undo, 0), null, "a typed answer keeps the box's undo")
+    compare(K.action(st("answering"), Qt.Key_Z, redo, 0), null)
+    compare(K.action(st("revealed"), Qt.Key_Z, Qt.NoModifier, 0), null)
+    compare(K.action(st("revealed"), Qt.Key_Z, Qt.ShiftModifier, 0), null)
+    compare(K.action(st("revealed"), Qt.Key_Z, undo | Qt.AltModifier, 0), null)
+    compare(K.action(st("idle"), Qt.Key_Z, undo, 0), null)
+    compare(K.action(st("syncing"), Qt.Key_Z, undo, 0), null)
+    compare(K.action(st("error"), Qt.Key_Z, undo, 0), null)
+  }
+
   function test_nothing_fires_outside_a_card() {
     compare(K.action(st("submitting"), Qt.Key_Return, Qt.ShiftModifier, 0), null)
     compare(K.action(st("blocked"), Qt.Key_Exclam, Qt.ShiftModifier, 10), null)
