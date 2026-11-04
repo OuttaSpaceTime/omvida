@@ -111,19 +111,23 @@ Scope {
     onNoteAsked: function(card) { root.openNote(card) }
     onDeleteAsked: function(card) { root.confirmDeleteCard(card, function() { studySession.deleteCard(card) }) }
     onCardCheckRequested: function(card) {
+      // A started check shows itself in the slot (CheckSlot.qml).
       var r = checks.run(card)
-      root.toast(r === "started" ? "Checking the card's quality in the background"
-                 : r === "checking" ? "This card is already being checked"
-                 : "Card checks are busy: try again when one is done")
+      if (r === "checking") root.toast("This card is already being checked")
+      else if (r === "busy") root.toast("Card checks are busy: try again when one is done")
     }
   }
 
-  // Ctrl+Q's checks (CardCheck.qml); their one-line results as toasts.
+  // Ctrl+Q's checks (CardCheck.qml); CheckSlot.qml shows them, above the status line.
   readonly property alias cardCheck: checks
   CardCheck {
     id: checks
-    onFinished: function(card, text, ok) { root.toast(ok ? "Card check: " + text : "Card check failed: " + text) }
     onCountChanged: root.quitIfDone()
+  }
+  // What the slot's buttons and keys ask (the keys take the oldest finished report).
+  function dismissCheck(report) { checks.dismiss(report.key) }
+  function discussCheck(report) {
+    root.launch(Launch.checkDiscussArgv(Paths.studyDir, report), "Discussing the check in Claude Code")
   }
 
   // ---- IPC: bin/omvida and the bar widget ----------------------------------------
@@ -201,6 +205,12 @@ Scope {
         var ctrl = event.modifiers & Qt.ControlModifier, alt = event.modifiers & Qt.AltModifier
         if (ctrl && event.key === Qt.Key_K) { root.openSearch(""); event.accepted = true; return }
         if (ctrl && event.key === Qt.Key_N) { root.toggleAdd(); event.accepted = true; return }
+        // Ctrl+Q's results, wherever the window is: they outlast the card and
+        // the screen they came from. Here rather than in StudyKeys, since a
+        // check finishing after the session must still be answerable.
+        var shift = event.modifiers & Qt.ShiftModifier
+        if (ctrl && shift && event.key === Qt.Key_Q && checks.settled) { root.dismissCheck(checks.settled); event.accepted = true; return }
+        if (ctrl && shift && event.key === Qt.Key_D && checks.settled) { root.discussCheck(checks.settled); event.accepted = true; return }
         if (ctrl && screenKeys[event.key] !== undefined) { root.goTo(screenKeys[event.key]); event.accepted = true; return }
         if (alt && event.key === Qt.Key_Left) { navigator.goBack(); event.accepted = true; return }
         if (alt && event.key === Qt.Key_Right) { navigator.goForward(); event.accepted = true; return }
@@ -277,7 +287,7 @@ Scope {
         anchors.left: sidebar.right
         anchors.right: parent.right
         anchors.top: topBar.bottom
-        anchors.bottom: statusLine.top
+        anchors.bottom: checkSlot.top
 
         // The screen on show, for the status line.
         readonly property var current: ({ home: homeScreen, study: studyScreen, wiki: wikiScreen,
@@ -314,6 +324,20 @@ Scope {
           visible: navigator.currentScreen === "graph"
           app: root
         }
+      }
+
+      // In the layout, not over it: the screen gives up the room, so a result
+      // stays on show while the card above it can still be answered.
+      CheckSlot {
+        id: checkSlot
+        objectName: "checkSlot"
+        anchors.left: sidebar.right
+        anchors.right: parent.right
+        anchors.bottom: statusLine.top
+        reports: checks.reports
+        settled: checks.settled
+        onDismissAsked: function(report) { root.dismissCheck(report); root.focusScreen() }
+        onDiscussAsked: function(report) { root.discussCheck(report) }
       }
 
       // The bottom line, as an editor's: each screen's mode, place, keys and

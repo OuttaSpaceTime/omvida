@@ -87,6 +87,7 @@ and stops.
 | `studyCard` (its `opacity` fades between rated cards), `answerField`, `cardFront`, `cardRecap`, `cardBack`, `suggestionBox`, `suggestionLine` (`verdict`, `reason`) | the study card |
 | `rate:<1-4>` (`suggested`, `marked` (picked or taken), `chosen`; its `interval` label), `startSessionButton`, `studyAgainButton` | the study controls |
 | `leechRewrite`, `leechSplit`, `leechDrop`, `leechDropConfirm`, `leechKeep`, `leechContinue` | a leech |
+| `checkSlot`, `checkReport:<i>`, `checkHeadline:<i>`, `checkFront:<i>`, `checkText:<i>`, `checkAsked:<i>`, `checkExtra:<i>`, `checkCard:<i>:<j>`, `checkDiscuss:<i>`, `checkDismiss:<i>` | Ctrl+Q's results, docked above the status line |
 | `summary`, `summaryLine`, `related:<path>` | the session summary |
 | `pageTitle`, `wikiFlick`, `pageCardsButton`, `pageAddCards`, `pageExplore:<n>`, `pageDeeper`, `heading:<anchor>` | a wiki page |
 | `panelMode:context`, `panelMode:tree`, `tree:<path>`, `sibling:<path>`, `section:<anchor>` | the wiki side panel |

@@ -56,7 +56,7 @@ TestCase {
   }
 
   // Ctrl+Q: the study repo's skill, headless, with the card writes it may
-  // make and no shell; its last line is the result.
+  // make and no general shell; a structured report is the result.
   function test_card_check_runs_the_skill_headless() {
     var argv = L.cardCheckArgv("c1")
     compare(argv.slice(0, 3), ["claude", "-p", "/study-card-check c1"])
@@ -64,15 +64,38 @@ TestCase {
     var tools = argv[argv.indexOf("--allowedTools") + 1].split(",")
     verify(tools.indexOf("mcp__flashcard-mcp__update_card") !== -1)
     verify(tools.indexOf("mcp__flashcard-mcp__create_card") !== -1)
-    verify(tools.indexOf("Bash") === -1)
+    verify(tools.indexOf("Bash") === -1, "no shell at large")
+    verify(tools.indexOf("Bash(scripts/card-quality-gate --judge *)") !== -1, "the one command: the gate's verdict")
     verify(tools.indexOf("mcp__flashcard-mcp__submit_review") === -1)
+    var schema = JSON.parse(argv[argv.indexOf("--json-schema") + 1])
+    compare(schema.required, ["outcome", "summary", "asked", "extra", "cards"])
   }
 
   function test_parse_card_check() {
-    compare(L.parseCardCheck('{"type":"result","subtype":"success","is_error":false,"result":"Looked at it.\\n\\nNo change: precise."}'), { ok: true, text: "No change: precise." })
+    compare(L.parseCardCheck('{"type":"result","subtype":"success","is_error":false,"result":"x","structured_output":{"outcome":"split","summary":"Two asks.","asked":["a","b"],"extra":["c"],"cards":[{"front":"f","back":"b"}]}}'),
+            { ok: true, outcome: "split", text: "Two asks.", asked: ["a", "b"], extra: ["c"], cards: [{ front: "f", back: "b" }] })
+    // No structured output: cut short, and the last line is why.
+    compare(L.parseCardCheck('{"type":"result","subtype":"success","is_error":false,"result":"Looked at it.\\n\\nNo change: precise."}'), { ok: false, text: "No change: precise." })
     compare(L.parseCardCheck('{"type":"result","subtype":"error_max_turns","is_error":true,"result":"Unchanged: ran out"}'), { ok: false, text: "Unchanged: ran out" })
     compare(L.parseCardCheck('{"type":"result","subtype":"success","is_error":false,"result":""}'), { ok: false, text: "" })
     compare(L.parseCardCheck(""), { ok: false, text: "" })
+  }
+
+  // Discussing a check carries the card as it was, since a split deleted it,
+  // and the counts the verdict rests on, and changes nothing unasked.
+  function test_check_discuss_prompt() {
+    var report = { card: { id: "c1", deck: "D", front: "<b>What?</b>", back: "That." }, outcome: "split", text: "Two asks.",
+                   asked: ["a", "b"], extra: ["c"], cards: [{ front: "What a?", back: "A." }] }
+    var argv = L.checkDiscussArgv("/s", report)
+    compare(argv.slice(0, 2), ["kitty", "--directory"])
+    var prompt = argv[argv.length - 1]
+    verify(prompt.indexOf("Card id: c1") !== -1)
+    verify(prompt.indexOf("What?") !== -1)
+    verify(prompt.indexOf("split. Two asks.") !== -1)
+    verify(prompt.indexOf("asked: a; b") !== -1)
+    verify(prompt.indexOf("extra in the back: c") !== -1)
+    verify(prompt.indexOf("Front: What a?") !== -1)
+    verify(prompt.indexOf("only after I agree") !== -1)
   }
 
   // Fix noted cards: one session, through the study repo's skill, which

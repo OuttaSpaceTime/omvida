@@ -273,24 +273,72 @@ OmvidaTest {
     compare(item("answerField").text, "line one\nline two")
   }
 
-  // Ctrl+Q hands the card to the study repo's /study-card-check, headless,
-  // and the session goes on; its one-line result comes back as a toast. A
-  // second Ctrl+Q while it runs starts no second check.
-  function test_ctrl_q_checks_the_card_in_the_background() {
+  // Ctrl+Q hands the card to the study repo's /study-card-check, headless, and
+  // the session goes on. Its report docks above the status line, in the layout,
+  // and stays until dismissed. A second Ctrl+Q while it runs starts no second check.
+  function test_ctrl_q_reports_in_the_slot_until_dismissed() {
     startSession()
     var id = study.card.id
     var before = cardCheckCalls().length
+    compare(app.cardCheck.reports.length, 0, "nothing to show yet")
     key(Qt.Key_Q, Qt.ControlModifier)
-    compare(item("toast").text, "Checking the card's quality in the background")
+    verify(item("checkSlot").visible, "shown while it runs")
+    compare(item("checkHeadline:0").text, "Checking this card…")
     compare(study.phase, "answering", "the session goes on")
     key(Qt.Key_Q, Qt.ControlModifier)
     compare(item("toast").text, "This card is already being checked")
-    tryVerify(function() { return item("toast").text.indexOf("Card check: ") === 0 }, 8000, "the result: " + item("toast").text)
-    compare(item("toast").text, "Card check: No change: fixture card " + id + " is sound.")
+    tryVerify(function() { return item("checkHeadline:0").text === "Sound, no change" }, 8000)
+    compare(item("checkText:0").text, "Fixture card " + id + " is sound.")
     var calls = cardCheckCalls().slice(before)
     compare(calls.length, 1, "one check")
     compare(calls[0][calls[0].indexOf("-p") + 1], "/study-card-check " + id)
     compare(app.cardCheck.count, 0, "none left running")
+    wait(4200)
+    verify(item("checkSlot").visible, "unlike a toast, it does not go away on its own")
+    // The screen gave up the room rather than being drawn over.
+    var slotTop = item("checkSlot").mapToItem(target, 0, 0).y
+    var bottom = studyView.mapToItem(target, 0, studyView.height).y
+    verify(bottom <= slotTop, "the screen ends above the slot: " + bottom + " vs " + slotTop)
+    click("checkDismiss:0")
+    tryVerify(function() { return app.cardCheck.reports.length === 0 })
+    compare(study.phase, "answering")
+  }
+
+  // A split reports what the card asked, what it carried beyond that and the
+  // cards it became. Ctrl+Shift+D and Ctrl+Shift+Q act from the answer box, and
+  // typing what was answered is not lost.
+  function test_check_report_is_discussed_and_dismissed_by_key() {
+    run(["touch", outDir + "/split-card-check"])
+    startSession()
+    type("half an answer")
+    key(Qt.Key_Q, Qt.ControlModifier)
+    tryVerify(function() { return item("checkHeadline:0").text === "Split into 2 cards" }, 8000)
+    run(["rm", "-f", outDir + "/split-card-check"])
+    compare(item("checkAsked:0").text, "Asked 2 things: what an ETag is; which header revalidates it")
+    compare(item("checkExtra:0").text, "Beyond what it asked: a date nobody asked for")
+    compare(item("checkCard:0:1").text, "→ Which header revalidates an ETag?")
+    var kittyBefore = kittyCalls().length
+    key(Qt.Key_D, Qt.ControlModifier | Qt.ShiftModifier)
+    tryVerify(function() { return kittyCalls().length === kittyBefore + 1 }, 5000)
+    var prompt = kittyCalls()[kittyBefore]
+    prompt = prompt[prompt.length - 1]
+    verify(prompt.indexOf("card quality check") !== -1)
+    verify(prompt.indexOf("which header revalidates it") !== -1)
+    verify(item("checkSlot").visible, "discussing does not dismiss it")
+    key(Qt.Key_Q, Qt.ControlModifier | Qt.ShiftModifier)
+    tryVerify(function() { return app.cardCheck.reports.length === 0 })
+    compare(item("answerField").text, "half an answer")
+  }
+
+  function test_a_failed_check_says_why() {
+    run(["touch", outDir + "/bad-card-check"])
+    startSession()
+    key(Qt.Key_Q, Qt.ControlModifier)
+    tryVerify(function() { return item("checkHeadline:0").text === "The check failed" }, 8000)
+    run(["rm", "-f", outDir + "/bad-card-check"])
+    compare(item("checkText:0").text, "ran out of turns")
+    click("checkDismiss:0")
+    tryVerify(function() { return app.cardCheck.reports.length === 0 })
   }
 
   // At most Config.cardCheckLimit (2) checks run at once: a third Ctrl+Q,
@@ -303,15 +351,13 @@ OmvidaTest {
       tryVerify(function() { return study.phase === "answering" && seen.indexOf(study.card.id) === -1 }, 8000, "a new card")
       seen.push(study.card.id)
       key(Qt.Key_Q, Qt.ControlModifier)
-      if (i < 2) {
-        compare(item("toast").text, "Checking the card's quality in the background")
-        key(Qt.Key_S, Qt.ControlModifier)
-      }
+      if (i < 2) key(Qt.Key_S, Qt.ControlModifier)
     }
     compare(item("toast").text, "Card checks are busy: try again when one is done")
     compare(app.cardCheck.count, 2)
     run(["rm", "-f", outDir + "/slow-card-check"])
     tryVerify(function() { return app.cardCheck.count === 0 }, 10000, "both finish")
+    while (app.cardCheck.reports.length > 0) app.dismissCheck(app.cardCheck.reports[0])
   }
 
   function test_discuss_opens_claude_in_kitty_with_the_card_and_answer() {

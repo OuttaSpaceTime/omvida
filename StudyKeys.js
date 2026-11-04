@@ -28,8 +28,10 @@
 //                 is still the top bar's button.
 //   Ctrl+Q        check the card's quality: Claude Code judges it in the
 //                 background and fixes it if it is flawed (CardCheck.qml),
-//                 while the session goes on. Not Shift+Q: that types a Q
-//                 into the answer.
+//                 while the session goes on, its result docked above the
+//                 status line (CheckSlot.qml; Ctrl+Shift+Q dismisses it and
+//                 Ctrl+Shift+D discusses it, the window's keys). Not Shift+Q:
+//                 that types a Q into the answer.
 //   Del           delete the card, after the window's confirm dialog asks.
 //                 Not while an answer is typed and not yet revealed, for
 //                 Esc's reason below: there Del edits the answer, as in any

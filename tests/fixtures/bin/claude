@@ -4,9 +4,10 @@
 # $OMVIDA_TEST_OUT/claude-calls.jsonl. (Grading is not claude's: the deck
 # server calls the API, faked by tests/fixtures/fake-anthropic.py.)
 #
-#   a card check (`/study-card-check <id>`, Ctrl+Q): one json result whose
-#     last line says the card is sound, after 0.5s (3s while the file
-#     $OMVIDA_TEST_OUT/slow-card-check exists)
+#   a card check (`/study-card-check <id>`, Ctrl+Q): one json result with the
+#     skill's structured report, saying the card is sound, after 0.5s (3s while
+#     the file $OMVIDA_TEST_OUT/slow-card-check exists); a split when the file
+#     $OMVIDA_TEST_OUT/split-card-check exists, a failure with bad-card-check
 #   asking (stream-json): a short streamed answer with a wikilink, one tool
 #     call, and a result carrying a session id; 2s first for a question with
 #     "slowly"
@@ -18,7 +19,13 @@ case " $* " in
     if [ -e "$out/slow-card-check" ]; then sleep 3; else sleep 0.5; fi
     prompt="$2"   # claude -p <prompt> ...
     id="${prompt#/study-card-check }"
-    python3 -c 'import json,sys; print(json.dumps({"type": "result", "subtype": "success", "is_error": False, "result": "Read the rubric.\n\nNo change: fixture card " + sys.argv[1] + " is sound."}))' "$id"
+    if [ -e "$out/bad-card-check" ]; then
+      echo '{"type":"result","subtype":"error_max_turns","is_error":true,"result":"ran out of turns"}'
+    elif [ -e "$out/split-card-check" ]; then
+      python3 -c 'import json; print(json.dumps({"type": "result", "subtype": "success", "is_error": False, "result": "done", "structured_output": {"outcome": "split", "summary": "It asked two things, so each has its own card now.", "asked": ["what an ETag is", "which header revalidates it"], "extra": ["a date nobody asked for"], "cards": [{"front": "What is an ETag?", "back": "A version tag for a response."}, {"front": "Which header revalidates an ETag?", "back": "<code>If-None-Match</code>."}]}}))'
+    else
+      python3 -c 'import json,sys; print(json.dumps({"type": "result", "subtype": "success", "is_error": False, "result": "done", "structured_output": {"outcome": "no_change", "summary": "Fixture card " + sys.argv[1] + " is sound.", "asked": ["one thing"], "extra": [], "cards": []}}))' "$id"
+    fi
     ;;
   *" stream-json "*)
     case "$*" in *slowly*) sleep 2 ;; esac

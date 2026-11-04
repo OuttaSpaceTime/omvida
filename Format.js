@@ -156,3 +156,16 @@ function sessionWhen(iso, now) {
   if (days > 1 && days < 7) return WEEKDAYS[d.getDay()] + " " + time
   return day
 }
+
+// A card check's headline (CardCheck.qml's report, CheckSlot.qml draws it).
+function checkHeadline(report) {
+  if (report.state === "running") return "Checking this card…"
+  if (report.state === "failed") return "The check failed"
+  switch (report.outcome) {
+  case "no_change": return "Sound, no change"
+  case "fixed": return "Fixed"
+  case "split": return "Split into " + report.cards.length + " cards"
+  case "unchanged": return "Flawed, not fixed"
+  }
+  return ""
+}

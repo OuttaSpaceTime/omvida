@@ -92,4 +92,13 @@ TestCase {
     compare(F.sessionWhen(new Date(2026, 8, 28, 7, 0).toISOString(), now), "2026-09-28")
     compare(F.sessionWhen("", now), "")
   }
+
+  function test_check_headline() {
+    compare(F.checkHeadline({ state: "running" }), "Checking this card…")
+    compare(F.checkHeadline({ state: "failed" }), "The check failed")
+    compare(F.checkHeadline({ state: "done", outcome: "no_change", cards: [] }), "Sound, no change")
+    compare(F.checkHeadline({ state: "done", outcome: "fixed", cards: [{}] }), "Fixed")
+    compare(F.checkHeadline({ state: "done", outcome: "split", cards: [{}, {}] }), "Split into 2 cards")
+    compare(F.checkHeadline({ state: "done", outcome: "unchanged", cards: [] }), "Flawed, not fixed")
+  }
 }

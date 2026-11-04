@@ -359,6 +359,8 @@ QtObject {
   // the rest settles on screen.
   readonly property int graphSettleBudget: 250
 
+  // The tallest Ctrl+Q's results may push the screen above them before they scroll (CheckSlot.qml).
+  readonly property int checkSlotMaxHeight: space4xl * 4
   // ---- loading the theme ------------------------------------------------------------
   function parseToml(text) {
     var out = {}

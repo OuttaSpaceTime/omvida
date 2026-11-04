@@ -115,6 +115,9 @@ confirm, `enter continue`), done (the summary with an honest duration, accuracy,
 related pages; a walkthrough offer per lapse; `enter start another session`, browse the wiki,
 home; the cards noted, with "fix them in claude"), error (`enter try again`). The leech and the summary set their actions as plain words
 (`PlainButton.qml`), never a row of boxes. Keys: README's table; Enter and Esc also work on a
+  Ctrl+Q's results dock above the status line, in the layout, so the card above stays usable: a line while
+  a check runs, then what became of the card, what it asked, what its back said beyond that, and the cards it
+  became. Each stays until `ctrl+shift+Q dismiss`; `ctrl+shift+D discuss` opens Claude Code on the verdict.
 leech, Enter on the summary.
 
 ## Wiki

@@ -18,7 +18,11 @@ import "Launch.js" as Launch
 // mid-review; this fixes it unattended, and only when asked.
 //
 // A Process rather than the detached launch kitty gets (App.launch), because
-// the skill's one-line result comes back as a toast. So a check dies with the
+// the skill's verdict comes back to the window: what the card asked, what its
+// back carried beyond that, and what became of it (Launch.parseCardCheck),
+// which CheckSlot.qml shows until it is dismissed or discussed. It was a
+// four-second toast until 2026-11-03: one line that was gone by the time the
+// answer in hand was typed, about a card that may have just been split. So a check dies with the
 // app, possibly halfway through a split; quitting waits for running checks
 // (App.qml, Config.cardCheckQuitDeadline). At most Config.cardCheckLimit run
 // at once, one per card: each is a Sonnet session, and every write it makes
@@ -27,38 +31,42 @@ import "Launch.js" as Launch
 QtObject {
   id: root
 
-  // The ids of the cards being checked.
-  property var running: ({})
-  readonly property int count: Object.keys(running).length
-
-  // What happened, for the window to toast: the skill's last line, or why it failed.
-  signal finished(var card, string text, bool ok)
+  // What CheckSlot.qml shows, oldest first: { key, card, state, outcome, text,
+  // asked, extra, cards }. state is "running", "done" or "failed"; the card is
+  // as it was when the check began, since a split deletes it. A new list on
+  // every change, so bindings on it notice.
+  property var reports: []
+  property int lastKey: 0
+  readonly property int count: reports.filter(function(r) { return r.state === "running" }).length
+  // The oldest finished report, the one the slot's keys act on, or null: a
+  // check still running has nothing to dismiss or discuss.
+  readonly property var settled: {
+    var done = root.reports.filter(function(r) { return r.state !== "running" })
+    return done.length ? done[0] : null
+  }
+  function dismiss(key) { root.reports = root.reports.filter(function(r) { return r.key !== key }) }
 
   // "started", or why not: "checking" (that card already is) or "busy"
   // (Config.cardCheckLimit checks are running).
   function run(card) {
-    if (root.running[card.id]) return "checking"
+    if (root.reports.some(function(r) { return r.state === "running" && r.card.id === card.id })) return "checking"
     if (root.count >= Config.cardCheckLimit) return "busy"
-    var p = checkProcess.createObject(root, { card: card, command: Launch.cardCheckArgv(card.id) }) as Process
-    var r = Object.assign({}, root.running)
-    r[card.id] = true
-    root.running = r
+    root.lastKey += 1
+    var p = checkProcess.createObject(root, { reportKey: root.lastKey, command: Launch.cardCheckArgv(card.id) }) as Process
+    root.reports = root.reports.concat([{ key: root.lastKey, card: card, state: "running", outcome: "", text: "", asked: [], extra: [], cards: [] }])
     p.running = true
     return "started"
   }
 
-  function done(p, text, ok) {
-    var r = Object.assign({}, root.running)
-    delete r[p.card.id]
-    root.running = r
-    root.finished(p.card, text, ok)
+  function done(p, result) {
+    root.reports = root.reports.map(function(r) { return r.key === p.reportKey ? Object.assign({}, r, result) : r })
     p.destroy()
   }
 
   property Component checkProcess: Component {
     Process {
       id: p
-      property var card
+      property int reportKey: 0
       property string out: ""
       property string err: ""
       property bool didStart: false
@@ -68,11 +76,12 @@ QtObject {
       onStarted: p.didStart = true
       onExited: function(code) {
         var r = Launch.parseCardCheck(p.out)
-        root.done(p, r.ok ? r.text : (r.text || p.err || "claude exited " + code), r.ok)
+        root.done(p, r.ok ? Object.assign({ state: "done" }, r)
+                          : { state: "failed", text: r.text || p.err || "claude exited " + code })
       }
       // A claude that never started (not on the PATH) sends no exited, and
       // would leave its card marked as being checked for good.
-      onRunningChanged: if (!running && !p.didStart) root.done(p, "claude could not be started", false)
+      onRunningChanged: if (!running && !p.didStart) root.done(p, { state: "failed", text: "claude could not be started" })
     }
   }
 }

@@ -22,7 +22,7 @@ A card's front, and the answer box already focused. Type an answer, or don't.
 | **Alt+Enter** | accept the suggestion. Before the reveal: reveal, and accept it the moment it arrives |
 | **Shift+1–4** | pick Again / Hard / Good / Easy, overriding the suggestion; before the reveal it reveals too. The same digit again (or Shift+Enter) submits the pick, another digit changes it |
 | **Ctrl+D** | discuss the card in Claude Code (kitty), Socratic mode, with your answer and the suggestion |
-| **Ctrl+Q** | check the card's quality in the background: Claude Code (`/study-card-check`, headless) fixes it if it is flawed, and a toast says what it did |
+| **Ctrl+Q** | check the card's quality in the background: Claude Code (`/study-card-check`, headless) fixes it if it is flawed, and a slot above the status line says what it did until dismissed (**Ctrl+Shift+Q**; **Ctrl+Shift+D** discusses it) |
 | **Ctrl+S** | skip; the card stays due |
 | **Ctrl+Z** | undo the last rating, and again for the one before: the card comes back revealed, with your answer and Claude's verdict, and no new grade. It also works on a leech and on the summary, which it reopens, until the session's log entry is written. With an answer typed, Ctrl+Z edits it |
 | **Ctrl+Shift+Z** | redo a rating undone, one at a time. Rating the card differently starts over: the redos are gone |
@@ -34,7 +34,7 @@ Shift+digit is matched on the physical key, so it works on US and German layouts
 (`StudyKeys.js` explains why). The grader's rubric is `/study`'s, fixed, and it only rates.
 **Ctrl+Q** checks the card's own quality instead: the study repo's `/study-card-check` runs
 headless, fixes a flawed card (corrects, rewrites, or splits it, keeping its schedule) and says
-what it did in a toast, while you study on. The keys that work
+what it did above the status line, while you study on. The keys that work
 at each moment are on the status line at the bottom of the window, and each is also a button
 there; after the reveal the four ratings are keycaps under the card.
 

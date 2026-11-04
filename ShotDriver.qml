@@ -67,6 +67,19 @@ Rectangle {
         if (a === "accept") whenPhase.run("revealed", function() { driver.study.submit(parseInt(arg || "3")) })
       })
     }
+    // Ctrl+Q's slot: a finished split and a check still running, over a card.
+    else if (a === "cardcheck") {
+      study.start()
+      whenPhase.run("answering", function() {
+        var c = driver.study.card
+        driver.app.cardCheck.reports = [
+          { key: 1, card: c, state: "done", outcome: "split", text: "It asked what an ETag is and which header revalidates it, so each has its own card now.",
+            asked: ["what an ETag is", "which header revalidates it"], extra: ["that RFC 7232 defines it"],
+            cards: [{ front: "What is an ETag?", back: "A version tag." }, { front: "Which header revalidates an ETag?", back: "If-None-Match." }] },
+          { key: 2, card: c, state: "running", outcome: "", text: "", asked: [], extra: [], cards: [] }
+        ]
+      })
+    }
     // Rated Hard, on to the next card, and undone: the card back as it was
     // rated; with undokeys, the key list over it.
     else if (a === "undo" || a === "undokeys") {

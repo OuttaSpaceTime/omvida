@@ -89,34 +89,89 @@ function headlessArgv(prompt, flags) {
 // references/card-quality.md and fixes a flawed one unattended, correcting,
 // rewriting or splitting it. Sonnet, the model that caught the subtle flaws
 // when Sonnet and Haiku were compared (2026-10-30). The tools: what the skill
-// reads, the card writes it may make, and the wiki and web to check a fact.
-// Its writes still pass the study repo's card-quality gate (a hook there).
+// reads, the gate's judge it takes the verdict from, the card writes it may
+// make, and the wiki and web to check a fact. Its writes still pass the study
+// repo's card-quality gate (a hook there).
 var CARD_CHECK_TOOLS = [
   "Read", "Glob", "Grep",
+  "Bash(scripts/card-quality-gate --judge *)", "Bash(scripts/card-links-sync)",
   "mcp__flashcard-mcp__get_card", "mcp__flashcard-mcp__find_similar_cards",
   "mcp__flashcard-mcp__update_card", "mcp__flashcard-mcp__create_card", "mcp__flashcard-mcp__delete_card",
+  "mcp__flashcard-mcp__update_code_card", "mcp__flashcard-mcp__create_code_card", "mcp__flashcard-mcp__check_code_card",
   "mcp__qmd__query", "mcp__qmd__search", "mcp__qmd__get",
   "WebSearch", "WebFetch"
 ]
+
+// What the skill reports, so the window can lay it out (CheckSlot.qml) instead
+// of showing one line of prose: what became of the card, what the card asked,
+// what its back said beyond that, and the cards as they now stand.
+var CARD_CHECK_SCHEMA = {
+  type: "object",
+  properties: {
+    outcome: { type: "string", enum: ["no_change", "fixed", "split", "unchanged"] },
+    summary: { type: "string" },
+    asked: { type: "array", items: { type: "string" } },
+    extra: { type: "array", items: { type: "string" } },
+    cards: { type: "array", items: {
+      type: "object",
+      properties: { front: { type: "string" }, back: { type: "string" } },
+      required: ["front", "back"],
+      additionalProperties: false
+    } }
+  },
+  required: ["outcome", "summary", "asked", "extra", "cards"],
+  additionalProperties: false
+}
 
 function cardCheckArgv(cardId) {
   return headlessArgv("/study-card-check " + cardId, [
     "--model", "sonnet",
     "--output-format", "json",
+    "--json-schema", JSON.stringify(CARD_CHECK_SCHEMA),
     "--allowedTools", CARD_CHECK_TOOLS.join(",")
   ])
 }
 
-// claude's json result -> { ok, text }: the skill's last line, which says
-// what it did; on a failed run, why, when claude said.
+// claude's json result -> { ok, outcome, text, asked, extra, cards }, or
+// { ok: false, text }: why, in its last line, when claude said. The run asks for
+// structured output, so one without it was cut short whatever it says of itself.
 function parseCardCheck(out) {
   var ev
   try { ev = JSON.parse(String(out).trim()) } catch (e) { return { ok: false, text: "" } }
   if (!ev || typeof ev !== "object") return { ok: false, text: "" }
   var lines = String(ev.result || "").trim().split("\n").filter(function(l) { return l.trim() !== "" })
-  var text = lines.length ? lines[lines.length - 1].trim() : ""
-  if (ev.is_error || ev.subtype !== "success") return { ok: false, text: text }
-  return { ok: text !== "", text: text }
+  var last = lines.length ? lines[lines.length - 1].trim() : ""
+  var s = ev.structured_output
+  if (ev.is_error || ev.subtype !== "success" || !s || typeof s !== "object") return { ok: false, text: last }
+  return { ok: true, outcome: String(s.outcome || ""), text: String(s.summary || last),
+           asked: s.asked || [], extra: s.extra || [], cards: s.cards || [] }
+}
+
+// Discuss a check's verdict: the verdict itself, and the card as it was, since
+// a split has deleted it. The app's Discuss (discussPrompt) is about learning
+// the card; this is about whether the check was right.
+function checkDiscussPrompt(report) {
+  var lines = [
+    "Omvida's card quality check (Ctrl+Q, /study-card-check) ran on this flashcard and I want to discuss its verdict with you. "
+    + "Don't start by defending it: read .claude/skills/references/card-quality.md, look at the card, and tell me where the check was right and where it may be wrong. "
+    + "Don't rate anything. Change a card only after I agree, through update_card (update_code_card for a code card) or create_card with inheritFrom as the reference says.",
+    "",
+    "The card as it was when checked:",
+    cardBlock(report.card),
+    "",
+    "The check: " + (report.outcome ? report.outcome + ". " : "") + report.text
+  ]
+  if (report.asked.length) lines.push("It counted these as asked: " + report.asked.join("; "))
+  if (report.extra.length) lines.push("It counted these as extra in the back: " + report.extra.join("; "))
+  if (report.cards.length) {
+    lines.push("", "The card(s) now:")
+    report.cards.forEach(function(c) { lines.push("Front: " + Format.htmlToText(c.front), "Back: " + Format.htmlToText(c.back)) })
+  }
+  return lines.join("\n")
+}
+
+function checkDiscussArgv(studyDir, report) {
+  return kittyArgv(studyDir, "Omvida · Card check", [checkDiscussPrompt(report)])
 }
 
 // Fix noted cards: one Claude Code session for them, through the study repo's
