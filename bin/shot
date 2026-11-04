@@ -21,7 +21,8 @@
 #       panels[:side,graph] (on a wiki page: fold the side panel, open the graph) |
 #       note[:text] (the note dialog over a card, never saved) |
 #       notes[:cards] (notes and a past session in the deck; :cards picks "noted") |
-#       studypages (the wiki panel's "From study" list)
+#       studypages (the wiki panel's "From study" list) |
+#       code:<predict|fill|compose>[:wrong|pass|error|giveup] (a code card; -f catches its animation)
 #   -w/-h size, -f frames (ms, comma-separated), -t settle ms, -o out dir
 #   -R  your real wiki and deck instead of the fixtures, to see the layout at
 #       full size. Read-only by construction: it refuses the Study screen and

@@ -350,17 +350,22 @@ QtObject {
   readonly property int acceptShowDuration: 260
   readonly property int acceptFadeDuration: 140
   readonly property int cardEnterDuration: 180
+  // A code card's check: a wrong try shakes the results, a pass flashes them.
+  // Well under a second, to stay out of the way of the next try.
+  readonly property int codeShakeDuration: 400
+  readonly property int codeShakeDistance: 6
+  readonly property int codeFlashDuration: 450
   // A sheet sliding in from the edge: quick, but long enough to be seen
   // arriving from somewhere.
   readonly property int sheetDuration: 180
   readonly property int toastDuration: 4000
+  // The tallest Ctrl+Q's results may push the screen above them before they scroll (CheckSlot.qml).
+  readonly property int checkSlotMaxHeight: space4xl * 4
   readonly property int graphTickInterval: 16
   // How long a new graph may lay itself out before its first paint; past it,
   // the rest settles on screen.
   readonly property int graphSettleBudget: 250
 
-  // The tallest Ctrl+Q's results may push the screen above them before they scroll (CheckSlot.qml).
-  readonly property int checkSlotMaxHeight: space4xl * 4
   // ---- loading the theme ------------------------------------------------------------
   function parseToml(text) {
     var out = {}

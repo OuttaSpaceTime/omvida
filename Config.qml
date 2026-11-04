@@ -26,6 +26,13 @@ QtObject {
   // ---- the user's pace ----------------------------------------------------------------
   // Over a typing gap, so a word is one search, not one per letter.
   readonly property int searchDebounce: 250
+  // A code card runs at a pause in the typing. A run costs about 60 ms and no
+  // API call, so this only has to skip the half-typed words between.
+  readonly property int codeRunDebounce: 300
+  // The failed checks before a code card offers to give up, so a retrieval is
+  // tried first. Execute Program waits for several; one here, as a card comes
+  // around again anyway, and no answer at all counts as a try.
+  readonly property int codeGiveUpAfter: 1
 
   // ---- deadlines ------------------------------------------------------------------------
   // The Anki sync must never hold a session hostage (AnkiSync.qml).

@@ -97,6 +97,10 @@ Rectangle {
         })
       })
     }
+    // A code card, in a session of only those (seed_deck.py --code), as
+    // code:<kind>:<what>. kind: predict, fill or compose. what: wrong, pass, error
+    // or giveup, or nothing to leave it untouched. Refused under -R.
+    else if (a === "code") codeDeck.running = (Quickshell.env("OMVIDA_SANDBOX") || "") !== ""
     else if (a === "pagecards") driver.wiki.openPageCards()
     // On Cards: page the stage forward n cards (default 3) as → would, or
     // flip its card as Space would.
@@ -155,6 +159,44 @@ Rectangle {
       driver.app.store.refreshDeck()
       if (driver.action === "notes:cards") driver.cardsScreen.setFilter("noted", true)
     }
+  }
+
+  Process {
+    id: codeDeck
+    command: ["python3", Paths.root + "/tests/fixtures/seed_deck.py", Quickshell.env("FLASHCARD_DB") || "", "--code"]
+    onRunningChanged: if (!running) {
+      driver.study.start()
+      whenPhase.run("answering", driver.codeCardUp)
+    }
+  }
+
+  // Passes over the cards before the kind asked for, then does what was asked.
+  function codeCardUp() {
+    var parts = driver.action.split(":")
+    var study = driver.study
+    if (study.card.exercise.kind === parts[1]) { driver.codeAct(parts[2] || ""); return }
+    study.skip()
+    whenPhase.run("answering", driver.codeCardUp)
+  }
+
+  // Answers per kind: what each `what` types there, as a test would.
+  readonly property var codeAnswersFor: ({
+    predict: { wrong: "[2, 4]", pass: "[1, 2]", error: "[1," },
+    fill: { wrong: "select", pass: "map", error: "nope" },
+    compose: { wrong: "  n * 3\n", pass: "  n * 2\n", error: "  n *\n" }
+  })
+
+  function codeAct(what) {
+    var study = driver.study
+    if (what === "") return
+    if (what === "giveup") {
+      study.codeChecks = Config.codeGiveUpAfter
+      study.giveUp()
+      return
+    }
+    study.codeAnswers = [driver.codeAnswersFor[study.card.exercise.kind][what]]
+    study.codeAnswersSet()
+    study.checkCode()
   }
 
   // Rating every card Good until the queue is empty: the summary.

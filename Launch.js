@@ -36,7 +36,7 @@ function discussPrompt(card, answer, suggestion) {
   var lines = [
     "I'm studying in the Omvida app and want to discuss this flashcard. Use the /study skill's Socratic mode "
     + "(\"Fast Feedback by Default, Socratic on Request\"): decompose with small concrete questions, don't hand me the answer. "
-    + "Don't rate the card or call submit_review: Omvida records my rating. If the card itself has a quality problem, say so and offer to fix it with update_card.",
+    + "Don't rate the card or call submit_review: Omvida records my rating. If the card itself has a quality problem, say so and offer to fix it with update_card (update_code_card for a code card).",
     "",
     cardBlock(card),
     "",
@@ -67,7 +67,7 @@ function skillArgv(studyDir, title, skill, topic, context) {
 function leechPrompt(card, lapses, how) {
   var ask = how === "split"
     ? "Split it: draft the focused cards, create each with create_card and inheritFrom: \"" + card.id + "\" so they keep its schedule, then delete_card the original."
-    : "Rewrite it grounded (a concrete scenario front, per /study's staging rule) and save it with update_card, which clears the leech flag and resets its lapses."
+    : "Rewrite it grounded (a concrete scenario front, per /study's staging rule) and save it with update_card (update_code_card for a code card, per references/code-cards.md), which clears the leech flag and resets its lapses."
   return "This flashcard is a leech: " + lapses + " lapses, so the card is fighting me, not the concept. " + ask
     + " Follow /study-flashcard's card content format and size rules. Show me the draft before writing it.\n\n" + cardBlock(card)
 }

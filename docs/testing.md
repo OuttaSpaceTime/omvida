@@ -54,7 +54,7 @@ and stops.
 - `tests/unit`: `StudyKeys.js` (every binding in every phase, US and German Shift+digit),
   `Format.js`, `Cards.js`, `Graph.js`, `Launch.js` (the prompts and the Ask tool allowlist),
   `NoteEdit.js` (the note editor's list and bold/italic keys),
-  `Session.js`, `StatusBits.js` (the status line's shared hints and pressure alert), the
+  `Session.js`, `StudyPages.js`, `Exercise.js` (a code card's lines, indenting, its results in words), `StatusBits.js` (the status line's shared hints and pressure alert), the
   bar's `Model.js`, and `Navigator.qml` (back and forward, links, the order of its signals),
   a QML type that uses no singleton, so `import "../.."` loads it without a window.
 - `tests/app`: `OmvidaTest.qml` is Omvision's harness adapted: the app loads the test file
@@ -65,7 +65,10 @@ and stops.
   one app; a file whose tests change the deck resets what it needs in `init()` (tst_study makes
   every card due again), or gets a file of its own (tst_delete deletes cards, from Study and
   from Cards; tst_catchup rewrites and deletes them behind a session's back, as Claude Code
-  does, and watches the session catch up; tst_notes writes card notes and past sessions).
+  does, and watches the session catch up; tst_notes writes card notes and past sessions; tst_code
+  runs code cards against the deck server's real sandbox, on `seed_deck.py <db> --code`, which also
+  suspends every other card).
+  tst_studypages rates cards and watches the wiki panel's "From study" list and its file.
   tst_client drives `JsonLineClient.qml` alone against `tests/fixtures/echo-backend.py`, a
   backend that hangs or exits on request: queued calls, the request timeout, a crash. It is an
   app test only because Quickshell's `Process` exists only inside `qs`.
@@ -84,10 +87,11 @@ and stops.
 | `statusLine`, `statusMode`, `statusSegment:<i>`, `statusHints` (their row), `statusHint:<label>`, `statusAlert:<i>` | the status line (each has a plain `text`; hints are buttons: `statusHint:keys` on Study, `statusHint:delete` on Cards...) |
 | `keyHelp:<label>` | Study's key list (Alt+?), its rows: `keyHelp:reveal`, `keyHelp:skip`, `keyHelp:check quality`, `keyHelp:undo rating`, `keyHelp:redo rating`... |
 | `toast` (its `text`) | the window's toast |
+| `checkSlot`, `checkReport:<i>`, `checkHeadline:<i>`, `checkFront:<i>`, `checkText:<i>`, `checkAsked:<i>`, `checkExtra:<i>`, `checkCard:<i>:<j>`, `checkDiscuss:<i>`, `checkDismiss:<i>` | Ctrl+Q's results, docked above the status line |
 | `studyCard` (its `opacity` fades between rated cards), `answerField`, `cardFront`, `cardRecap`, `cardBack`, `suggestionBox`, `suggestionLine` (`verdict`, `reason`) | the study card |
 | `rate:<1-4>` (`suggested`, `marked` (picked or taken), `chosen`; its `interval` label), `startSessionButton`, `studyAgainButton` | the study controls |
+| `codeCard` (`shaking`, `flashing`: the last check's animation), `codeBrief`, `codeListing`, `codeBlank:<i>`, `codeVerdict`, `codeCase:<i>`, `codeActual:<i>`, `codeExpected:<i>`, `codeError`, `codeOutput`, `codeExplain`, `codeResults` | a code card |
 | `leechRewrite`, `leechSplit`, `leechDrop`, `leechDropConfirm`, `leechKeep`, `leechContinue` | a leech |
-| `checkSlot`, `checkReport:<i>`, `checkHeadline:<i>`, `checkFront:<i>`, `checkText:<i>`, `checkAsked:<i>`, `checkExtra:<i>`, `checkCard:<i>:<j>`, `checkDiscuss:<i>`, `checkDismiss:<i>` | Ctrl+Q's results, docked above the status line |
 | `summary`, `summaryLine`, `related:<path>` | the session summary |
 | `pageTitle`, `wikiFlick`, `pageCardsButton`, `pageAddCards`, `pageExplore:<n>`, `pageDeeper`, `heading:<anchor>` | a wiki page |
 | `panelMode:context`, `panelMode:tree`, `tree:<path>`, `sibling:<path>`, `section:<anchor>` | the wiki side panel |

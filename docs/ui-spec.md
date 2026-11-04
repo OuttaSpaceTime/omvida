@@ -80,6 +80,19 @@ Drawn for the keyboard: no button rows, no session line, no hint footer; the sta
 the mode, the place and the keys. The card sits in the reading column, centred vertically
 while it fits.
 
+- A code card (`CodeCard.qml`) is its own layout, status mode CODE. What to solve, large; the code
+  on its fill, highlighted, each blank an underlined field in place (Tab between them; a multi-line
+  one is a block, which indents as an editor does, two spaces at a time: it starts at the body's indentation, Enter keeps
+  the line's and goes one further after an opener, an `end` comes back out, Backspace takes an indent whole,
+  Tab and Shift+Tab indent and outdent, Ctrl+Tab is the next blank); for a prediction, under each expression a `›` and a field. Under it the verdict
+  as one bold line ("✓ matches", "1 of 2 match", "error") and each case, its expression small over
+  `output` beside `expected`, the output green on a match and red otherwise, an error being its output,
+  in full. Syntax errors above the cases, what was printed below. No result, no such rows, for a
+  prediction: it shows nothing of the real value until it is right. It updates as you pause typing,
+  silently, except that code which doesn't compile says nothing until a check. Shift+Enter checks (Enter too in an inline blank): the results shake (400ms, 6px) on
+  a wrong answer or an error, and flash green (450ms) on one, which stays up with the card's one-clause why until a second
+  Shift+Enter moves on, rated Good (Esc there ends the session, the pass written). The words carry it without the motion. Ctrl+G gives up once a check has
+  failed: the solution in the blanks, the why, and the next Shift+Enter rates it Again.
 - Answering: the front large (20px), without its tags (they can give the answer away), then
   a borderless prompt: an accent `›` and the answer box ("answer, or leave
   empty").
@@ -96,12 +109,15 @@ while it fits.
   Keys are spelled out (`ctrl+`, `shift+`, `alt+`, `enter`), not as Mac glyphs.
   Answering it lists `shift+enter reveal`, `alt+enter reveal+accept`, `shift+1-4 reveal and pick`,
   `ctrl+D discuss`, `ctrl+N note`, `ctrl+Q check quality`, `ctrl+S skip`, `esc end`, `del delete`; revealed
-  `shift+enter <picked rating>` once Shift+digit picked one, `alt+enter take <rating>` (or
-  `shift+enter good` with no suggestion and no pick), `shift+1-4 pick, twice to rate` as a legend,
+  `shift+enter <rating>` (the pick, else the suggestion, else good), `alt+enter take <rating>` when the
+  suggestion differs from the pick, `shift+1-4 pick, twice to rate` as a legend,
   discuss, note, check quality, skip, end, delete. On a card `ctrl+Z undo rating` and `ctrl+shift+Z redo rating`
   end the list, as buttons when there is one to take and as a legend otherwise, and not with an answer
   typed, when Ctrl+Z edits it; a leech and the summary list undo when there is one. An undone card comes
   back revealed, its answer and verdict in place and its rating's keycap filled, as a pick is.
+  Ctrl+Q's results dock above the status line, in the layout, so the card above stays usable: a line while
+  a check runs, then what became of the card, what it asked, what its back said beyond that, and the cards it
+  became. Each stays until `ctrl+shift+Q dismiss`; `ctrl+shift+D discuss` opens Claude Code on the verdict.
   Shift+digit never moves on at the first press. A noted card says
   `noted` (accent) among the segments. Del asks in the
   confirm dialog, then deletes the card and the session goes on; with an answer typed and not
@@ -115,9 +131,6 @@ confirm, `enter continue`), done (the summary with an honest duration, accuracy,
 related pages; a walkthrough offer per lapse; `enter start another session`, browse the wiki,
 home; the cards noted, with "fix them in claude"), error (`enter try again`). The leech and the summary set their actions as plain words
 (`PlainButton.qml`), never a row of boxes. Keys: README's table; Enter and Esc also work on a
-  Ctrl+Q's results dock above the status line, in the layout, so the card above stays usable: a line while
-  a check runs, then what became of the card, what it asked, what its back said beyond that, and the cards it
-  became. Each stays until `ctrl+shift+Q dismiss`; `ctrl+shift+D discuss` opens Claude Code on the verdict.
 leech, Enter on the summary.
 
 ## Wiki

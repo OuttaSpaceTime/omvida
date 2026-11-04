@@ -7,8 +7,6 @@ import QtQuick
 OmvidaTest {
   name: "study"
 
-  function reviews() { return sql("SELECT cardId, rating FROM Review WHERE id NOT LIKE 'fixturereview%' ORDER BY reviewedAt")[0] ? sql("SELECT cardId, rating FROM Review WHERE id NOT LIKE 'fixturereview%' ORDER BY reviewedAt") : [] }
-
   // Every test starts with the whole deck due again and no session open: a
   // review pushes a card days out, and the next test would find nothing to do.
   function init() {
@@ -126,6 +124,20 @@ OmvidaTest {
     tryVerify(function() { return study.card && study.card.id !== cardId }, 8000)
     var r = reviews()
     compare(r[r.length - 1], [cardId, 4])
+  }
+
+  // Shift+Enter on a revealed card takes the suggestion, not a blanket Good.
+  function test_shift_enter_takes_the_suggestion() {
+    startSession()
+    var cardId = study.card.id
+    type("a perfect answer")
+    key(Qt.Key_Return, Qt.ShiftModifier)
+    tryVerify(function() { return study.suggestion !== null }, 8000)
+    var suggested = study.suggestion.rating
+    key(Qt.Key_Return, Qt.ShiftModifier)
+    tryVerify(function() { return study.card && study.card.id !== cardId }, 8000)
+    var r = reviews()
+    compare(r[r.length - 1], [cardId, suggested], "the suggested rating")
   }
 
   function test_a_rating_overrides_the_suggestion() {

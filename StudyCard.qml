@@ -24,7 +24,9 @@ Column {
 
   // The answer box keeps the keyboard while a card is up, so typing starts at
   // once and the rating keys always reach it.
-  function focusAnswer() { answer.forceActiveFocus() }
+  function focusAnswer() {
+    if (!root.session.isCode || !codeCard.focusBlank()) answer.forceActiveFocus()
+  }
 
   readonly property bool showCard: root.session.cardShown
 
@@ -84,13 +86,23 @@ Column {
     color: Theme.orangeText
   }
 
+  // A code card is its own layout: nothing of the rest fits it but the keycaps,
+  // which it shows only for a rating undone (there is no step of choosing one).
+  CodeCard {
+    id: codeCard
+    objectName: "codeCard"
+    visible: root.showCard && root.session.isCode
+    width: parent.width
+    session: root.session
+  }
+
   // ---- the front ---------------------------------------------------------------------
   // The front alone, without the card's tags: a tag often names the answer
   // ("#max-age" under "How long does a response stay fresh?"). Cards shows
   // them; studying, they would be a hint.
   CardFace {
     objectName: "cardFront"
-    visible: root.showCard && !root.session.backShown
+    visible: root.showCard && !root.session.backShown && !root.session.isCode
     width: parent.width
     html: root.session.card ? root.session.card.front : ""
     size: Theme.cardFrontSize
@@ -101,7 +113,7 @@ Column {
   // text, a few lines at most, so the answer and the back get the room.
   UiText {
     objectName: "cardRecap"
-    visible: root.showCard && root.session.backShown
+    visible: root.showCard && root.session.backShown && !root.session.isCode
     width: parent.width
     text: root.session.card ? Format.stripHtml(root.session.card.front) : ""
     wrapMode: Text.Wrap
@@ -125,7 +137,7 @@ Column {
   // visibility change between the two, never the anchors (layout rule 6).
   Item {
     id: answerBox
-    visible: root.showCard
+    visible: root.showCard && !root.session.isCode
     width: parent.width
     readonly property bool split: root.session.backShown
     readonly property int pad: split ? Theme.spaceLg : 0
@@ -268,7 +280,9 @@ Column {
   // Every rating follows a reveal (a first Shift+digit reveals and picks), so
   // the row is always up when one is taken.
   Row {
-    visible: root.session.backShown
+    // On a code card only when undone: it never asks for a rating, but a rating
+    // given can be corrected by hand.
+    visible: root.session.backShown && (!root.session.isCode || root.session.picked > 0)
     spacing: Theme.spaceSm
     Repeater {
       model: [1, 2, 3, 4]

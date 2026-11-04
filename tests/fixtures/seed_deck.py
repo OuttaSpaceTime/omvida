@@ -20,6 +20,7 @@ it, so the rows are written in one place. INSERT OR REPLACE: a test file may
 run it again on its deck.
 """
 
+import json
 import sqlite3
 import sys
 from datetime import UTC, datetime, timedelta
@@ -32,6 +33,43 @@ def iso(d):
 
 
 db = sqlite3.connect(sys.argv[1])
+
+if sys.argv[2:] == ["--code"]:
+    # Code cards, due before anything else, with every other card suspended, so
+    # a session is only these: a prediction, a fill with two cases and a block to
+    # write. tst_code and the shots (bin/shot -a code) both use it. exercises.ts
+    # says what the fields are, and writes front and back; here they are short.
+    code_cards = [
+        ("fixturecode01", "What does <code>each</code> hand back?", {
+            "kind": "predict", "lang": "ruby", "brief": "What does <code>each</code> hand back?",
+            "source": "r = [1, 2].each { |x| x * 2 }\nputs \"ran\"",
+            "cases": [{"expr": "r", "goal": "[1, 2]"}],
+            "explain": "<code>each</code> returns its receiver.",
+        }),
+        ("fixturecode02", "Keep the even numbers, squared.", {
+            "kind": "fill", "lang": "ruby", "brief": "Keep the even numbers, squared.",
+            "source": "def even_squares(list)\n  list.select(&:even?).{{c1::map}} { |n| n * n }\nend\nputs \"loaded\"",
+            "cases": [{"expr": "even_squares([1, 2])", "goal": "[4]"}, {"expr": "even_squares([3])", "goal": "[]"}],
+            "explain": "<code>select</code> narrows, <code>map</code> transforms.",
+        }),
+        ("fixturecode03", "Write the method body.", {
+            "kind": "compose", "lang": "ruby", "brief": "Double a number.",
+            "source": "def double(n)\n{{c1::  n * 2\n}}end",
+            "cases": [{"expr": "double(2)", "goal": "4"}],
+            "explain": "A method returns its last expression.",
+        }),
+    ]
+    db.execute("UPDATE Card SET suspended = 1")
+    stamp = iso(now - timedelta(days=30))
+    for offset, (cid, front, exercise) in enumerate(code_cards):
+        db.execute(
+            "INSERT OR REPLACE INTO Card (id, deckId, front, back, tags, type, exercise, due, stability, difficulty,"
+            " reps, lapses, state, lastReview, interval, suspended, createdAt, updatedAt)"
+            " VALUES (?,'deckweb',?,?,'ruby','guided',?,?,5,5,3,0,2,?,5,0,?,?)",
+            (cid, front, exercise["explain"], json.dumps(exercise),
+             iso(now - timedelta(days=30 - offset)), stamp, stamp, stamp))
+    db.commit()
+    sys.exit(0)
 
 if sys.argv[2:] == ["--notes"]:
     def ago(minutes):

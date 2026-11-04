@@ -203,6 +203,11 @@ TestCase {
   }
 
   // Rows from the fixture deck, read-only.
+  // The reviews a test wrote, oldest first: [cardId, rating] rows.
+  function reviews() {
+    return sql("SELECT cardId, rating FROM Review WHERE id NOT LIKE 'fixturereview%' ORDER BY reviewedAt")
+  }
+
   function sql(query) {
     var r = run(["python3", "-c",
       "import json,sqlite3,sys; c=sqlite3.connect('file:'+sys.argv[1]+'?mode=ro',uri=True); print(json.dumps(c.execute(sys.argv[2]).fetchall()))",
@@ -254,6 +259,8 @@ TestCase {
     // The answer box takes the keyboard a moment after the phase changes
     // (StudyScreen focuses it with Qt.callLater); a key typed before that
     // went to the screen, and the test lost its first letter.
+    // A code card's own first blank is its test's to wait for (tst_code).
+    if (base.study.isCode) return
     var field = item("answerField")
     tryVerify(function() { return field.activeFocus }, base.timeout, "the answer box has the keyboard")
   }

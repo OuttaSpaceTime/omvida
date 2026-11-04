@@ -7,7 +7,7 @@ TestCase {
   name: "StudyKeys"
 
   function st(phase, extra) {
-    var s = { phase: phase, hasSuggestion: false, answerEmpty: false }
+    var s = { phase: phase, suggested: 0, answerEmpty: false }
     for (let k in extra) s[k] = extra[k]
     return s
   }
@@ -18,9 +18,16 @@ TestCase {
     compare(K.action(st("grading"), Qt.Key_Enter, Qt.ShiftModifier, 0), { action: "submit", rating: 3 })
   }
 
+  // Shift+Enter takes what is in play: the pick, else the suggestion, else Good.
+  function test_shift_enter_takes_the_suggestion_over_good() {
+    compare(K.action(st("revealed", { suggested: 4 }), Qt.Key_Return, Qt.ShiftModifier, 0), { action: "submit", rating: 4 })
+    compare(K.action(st("revealed", { suggested: 4, picked: 2 }), Qt.Key_Return, Qt.ShiftModifier, 0), { action: "submit", rating: 2 })
+    compare(K.action(st("revealed", { suggested: 0 }), Qt.Key_Return, Qt.ShiftModifier, 0), { action: "submit", rating: 3 })
+  }
+
   function test_alt_enter_accepts_the_suggestion() {
-    compare(K.action(st("revealed", { hasSuggestion: true }), Qt.Key_Return, Qt.AltModifier, 0), { action: "accept" })
-    compare(K.action(st("revealed", { hasSuggestion: false }), Qt.Key_Return, Qt.AltModifier, 0), null)
+    compare(K.action(st("revealed", { suggested: 3 }), Qt.Key_Return, Qt.AltModifier, 0), { action: "accept" })
+    compare(K.action(st("revealed", { suggested: 0 }), Qt.Key_Return, Qt.AltModifier, 0), null)
     compare(K.action(st("grading"), Qt.Key_Return, Qt.AltModifier, 0), { action: "acceptLater" })
     compare(K.action(st("answering"), Qt.Key_Return, Qt.AltModifier, 0), { action: "revealAccept" })
     compare(K.action(st("answering", { answerEmpty: true }), Qt.Key_Return, Qt.AltModifier, 0), { action: "reveal" })
@@ -151,5 +158,65 @@ TestCase {
     compare(K.action(st("revealed"), Qt.Key_Q, Qt.ControlModifier, 0), { action: "check" })
     compare(K.action(st("done"), Qt.Key_Q, Qt.ControlModifier, 0), null)
     compare(K.action(st("answering"), Qt.Key_Q, Qt.ShiftModifier, 0), null, "Shift+Q types a Q")
+  }
+
+  // ---- code cards ------------------------------------------------------------
+  function codeState(extra) {
+    var code = Object.assign({ enterChecks: true, canGiveUp: false, rating: 0 }, extra || {})
+    return { phase: "answering", suggested: 0, answerEmpty: false, picked: 0, code: code }
+  }
+
+  function test_code_shift_enter_checks() {
+    compare(K.action(codeState(), K.KEY.Return, K.MOD.Shift, 0), { action: "codeCheck" })
+    compare(K.action(codeState({ enterChecks: false }), K.KEY.Return, K.MOD.Shift, 0), { action: "codeCheck" })
+  }
+
+  function test_code_enter_checks_in_an_inline_blank_and_types_in_a_block() {
+    compare(K.action(codeState(), K.KEY.Return, 0, 0), { action: "codeCheck" })
+    compare(K.action(codeState({ enterChecks: false }), K.KEY.Return, 0, 0), null)
+  }
+
+  function test_code_shift_digits_type_what_code_needs() {
+    compare(K.action(codeState(), K.KEY.K1, K.MOD.Shift, 10), null, "! is typed")
+    compare(K.action(codeState(), K.KEY.QuoteDbl, K.MOD.Shift, 11), null, "a quote is typed")
+    compare(K.action(codeState(), K.KEY.Dollar, K.MOD.Shift, 13), null, "$ is typed")
+  }
+
+  function test_code_alt_enter_is_nothing_with_no_rating_to_take() {
+    compare(K.action(codeState(), K.KEY.Return, K.MOD.Alt, 0), null)
+  }
+
+  function test_code_ctrl_g_gives_up_only_once_offered() {
+    compare(K.action(codeState({ canGiveUp: true }), K.KEY.G, K.MOD.Control, 0), { action: "giveUp" })
+    compare(K.action(codeState(), K.KEY.G, K.MOD.Control, 0), { action: "none" })
+  }
+
+  // Passed or given up on: the rating it came with, on Shift+Enter and nothing else.
+  function test_code_decided_only_shift_enter_moves_on() {
+    [3, 1].forEach(function(rating) {
+      var s = codeState({ rating: rating })
+      s.phase = "revealed"
+      compare(K.action(s, K.KEY.Return, K.MOD.Shift, 0), { action: "submit", rating: rating })
+      compare(K.action(s, K.KEY.Return, 0, 0), null, "a plain Enter doesn't")
+      compare(K.action(s, K.KEY.Return, K.MOD.Alt, 0), null, "nor Alt+Enter")
+      compare(K.action(s, K.KEY.K4, K.MOD.Shift, 13), null, "no rating to pick")
+    })
+  }
+
+  function test_code_an_undone_rating_is_an_ordinary_revealed_card() {
+    var s = codeState()
+    s.phase = "revealed"
+    s.picked = 3
+    compare(K.action(s, K.KEY.Return, K.MOD.Shift, 0), { action: "submit", rating: 3 })
+    compare(K.action(s, K.KEY.K1, K.MOD.Shift, 10), { action: "pick", rating: 1 })
+  }
+
+  function test_code_keeps_the_other_keys_of_a_card() {
+    compare(K.action(codeState(), K.KEY.S, K.MOD.Control, 0), { action: "skip" })
+    compare(K.action(codeState(), K.KEY.N, K.MOD.Control, 0), { action: "note" })
+    compare(K.action(codeState({ }), K.KEY.Escape, 0, 0), { action: "none" }, "a typed answer is safe from Esc")
+    var empty = codeState()
+    empty.answerEmpty = true
+    compare(K.action(empty, K.KEY.Escape, 0, 0), { action: "end" })
   }
 }

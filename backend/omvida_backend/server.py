@@ -94,12 +94,18 @@ class Service:
     def log_session(self, p: dict) -> dict:
         return logs.append_session(self.study_dir, dict(p.get("entry", {})))
 
+    def highlight(self, p: dict) -> list[str]:
+        """Code runs as highlighted html, for a code card, cut around its blanks."""
+        lang = str(p.get("lang", ""))
+        return [render.highlight(str(code), lang) for code in p.get("segments", [])]
+
     def handlers(self) -> dict[str, Callable[[dict], Any]]:
         return {
             "index": self.index,
             "stamp": self.stamp,
             "page": self.page,
             "markdown": self.markdown,
+            "highlight": self.highlight,
             "search": self.search,
             "related": self.related,
             "pagesOfCard": self.pages_of_card,

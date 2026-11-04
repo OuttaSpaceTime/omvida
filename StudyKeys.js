@@ -1,13 +1,15 @@
 .pragma library
 
 // What a key press means on the Study screen. Pure, so tests/unit can pin
-// every binding without a window; StudyScreen.qml only carries out the action
-// returned.
+// every binding without a window; StudySession.handleKey only carries out the
+// action returned.
 //
 // The bindings:
 //   Shift+Enter   reveal: show the back and send a typed answer to the grader.
-//                 Pressed again once revealed: submit the picked rating, else
-//                 Good.
+//                 Pressed again once revealed: submit the rating in play, the
+//                 one Shift+digit picked, else the suggestion, else Good. So
+//                 it always takes what the keycaps show as chosen, and Good
+//                 only when nothing is.
 //   Alt+Enter     accept the suggested rating. Before the reveal it reveals
 //                 and accepts the suggestion the moment it arrives, so one
 //                 key goes from answer to next card.
@@ -55,6 +57,22 @@
 //                 keyboard. On a leech, Esc ends the session too.
 // Plain Enter types a newline: answers are often code.
 //
+// On a code card, being answered (Execute Program's keys):
+//   Shift+Enter   check: run it. Wrong is no penalty, so it can be pressed freely.
+//   Enter         the same, in an inline blank, which has no use for a newline.
+//   Tab           the next blank; in a block it indents, Shift+Tab outdents and
+//                 Ctrl+Tab is the next blank (CodeBlank.qml, which handles these).
+//   Ctrl+G        give up, once a check has failed: the solution, and rated
+//                 Again when moved on from. Elsewhere it does nothing.
+//   Shift+digit is no rating here. There is no rating to give, and it is how
+//   `!`, `"` and `$` get typed, which code wants.
+// Once it has passed or been given up on, the result stays up, and Shift+Enter,
+// only that, moves on and writes the rating it came with: a plain Enter is what
+// checks in an inline blank, so a repeat of it could pass over the reason unread.
+// It went on by itself at first, after a pause, which was never the right length
+// for reading. The card is otherwise as any card: Ctrl+D, Ctrl+S, Ctrl+N, Ctrl+Q
+// and Esc, which still writes the rating, as the pass was earned.
+//
 // Shift+digit is matched on the physical key, not the character. Shift+1
 // arrives as "!" on a US layout and as "!" on German too, but Shift+3 is "#"
 // on US and "§" on German, and Shift+2 is "@" or '"'. Qt reports the
@@ -71,7 +89,7 @@ var KEY = {
   Return: 0x01000004, Enter: 0x01000005, Escape: 0x01000000, Delete: 0x01000007,
   K1: 0x31, K2: 0x32, K3: 0x33, K4: 0x34,
   Exclam: 0x21, At: 0x40, QuoteDbl: 0x22, NumberSign: 0x23, Section: 0xa7, Dollar: 0x24,
-  D: 0x44, S: 0x53, N: 0x4e, Q: 0x51, Z: 0x5a, Question: 0x3f, Slash: 0x2f
+  D: 0x44, S: 0x53, N: 0x4e, Q: 0x51, Z: 0x5a, G: 0x47, Question: 0x3f, Slash: 0x2f
 }
 var MOD = { Shift: 0x02000000, Control: 0x04000000, Alt: 0x08000000, Meta: 0x10000000 }
 
@@ -99,8 +117,12 @@ function isEnter(key) { return key === KEY.Return || key === KEY.Enter }
 // is in doubt. Whether there is one to take back is the session's to say.
 var HISTORY_PHASES = ["answering", "grading", "revealed", "submitting", "loading", "blocked", "done"]
 
-// state: { phase, hasSuggestion, answerEmpty, picked }
+// state: { phase, suggested, answerEmpty, picked, code }
+//   code: on a code card, what its keys need: { enterChecks, canGiveUp, rating },
+//         enterChecks being whether the blank in hand is an inline one, and
+//         rating the one a pass or a give-up came with, waiting to be moved on from
 //   picked: the rating Shift+digit picked on this card, 1..4, else 0
+//   suggested: the grader's rating, 1..4, else 0 (none arrived yet)
 //   phase: "idle" | "loading" | "answering" | "grading" | "revealed" | "submitting" |
 //          "blocked" | "done" | "error"
 // Returns { action, rating? } or null when the key is not ours (it then types
@@ -114,6 +136,7 @@ var HISTORY_PHASES = ["answering", "grading", "revealed", "submitting", "loading
 //   discuss, skip, note, check, end, delete
 //   undo, redo     take back the last rating, or give back one taken back
 //   help           show the keys (Alt+?, in every phase)
+//   codeCheck, giveUp  a code card's try, and its way out
 //   start          a new session (Enter with no card up: idle, done, error)
 //   continue       go on past a leech (Enter on one)
 function action(state, key, modifiers, scanCode) {
@@ -132,7 +155,9 @@ function action(state, key, modifiers, scanCode) {
   var active = phase === "answering" || phase === "grading" || phase === "revealed"
   if (!active) return null
 
-  var digit = shiftDigit(key, modifiers, scanCode)
+  var codeAnswering = !!state.code && phase === "answering"
+  var codeDecided = !!state.code && state.code.rating > 0
+  var digit = codeAnswering || codeDecided ? 0 : shiftDigit(key, modifiers, scanCode)
   if (digit) {
     if (phase !== "answering" && state.picked === digit) return { action: "submit", rating: digit }
     return { action: "pick", rating: digit }
@@ -143,6 +168,7 @@ function action(state, key, modifiers, scanCode) {
   if (ctrl && !alt && !shift && key === KEY.S) return { action: "skip" }
   if (ctrl && !alt && !shift && key === KEY.N) return { action: "note" }
   if (ctrl && !alt && !shift && key === KEY.Q) return { action: "check" }
+  if (codeAnswering && ctrl && !alt && !shift && key === KEY.G) return state.code.canGiveUp ? { action: "giveUp" } : { action: "none" }
   if (key === KEY.Escape && !ctrl && !alt && !shift && !(modifiers & MOD.Meta)) {
     if (phase === "answering" && !state.answerEmpty) return { action: "none" }
     return { action: "end" }
@@ -153,13 +179,18 @@ function action(state, key, modifiers, scanCode) {
   }
 
   if (!isEnter(key)) return null
+  if (codeAnswering) {
+    if (ctrl || alt) return null
+    return shift || state.code.enterChecks ? { action: "codeCheck" } : null
+  }
+  if (codeDecided) return shift && !ctrl && !alt ? { action: "submit", rating: state.code.rating } : null
   if (shift && !ctrl && !alt) {
-    return phase === "answering" ? { action: "reveal" } : { action: "submit", rating: state.picked || 3 }
+    return phase === "answering" ? { action: "reveal" } : { action: "submit", rating: state.picked || state.suggested || 3 }
   }
   if (alt && !ctrl && !shift) {
     if (phase === "answering") return state.answerEmpty ? { action: "reveal" } : { action: "revealAccept" }
     if (phase === "grading") return { action: "acceptLater" }
-    return state.hasSuggestion ? { action: "accept" } : null
+    return state.suggested > 0 ? { action: "accept" } : null
   }
   return null
 }

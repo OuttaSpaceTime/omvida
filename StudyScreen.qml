@@ -61,6 +61,7 @@ Item {
     case "done": return "DONE"
     case "error": return "ERROR"
     }
+    if (root.session.isCode && root.session.picked === 0) return "CODE"
     return root.session.backShown ? "RATE" : "STUDY"
   }
   readonly property color statusModeColor: {
@@ -78,6 +79,7 @@ Item {
       if (pos !== "") out.push({ text: pos, color: Theme.ink })
       out.push({ text: s.card.deck })
       if (s.next.repeat) out.push({ text: "repeat" })
+      if (s.isCode && s.codeGaveUp) out.push({ text: "the solution", color: Theme.orangeText })
       if (root.app.store.notes[s.card.id]) out.push({ text: "noted", color: Theme.accentColor })
       return out
     }
@@ -120,31 +122,54 @@ Item {
     // so in a toast). With an answer typed Ctrl+Z is the box's (StudyKeys.js),
     // so it isn't listed as a rating's. A leech or the summary has no card to
     // redo on, and offers undo only when it would do something.
+    var cardKeys = [discuss, note, check, skip, end, del]
     var undoRow = { keys: "ctrl+Z", label: "undo rating" }
     if (s.canUndo) undoRow.run = function() { s.undo() }
     var redoRow = { keys: "ctrl+shift+Z", label: "redo rating" }
     if (s.canRedo) redoRow.run = function() { s.redo() }
-    var history = phase === "answering" && s.answer.trim() !== "" ? [] : [undoRow, redoRow]
+    var history = phase === "answering" && s.hasTyped ? [] : [undoRow, redoRow]
     var undoOnly = s.canUndo ? [undoRow] : []
+    // A code card has no rating to choose, on purpose: see StudySession.
+    if (s.isCode && phase === "answering") {
+      let block = s.codeBlockFocused
+      let several = s.card.exercise.answers > 1
+      // Which blank has the keyboard says what Enter and Tab do (CodeBlank.qml).
+      // The rows with no `run` are a legend: they are keys for typing.
+      let rows = [{ keys: block ? "shift+enter" : "enter, shift+enter", label: "check", run: function() { s.checkCode() } }]
+      if (block) rows.push({ keys: "enter", label: "new line, indented" },
+                           { keys: "tab", label: "indent" },
+                           { keys: "shift+tab", label: "outdent" })
+      if (several) rows.push({ keys: block ? "ctrl+tab" : "tab", label: "next blank" })
+      let giveUp = { keys: "ctrl+G", label: "give up" }
+      if (s.canGiveUp) giveUp.run = function() { s.giveUp() }
+      rows.push(giveUp)
+      // With code typed, Ctrl+Z is the box's (StudyKeys.js), and worth saying so.
+      let typing = s.hasTyped ? [{ keys: "ctrl+Z", label: "undo typing" }] : []
+      return rows.concat(cardKeys, history, typing)
+    }
+    if (s.isCode && s.codeRating > 0)
+      return [{ keys: "shift+enter", label: s.codeGaveUp ? "next, rated " + Format.ratingName(s.codeRating).toLowerCase() : "next", run: function() { s.submit(s.codeRating) } }]
+        .concat(cardKeys, history)
     if (s.frontShown) return [
       { keys: "shift+enter", label: "reveal", run: function() { s.reveal(false) } },
       { keys: "alt+enter", label: "reveal+accept", run: function() { s.reveal(true) } },
       // The mouse has no Shift: a click reveals, where the keycaps are.
-      { keys: "shift+1-4", label: "reveal and pick", run: function() { s.reveal(false) } },
-      discuss, note, check, skip, end, del
-    ].concat(history)
+      { keys: "shift+1-4", label: "reveal and pick", run: function() { s.reveal(false) } }
+    ].concat(cardKeys, history)
     if (root.session.backShown) {
-      // A picked rating goes first: shift+enter submits it, and claude's
-      // rating stays a key away.
+      // shift+enter submits the rating in play: the pick, else claude's
+      // suggestion, else good (StudyKeys.js). alt+enter stays for taking the
+      // suggestion over a different pick, or waiting for it while it grades.
       let rows = []
       let picked = s.picked
-      if (picked) rows.push({ keys: "shift+enter", label: Format.ratingName(picked).toLowerCase(), run: function() { s.submit(picked) } })
+      let suggested = s.suggestion ? s.suggestion.rating : 0
+      let inPlay = picked || suggested || 3
+      rows.push({ keys: "shift+enter", label: Format.ratingName(inPlay).toLowerCase(), run: function() { s.submit(inPlay) } })
       if (phase === "grading") rows.push({ keys: "alt+enter", label: s.acceptPending ? "taking claude's rating" : "take claude's rating", run: function() { s.acceptPending = true } })
-      else if (s.suggestion) rows.push({ keys: "alt+enter", label: "take " + Format.ratingName(s.suggestion.rating).toLowerCase(), run: function() { s.submit(s.suggestion.rating) } })
-      else if (!picked) rows.push({ keys: "shift+enter", label: "good", run: function() { s.submit(3) } })
+      else if (suggested && suggested !== picked) rows.push({ keys: "alt+enter", label: "take " + Format.ratingName(suggested).toLowerCase(), run: function() { s.submit(suggested) } })
       // shift+1-4 is a legend here: the keycaps above are its buttons. The
       // first press picks, the second submits.
-      return rows.concat([{ keys: "shift+1-4", label: "pick, twice to rate" }, discuss, note, check, skip, end, del], history)
+      return rows.concat([{ keys: "shift+1-4", label: "pick, twice to rate" }], cardKeys, history)
     }
     switch (phase) {
     case "idle": return [{ keys: "enter", label: "start", run: function() { s.start() } }]

@@ -32,6 +32,8 @@ and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
 - No business rule lives here. Pressure, calibration, scheduling, leeches and the grading
   rubric are flashcard-mcp's; the wiki's link resolution mirrors the study repo's viewer
   (`backend/omvida_backend/wiki.py` says which rules). Show verdicts verbatim; never recompute.
+- A code card's verdict and rating are the deck server's (flashcard-mcp's `exercises.ts`), after Execute
+  Program: the app shows them. It never compares an answer itself, and never asks for a rating on one: a second Shift+Enter moves on from the result, and that is all it says. The keycaps appear only on one brought back by Ctrl+Z, to correct a rating by hand.
 - The app never edits cards or wiki pages. Those go through Claude Code skills in kitty
   (`Launch.js`), which own the content rules; Ctrl+Q's quality check is the same, a skill
   (`/study-card-check`) run headless (`CardCheck.qml`). The only writes the app makes are reviews (and undoing them, Ctrl+Z in Study),

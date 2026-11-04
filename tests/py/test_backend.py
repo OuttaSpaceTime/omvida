@@ -256,3 +256,15 @@ def test_markdown_renders_an_answer_with_resolved_wikilinks(svc):
     assert out["blocks"][0]["kind"] == "rich"  # a leading H1 is dropped, as on pages
     assert '<a href="wiki:security/csrf">csrf</a>' in out["blocks"][0]["html"]
     assert '<span class="broken">nope</span>' in out["blocks"][0]["html"]
+
+
+def test_highlight_keeps_each_run_of_code_apart(svc):
+    res = json.loads(respond(svc.handlers(), {"id": 1, "method": "highlight", "params": {
+        "segments": ["def double(n)", " <tag> "], "lang": "ruby"}}))["result"]
+    assert len(res) == 2
+    assert "class=" in res[0] and "double" in res[0]
+    assert "&lt;" in res[1], "escaped, as it goes into rich text"
+
+
+def test_highlight_of_an_unknown_language_is_only_escaped(svc):
+    assert svc.highlight({"segments": ["a < b"], "lang": "nosuchlang"}) == ["a &lt; b"]

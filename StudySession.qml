@@ -3,6 +3,7 @@ import QtQuick
 import "StudyKeys.js" as StudyKeys
 import "Launch.js" as Launch
 import "Session.js" as Session
+import "Exercise.js" as Exercise
 
 // A study session: the /study skill's loop, as state and actions with no view.
 // StudyScreen draws it; App.qml owns it (app.study), beside the store, so the
@@ -112,8 +113,9 @@ QtObject {
 
   // ---- undo and redo: the state --------------------------------------------------
   // The session's ratings, oldest first, each with what its card showed when it
-  // was given: { cardId, rating, answer, suggestion, gradeError, responseMs, leeches }
-  // (leeches: the record's leech lines by then, Session.unrated). What a rating
+  // was given: { cardId, rating, answer, suggestion, gradeError, responseMs, leeches,
+  // codeAnswers, codeResult, codeExplain, codeGaveUp } (leeches: the record's leech
+  // lines by then, Session.unrated). What a rating
   // changed in the deck is the deck server's to put back (undoReview); these
   // bring the view back, so an undo asks the grader nothing and bills nothing.
   property var rated: []
@@ -137,6 +139,38 @@ QtObject {
       return root.rated.some(function(r) { return r.cardId === cardId && r.rating === 1 })
     }
     onSaveFailed: function(text) { root.store.status = "study pages: " + text }
+  }
+
+  // ---- code cards: the state ------------------------------------------------------
+  // A card answered by running it (flashcard-mcp's exercises.ts, after Execute
+  // Program). It needs no reveal and no grade: it runs at each pause in the
+  // typing, a check is the same run with the animation (codeChecked), and a pass
+  // waits for one more Shift+Enter, with no step of choosing a rating. What a pass
+  // rates, and that a wrong try costs nothing, are the deck server's: `rating`
+  // comes with the result. It uses this session's phases, so everything built on them
+  // (undo, catching up, the log) needs nothing new: answering, then revealed on
+  // a pass or on giving up, and Shift+Enter from there writes the rating.
+  readonly property bool isCode: card !== null && !!card.exercise
+  property var codeAnswers: []    // one string per blank or prediction
+  property var codeResult: null   // the last run's result, shown as it stands
+  property var codeHtml: ({})     // their code, highlighted, by segment
+  property string codeExplain: ""
+  property int codeChecks: 0      // failed checks on this card
+  property bool codeGaveUp: false
+  property int codeRating: 0      // what a pass or a give-up rates, once moved on from
+  property bool codeBlockFocused: false // a multi-line blank has the keyboard
+  property int codeSeq: 0
+  readonly property bool canGiveUp: isCode && phase === "answering" && codeChecks >= Config.codeGiveUpAfter
+  // Whatever was typed on this card, for what doesn't care what kind it is.
+  readonly property string typed: isCode ? codeAnswers.join("\n") : answer
+  // Apart from `typed`, as the key list hangs on it: every character would build
+  // the list anew, where this changes only at the first and the last.
+  readonly property bool hasTyped: typed.trim() !== ""
+  signal codeChecked(string status)
+  signal codeAnswersSet()   // the answers changed other than by typing: the blanks show them
+  property Timer codeRunTimer: Timer {
+    interval: Config.codeRunDebounce
+    onTriggered: root.runLive()
   }
 
   // What it asks of the window (App.qml wires each).
@@ -168,7 +202,7 @@ QtObject {
   // trip to every rating. Ended or failed meanwhile (or ended and started
   // again before the reply), the session is past that card: the phase and
   // cardSeq drop the reply.
-  property int settleMs: Theme.acceptShowDuration + Theme.acceptFadeDuration
+  readonly property int settleMs: Theme.acceptShowDuration + Theme.acceptFadeDuration
   property int cardSeq: 0
   property var held: null        // { seq, err, res }: nextCard's reply, waiting out settleMs
   property Timer settleTimer: Timer {
@@ -227,6 +261,7 @@ QtObject {
     root.held = null
     settleTimer.stop()
     root.dropGrade()
+    root.resetCode()
     root.answerReset()
   }
 
@@ -245,6 +280,7 @@ QtObject {
     root.shownAt = Date.now()
     root.responseMs = 0
     root.rec = Session.shown(root.rec, root.shownAt)
+    if (root.isCode) root.setUpCode()
     var u = root.undone[root.undone.length - 1]
     if (u && u.cardId === res.card.id) {
       root.showAsRated(u)
@@ -265,6 +301,13 @@ QtObject {
     root.suggestion = u.suggestion
     root.gradeError = u.gradeError
     root.picked = u.rating
+    if (root.isCode) {
+      root.codeResult = u.codeResult
+      root.codeExplain = u.codeExplain
+      root.codeAnswers = u.codeAnswers
+      root.codeGaveUp = u.codeGaveUp
+      root.codeAnswersSet()
+    }
     root.answerRestored(u.answer)
     root.phase = "revealed"
   }
@@ -338,7 +381,8 @@ QtObject {
     root.reveal(false)
   }
 
-  function submit(rating) {
+  // `thenEnd`: the session ends once it is written, with no next card.
+  function submit(rating, thenEnd) {
     if (!root.card || root.phase === "submitting") return
     var c = root.card
     var repeat = root.next.repeat
@@ -346,7 +390,9 @@ QtObject {
     var responseMs = root.responseMs || Date.now() - root.shownAt
     var seq = root.cardSeq
     var given = { cardId: c.id, rating: rating, answer: root.answer, suggestion: root.suggestion,
-                  gradeError: root.gradeError, responseMs: responseMs, leeches: 0 }
+                  gradeError: root.gradeError, responseMs: responseMs, leeches: 0,
+                  codeAnswers: root.codeAnswers, codeResult: root.codeResult, codeExplain: root.codeExplain,
+                  codeGaveUp: root.codeGaveUp }
     // The rating undone given again is the redo, and the ones after it can
     // follow. Any other rating is a new history, as in an editor.
     var top = root.undone[root.undone.length - 1]
@@ -361,6 +407,7 @@ QtObject {
       root.rated = root.rated.concat([given])
       root.rec = Session.rated(root.rec, c, rating, suggested, repeat, Date.now())
       root.fromStudy.touch(c.id)
+      if (thenEnd) { root.finish(); return }
       if (seq !== root.cardSeq || root.phase !== "submitting") return
       deck.call("nextCard", { sessionId: root.sessionId }, function(err, res) {
         root.held = { seq: seq, err: err, res: res }
@@ -497,6 +544,17 @@ QtObject {
     if (JSON.stringify(c) === JSON.stringify(root.card)) return
     root.next = Object.assign({}, root.next, { card: c })
     root.dropGrade()
+    // The blanks may have moved: the card starts over, as it now is. The phase may
+    // not change, and the blank with the keyboard is gone, so the keyboard is
+    // asked back for (answerRestored).
+    if (root.isCode) {
+      root.picked = 0
+      root.revealedAt = 0
+      root.resetCode()
+      root.setUpCode()
+      root.answerRestored("")
+      root.phase = "answering"
+    }
     if (root.phase === "grading") root.phase = "revealed"
     root.toastRequested("Card updated in Claude Code")
   }
@@ -511,7 +569,7 @@ QtObject {
 
   function discuss() {
     if (!root.card) return
-    root.launchRequested(Launch.discussArgv(Paths.studyDir, root.card, root.answer, root.suggestion),
+    root.launchRequested(Launch.discussArgv(Paths.studyDir, root.card, root.typed, root.suggestion),
                     "Discussing in Claude Code. Rate the card when you're back.")
   }
 
@@ -557,7 +615,8 @@ QtObject {
   // A key from the answer box (or, with no card up, the screen): true when
   // it was a study key, which the box then doesn't type.
   function handleKey(event) {
-    var a = StudyKeys.action({ phase: root.phase, hasSuggestion: !!root.suggestion, answerEmpty: root.answer.trim() === "", picked: root.picked },
+    var a = StudyKeys.action({ phase: root.phase, suggested: root.suggestion ? root.suggestion.rating : 0, answerEmpty: !root.hasTyped, picked: root.picked,
+                              code: root.isCode ? { enterChecks: !root.codeBlockFocused, canGiveUp: root.canGiveUp, rating: root.codeRating } : null },
                              event.key, event.modifiers, event.nativeScanCode)
     if (!a) return false
     switch (a.action) {
@@ -571,6 +630,8 @@ QtObject {
     case "skip": root.skip(); break
     case "note": root.note(); break
     case "check": root.checkCard(); break
+    case "codeCheck": root.checkCode(); break
+    case "giveUp": root.giveUp(); break
     case "delete": root.askDelete(); break
     case "undo": root.undo(); break
     case "redo": root.redo(); break
@@ -580,6 +641,105 @@ QtObject {
     case "help": root.keysWanted(); break
     }
     return true
+  }
+
+  // ---- code cards -----------------------------------------------------------------
+  function resetCode() {
+    root.codeSeq++
+    codeRunTimer.stop()
+    root.codeAnswers = []
+    root.codeResult = null
+    root.codeHtml = ({})
+    root.codeExplain = ""
+    root.codeChecks = 0
+    root.codeGaveUp = false
+    root.codeRating = 0
+    root.codeBlockFocused = false
+  }
+
+  function setUpCode() {
+    var ex = root.card.exercise
+    root.codeAnswers = Exercise.startAnswers(ex.parts, ex.answers)
+    root.codeAnswersSet()
+    var id = root.card.id
+    wikiService.call("highlight", { segments: Exercise.segments(ex.parts), lang: ex.lang }, function(err, html) {
+      // Without it the code is plain, which is no reason to say anything.
+      if (!err && root.card && root.card.id === id) root.codeHtml = html
+    })
+  }
+
+  function setCodeAnswer(index, text) {
+    if (root.phase !== "answering" || root.codeAnswers[index] === text) return
+    var answers = root.codeAnswers.slice()
+    answers[index] = text
+    root.codeAnswers = answers
+    // A prediction shows nothing until it is checked, or the code would answer
+    // it. Otherwise the output follows the typing.
+    if (root.card.exercise.kind !== "predict") codeRunTimer.restart()
+  }
+
+  // A call about the card up, replacing the one before: its answer counts only
+  // while it is the latest and the card is still being answered.
+  function codeRequest(method, params, then) {
+    codeRunTimer.stop()
+    var seq = ++root.codeSeq
+    deck.call(method, Object.assign({ cardId: root.card.id }, params), function(err, res) {
+      if (seq !== root.codeSeq || root.phase !== "answering") return
+      if (err) { root.toastRequested(err); return }
+      then(res)
+    })
+  }
+
+  // The card is over, by a pass or a give-up, and waits for Shift+Enter.
+  function settleCode(rating, explain) {
+    root.revealedAt = Date.now()
+    root.responseMs = root.revealedAt - root.shownAt
+    root.codeRating = rating
+    root.codeExplain = explain
+    root.phase = "revealed"
+  }
+
+  function runLive() {
+    if (root.phase !== "answering" || !root.isCode) return
+    codeRequest("runExercise", { answers: root.codeAnswers }, function(res) {
+      // Half-filled says nothing, and leaves the last result where it is. Nor does
+      // code that doesn't compile yet, which is most pauses in a line being typed:
+      // a check is where that gets said. Two things do go, the code having changed
+      // since: an error a check said, and a pass, which is no longer true.
+      var early = Exercise.stoppedEarly(res)
+      if (res.status === "incomplete" || early) {
+        let shown = root.codeResult
+        if (shown && (shown.status === "pass" || (early && Exercise.stoppedEarly(shown)))) root.codeResult = null
+        return
+      }
+      root.codeResult = res
+    })
+  }
+
+  // A try, whatever comes of it. A wrong one and an error count only towards
+  // being offered the way out.
+  function checkCode() {
+    if (root.phase !== "answering" || !root.isCode) return
+    codeRequest("runExercise", { answers: root.codeAnswers }, function(res) {
+      root.codeResult = res
+      if (res.status !== "pass") root.codeChecks++
+      root.codeChecked(res.status)
+      if (res.rating !== null) root.settleCode(res.rating, res.explain || "")
+    })
+  }
+
+  // The solution, with the reason, up until the next key: reading it is the
+  // point of having given up. Rated then, not now, as a card still on screen
+  // can be noted or discussed first.
+  function giveUp() {
+    if (!root.canGiveUp) return
+    codeRequest("revealExercise", {}, function(res) {
+      root.codeGaveUp = true
+      root.codeResult = res.result
+      root.codeAnswers = res.answers
+      root.settleCode(res.rating, res.explain)
+      root.codeAnswersSet()
+    })
   }
 
   // ---- leeches ------------------------------------------------------------------------
@@ -620,9 +780,11 @@ QtObject {
     root.store.refreshDeck()
   }
 
-  // End early: what was reviewed still counts, and the session is closed.
+  // End early: what was reviewed still counts, and the session is closed. That
+  // takes in a code card passed or given up on and not yet moved on from.
   function endNow() {
     if (root.phase === "idle" || root.phase === "done") return
+    if (root.phase === "revealed" && root.codeRating > 0) { root.submit(root.codeRating, true); return }
     root.forgetGrade()
     root.finish()
   }

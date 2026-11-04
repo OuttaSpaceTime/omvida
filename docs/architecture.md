@@ -21,7 +21,8 @@
 the app is `App.qml`, a type of its own, which holds the parts and the window. The parts are
 types too: `Store.qml` (the data the screens share, the wiki index, the deck overview, all
 cards, and both backends), `Navigator.qml` (the screen, the open page, back and forward) and
-`StudySession.qml` (a study session, drawn by `StudyScreen`). `AskSession.qml` is one Ask,
+`StudySession.qml` (a study session, drawn by `StudyScreen`, with `FromStudy.qml` beside it for the
+pages it touches). `AskSession.qml` is one Ask,
 drawn by `SearchPalette`. What runs over time sits apart from the view that shows it.
 
 The wiring follows QML's own advice: dependencies go down typed, events come up as signals.
@@ -48,7 +49,7 @@ and card HTML as plain text), `Cards.js` (explorer filters, the viewer's, and a 
 caption), `Graph.js` (force layout), `WikiTree.js` (lookups in the wiki service's tree), `NoteEdit.js`
 (markdown editing in the note dialog), `Launch.js` (every argv the app launches, and
 every prompt handed to Claude), `StatusBits.js` (the status line's shared hints and alert),
-`Icons.js` (the Nerd Font glyphs, by name). `Navigator.qml` uses no singleton, so it is
+`Exercise.js` (a code card's lines and its result in words), `Icons.js` (the Nerd Font glyphs, by name). `Navigator.qml` uses no singleton, so it is
 unit-tested the same way.
 
 **The deck server** is flashcard-mcp's `src/app/server.ts`, started by `bin/omvida-deck`.
@@ -107,6 +108,20 @@ its split parts (`Launch.CARD_CHECK_TOOLS`), and reports through a JSON schema (
 the study repo, the check's included, passes the repo's card-quality gate, a PreToolUse hook that
 judges the card with `claude -p` and refuses a flawed one, so a flaw is stopped before a review
 ever shows it.
+
+**Code cards** are cards answered by running them, after Execute Program, which the developer has
+used and rates highly. What a card is and what counts as passing are flashcard-mcp's (its
+`exercises.ts` and `exercise-sandbox.ts`): `nextCard` sends what to draw and no answer, `runExercise`
+and `revealExercise` send back verdicts, shown verbatim. The app runs a card at each pause in the
+typing, quietly, and on a check with the animation; a prediction runs only on a check, as its
+output is the answer, and code that doesn't compile says so only on a check, as it mostly doesn't yet
+at a pause in the typing. A pass writes Good, however many tries it took, and giving up writes Again,
+each when Shift+Enter moves on from the result (or Esc ends the session on it): wrong tries cost
+nothing, and no rating is asked for. That replaced the "suggest, you confirm" this began with, because
+Execute Program asks for no grade either. It moved on by itself at first; the developer wants to read the result. A slip can still be fixed: Ctrl+Z brings the card back, with the keycaps. `StudySession` holds
+the state, on its existing phases (answering, then revealed, then submitting), so undo, catching up and
+the log needed nothing new. On Anki it is an ordinary card, rated by hand; the study repo's anki-sync
+carries the exercise in a hidden field. flashcard-mcp's CLAUDE.md has the rest.
 
 **Card notes** are the one thing the app writes about a card without changing it. Ctrl+N in
 Study (N on the Cards stage) notes what should change about a card, or what to understand
