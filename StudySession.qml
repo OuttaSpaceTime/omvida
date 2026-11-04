@@ -127,6 +127,18 @@ QtObject {
   readonly property bool canUndo: rated.length > 0 && (phase === "done" ? logPending : sessionId !== "")
   readonly property bool canRedo: undone.length > 0 && inCard && card !== null && undone[undone.length - 1].cardId === card.id
 
+  // ---- the pages study has touched --------------------------------------------------
+  // The wiki panel's "From study" (FromStudy.qml). Failed in this session means by
+  // the ratings still standing: an Again followed by the repeat's Good is still a
+  // lapse, as in the summary (Session.studiedCards).
+  readonly property FromStudy fromStudy: FromStudy {
+    wikiService: root.wikiService
+    lapsedHere: function(cardId) {
+      return root.rated.some(function(r) { return r.cardId === cardId && r.rating === 1 })
+    }
+    onSaveFailed: function(text) { root.store.status = "study pages: " + text }
+  }
+
   // What it asks of the window (App.qml wires each).
   signal toastRequested(string text)
   // Claude Code in kitty (Launch.js has every argv), with a toast.
@@ -348,6 +360,7 @@ QtObject {
       given.leeches = root.rec.leeches.length
       root.rated = root.rated.concat([given])
       root.rec = Session.rated(root.rec, c, rating, suggested, repeat, Date.now())
+      root.fromStudy.touch(c.id)
       if (seq !== root.cardSeq || root.phase !== "submitting") return
       deck.call("nextCard", { sessionId: root.sessionId }, function(err, res) {
         root.held = { seq: seq, err: err, res: res }
@@ -406,6 +419,7 @@ QtObject {
       root.undone = root.undone.concat([r])
       root.rated = left
       root.rec = rec
+      root.fromStudy.ratingUndone(r.cardId)
       return
     }
     root.rated = []
@@ -590,21 +604,6 @@ QtObject {
     root.loadNext()
   }
 
-  // ---- pages from study ----------------------------------------------------------------
-  // The wiki pages a finished session pointed to (its summary's related
-  // pages), kept for the wiki's side panel so they stay one click apart while
-  // you read them: the summary is gone once a page is open, and was the only
-  // place they were listed. Newest session's first, each page once, until
-  // cleared (one by one or all) or the app closes, so across sessions.
-  // [{ path, title, lapsed, via, cards }]
-  property var pages: []
-  function addPages(list) {
-    var paths = list.map(function(p) { return p.path })
-    root.pages = list.concat(root.pages.filter(function(p) { return paths.indexOf(p.path) === -1 }))
-  }
-  function dropPage(path) { root.pages = root.pages.filter(function(p) { return p.path !== path }) }
-  function clearPages() { root.pages = [] }
-
   // ---- the end ------------------------------------------------------------------------
   function finish() {
     root.phase = "done"
@@ -616,10 +615,7 @@ QtObject {
     if (root.rec.reviews.length === 0) return
     root.logPending = true
     wikiService.call("related", { studied: Session.studiedCards(root.rec), limit: 3 }, function(err, pages) {
-      if (err) return
-      root.related = pages
-      // Kept in the wiki's side panel too, where they stay once a page is open.
-      root.addPages(pages)
+      if (!err) root.related = pages
     })
     root.store.refreshDeck()
   }

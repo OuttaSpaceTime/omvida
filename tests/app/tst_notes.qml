@@ -4,8 +4,8 @@ import QtQuick
 // note is kept in the deck (flashcard-mcp's CardNote) and shows on Cards
 // (the "noted" filter, "fix it", the stage) and on Home (past sessions,
 // "fix all"), which hand the noted cards to one Claude Code session. Also
-// the pages a finished session points to, kept in the wiki's side panel,
-// and that panel's drag edge. A file of its own: it writes notes and
+// that a session's pages are in the wiki's side panel once one is open
+// (tst_studypages has the list's rules), and that panel's drag edge. A file of its own: it writes notes and
 // sessions to the deck.
 OmvidaTest {
   name: "notes"
@@ -67,7 +67,7 @@ OmvidaTest {
   // The summary counts the noted cards and fixes them; its related pages
   // stay in the wiki's side panel once one is open.
   function test_z_the_summary_offers_the_fix_and_keeps_its_pages_in_the_wiki() {
-    app.study.clearPages()
+    app.study.fromStudy.clear()
     startSession()
     var noted = study.card.id
     key(Qt.Key_N, Qt.ControlModifier)
@@ -105,7 +105,8 @@ OmvidaTest {
 
     tryVerify(function() { return study.related.length > 0 }, 5000)
     var pages = study.related.map(function(p) { return p.path })
-    compare(app.study.pages.map(function(p) { return p.path }), pages)
+    tryVerify(function() { return pages.every(function(p) { return app.study.fromStudy.pages.some(function(e) { return e.path === p }) }) }, 5000)
+    compare(app.study.fromStudy.pages.length, pages.length)
     click("related:" + pages[0])
     tryCompare(app.nav, "currentScreen", "wiki")
     // Every page from the session is listed, the open one marked; a click
@@ -117,10 +118,10 @@ OmvidaTest {
       item("studyPage:" + pages[0])
     }
     click("studyPageDrop:" + pages[0])
-    tryVerify(function() { return app.study.pages.length === pages.length - 1 }, 2000)
+    tryVerify(function() { return app.study.fromStudy.pages.length === pages.length - 1 }, 2000)
     if (pages.length > 1) {
       click("studyPagesClear")
-      tryCompare(app.study.pages, "length", 0)
+      tryCompare(app.study.fromStudy.pages, "length", 0)
     }
     tryVerify(function() { return findNamed(target, "studyPages") === null }, 2000, "the section goes when empty")
   }

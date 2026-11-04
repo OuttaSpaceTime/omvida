@@ -57,6 +57,16 @@ def related_pages(
     return scored[:limit]
 
 
+def pages_of_card(pages: list[dict[str, Any]], card_id: str) -> list[dict[str, Any]]:
+    """The pages a card belongs to, by their flashcard_ids: what rating it touches.
+
+    No tag fallback and no limit, unlike related_pages. That offers a session's best few at its
+    end; this is asked per card and its answers pile up in a list kept until cleared, where
+    every page sharing a tag with a card would soon bury the pages the cards actually came from.
+    """
+    return [{"path": p["path"], "title": p["title"]} for p in pages if card_id in p.get("flashcardIds", [])]
+
+
 def recently_studied_pages(
     pages: list[dict[str, Any]],
     studied: list[dict[str, Any]],

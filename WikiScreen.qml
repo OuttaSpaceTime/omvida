@@ -12,8 +12,8 @@ import "Launch.js" as Launch
 // no page open it shows a folder (the viewer's FolderView).
 //
 // The left panel's right edge drags it wider, as the graph rail's left edge
-// does; over either of its modes it lists the pages a finished session
-// pointed to (WikiSidePanel, app.study.pages).
+// does; over either of its modes it lists the pages study has touched, until
+// they are cleared (WikiSidePanel, app.study.fromStudy.pages).
 //
 // Either panel folds to a strip at its edge, `[` and `]` or the chevron in
 // its corner, and stays as left while the app runs. The graph starts folded:

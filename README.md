@@ -41,7 +41,9 @@ there; after the reveal the four ratings are keycaps under the card.
 Around the loop it keeps what `/study` does: Anki sync before (phone reviews first) and after,
 the pressure and calibration verdicts, new cards held back under pressure, the leech block
 (rewrite or split in Claude, delete, or keep as is), and at the end the summary, the wiki pages
-related to what you studied, and a `## Session N — Study` entry in the study repo's log.
+related to what you studied, and a `## Session N — Study` entry in the study repo's log. Every page
+whose card you rate also stacks up in the wiki panel's "From study" list, across sessions and
+restarts, until you clear it.
 
 ## The rest
 

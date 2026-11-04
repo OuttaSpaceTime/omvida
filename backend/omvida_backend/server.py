@@ -20,7 +20,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from . import logs, rank, render, search, wiki
+from . import logs, rank, render, search, study_pages, wiki
 
 
 class Service:
@@ -28,9 +28,10 @@ class Service:
     # and the page clicked meanwhile shouldn't wait behind it.
     concurrent = frozenset({"search"})
 
-    def __init__(self, study_dir: Path):
+    def __init__(self, study_dir: Path, state_dir: Path | None = None):
         self.study_dir = study_dir
         self.wiki_root = study_dir / "wiki"
+        self.state_dir = state_dir or study_pages.default_dir()
         self._index: dict[str, Any] | None = None
         self._resolver: wiki.Resolver | None = None
 
@@ -77,9 +78,18 @@ class Service:
         return rank.related_pages(self._current()[0]["pages"], list(p.get("studied", [])),
                                   int(p.get("limit", 3)))
 
+    def pages_of_card(self, p: dict) -> list:
+        return rank.pages_of_card(self._current()[0]["pages"], str(p.get("cardId", "")))
+
     def recent(self, p: dict) -> list:
         return rank.recently_studied_pages(self._current()[0]["pages"], list(p.get("studied", [])),
                                            int(p.get("limit", 8)))
+
+    def study_pages(self, _p: dict) -> list:
+        return study_pages.load(self.state_dir, self._current()[0]["pages"])
+
+    def save_study_pages(self, p: dict) -> dict:
+        return study_pages.save(self.state_dir, list(p.get("pages", [])))
 
     def log_session(self, p: dict) -> dict:
         return logs.append_session(self.study_dir, dict(p.get("entry", {})))
@@ -92,7 +102,10 @@ class Service:
             "markdown": self.markdown,
             "search": self.search,
             "related": self.related,
+            "pagesOfCard": self.pages_of_card,
             "recent": self.recent,
+            "studyPages": self.study_pages,
+            "saveStudyPages": self.save_study_pages,
             "logSession": self.log_session,
         }
 

@@ -37,7 +37,8 @@ and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
   (`/study-card-check`) run headless (`CardCheck.qml`). The only writes the app makes are reviews (and undoing them, Ctrl+Z in Study),
   leech decisions (keep, delete), deleting a card (Del on Cards or in Study) and card notes
   (Ctrl+N in Study, N on Cards: what to fix later, never the card itself) through the deck
-  server, and the study log entry through the wiki service. Fixing a noted card is a skill's
+  server, the study log entry through the wiki service, and the wiki panel's "From study" list, a state file of the app's own
+  (`~/.local/state/omvida/study-pages.json`, through the wiki service, `study_pages.py`). Fixing a noted card is a skill's
   job too: "fix all" hands the noted cards to one Claude Code session, the study repo's
   `/study-fix-notes` (`Launch.fixNotesArgv`).
 - Wiring (`docs/architecture.md`, "The parts"): a screen or dialog declares

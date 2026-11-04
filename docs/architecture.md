@@ -43,7 +43,7 @@ motion), `Config.qml` how often and how long (polls, debounces, timeouts, data l
 `Paths.qml` where things are.
 
 Pure logic is in `.js` modules, unit-tested without a window:
-`StudyKeys.js` (what a key means), `Session.js` (a session's record), `Format.js` (wording,
+`StudyKeys.js` (what a key means), `Session.js` (a session's record), `StudyPages.js` (the "From study" list), `Format.js` (wording,
 and card HTML as plain text), `Cards.js` (explorer filters, the viewer's, and a tile's
 caption), `Graph.js` (force layout), `WikiTree.js` (lookups in the wiki service's tree), `NoteEdit.js`
 (markdown editing in the note dialog), `Launch.js` (every argv the app launches, and
@@ -71,7 +71,9 @@ graph, its nodes carrying their tags) and renders a page as **blocks** for Qt: Q
 an anchor, so a page is a column of items, and a heading link scrolls to one. Syntax
 highlighting is Pygments, collapsed to a dozen class names that `Theme.richTextStyle` colours,
 so a theme switch recolours without re-rendering. It also ranks pages (after a session, and
-for Home), runs qmd, and appends the session log entry.
+for Home), runs qmd, appends the session log entry, and keeps the wiki panel's "From study" list
+in `~/.local/state/omvida/study-pages.json` (`study_pages.py`; `FromStudy` adds a page as one of
+its cards is rated, and saves on each change, so sessions stack, finished or not, until cleared).
 
 **Both speak JSON lines** over stdio (`JsonLineClient.qml`): `{id, method, params}` in,
 `{id, result | error}` out, `{"ready": true}` at start. A backend that exits is restarted; a

@@ -10,10 +10,10 @@ import "WikiTree.js" as WikiTree
 //            links go (outgoing, linked from)
 //   tree     the whole wiki, folders collapsible, the open page's ancestors
 //            opened for you
-// Over both, while there are any, the pages a finished study session
-// pointed to (app.study.pages): its summary lists them, but opening one leaves
-// the summary behind, and the user wanted to go from one to the next. Each
-// has ✕, and "clear all" drops the lot.
+// Over both, while there are any, the pages study has touched (app.study.fromStudy.pages),
+// stacked across sessions, finished or not, and app restarts until cleared, so
+// you can go from one to the next whenever you get to reading them. Each has ✕,
+// and "clear all" drops the lot; nothing else takes one off.
 Rectangle {
   id: root
 
@@ -129,7 +129,7 @@ Rectangle {
       Column {
         id: studyCol
         objectName: "studyPages"
-        visible: root.app.study.pages.length > 0
+        visible: root.app.study.fromStudy.pages.length > 0
         width: parent.width
         spacing: Theme.spaceXs
         Item {
@@ -143,11 +143,11 @@ Rectangle {
             anchors.rightMargin: Theme.spaceLg
             anchors.verticalCenter: parent.verticalCenter
             label: "clear all"
-            onActivated: root.app.study.clearPages()
+            onActivated: root.app.study.fromStudy.clear()
           }
         }
         Repeater {
-          model: root.app.study.pages
+          model: root.app.study.fromStudy.pages
           delegate: PageRow {
             id: studyRow
             required property var modelData
@@ -156,7 +156,7 @@ Rectangle {
             path: studyRow.modelData.path
             title: studyRow.modelData.title
             current: root.app.nav.wikiPath === studyRow.modelData.path
-            tint: studyRow.modelData.lapsed > 0 ? Theme.redText : Theme.dim
+            tint: studyRow.modelData.lapsed.length > 0 ? Theme.redText : Theme.dim
             reserve: drop.width + Theme.spaceSm
             onActivated: root.app.nav.openPage(studyRow.modelData.path, "")
             // Shown on the row's hover (and on the open page's row), so a
@@ -170,7 +170,7 @@ Rectangle {
               opacity: studyRow.hovered || drop.hovered || studyRow.current ? 1 : 0
               icon: "close"
               tip: "Drop from this list"
-              onActivated: root.app.study.dropPage(studyRow.modelData.path)
+              onActivated: root.app.study.fromStudy.drop(studyRow.modelData.path)
             }
           }
         }

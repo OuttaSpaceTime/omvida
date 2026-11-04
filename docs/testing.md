@@ -100,7 +100,7 @@ and stops.
 | `graphScreen`, `graphAll`, `graphLocal`, `graphView` | the graph |
 | `graphRailHandle`, `graphFullScreen`, `graphCollapse`, `graphExpand` | the wiki page's graph rail: its drag edge, its full-screen icon, folding it and opening it again |
 | `sidePanelCollapse`, `sidePanelExpand`, `sidePanelHandle` | folding the wiki's side panel, opening it again, its drag edge |
-| `studyPages`, `studyPage:<path>`, `studyPageDrop:<path>`, `studyPagesClear` | the side panel's "From study" pages (`app.study.pages`) |
+| `studyPages`, `studyPage:<path>`, `studyPageDrop:<path>`, `studyPagesClear` | the side panel's "From study" pages (`app.study.fromStudy.pages`, `FromStudy.qml`) |
 | `noteDialog` (`app.noteOpen` says whether it is up), `noteCardFront`, `noteEditor`, `notePreview`, `noteSave`, `noteDelete` | a card's note |
 | `summaryNoted`, `summaryFixNotes` | the summary's noted cards |
 | `notedChip`, `selected:noted:yes`, `fixNoted`, `stageNote` | the deck explorer's noted filter, its fix, the stage card's note |

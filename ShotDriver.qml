@@ -137,12 +137,13 @@ Rectangle {
     // would leave them: Home's past sessions, and on Cards (notes:cards) the
     // "noted" filter picked. Refused under -R.
     else if (a === "notes") notesDeck.running = (Quickshell.env("OMVIDA_SANDBOX") || "") !== ""
-    // The wiki panel's "From study" list: the first three pages, as a
-    // finished session would leave them, and the first one open. Memory only.
+    // The wiki panel's "From study" list: the first three pages, as study
+    // would leave them, and the first one open. Assigned, not set(): memory
+    // only, as -R allows this action and the real list must not be overwritten.
     else if (a === "studypages") {
-      let pages = driver.app.store.wikiIndex.pages.slice(0, 3).map(function(p) { return { path: p.path, title: p.title, lapsed: 0 } })
-      pages[1].lapsed = 1
-      driver.app.study.addPages(pages)
+      let pages = driver.app.store.wikiIndex.pages.slice(0, 3).map(function(p) { return { path: p.path, title: p.title, lapsed: [] } })
+      pages[1].lapsed = ["fixture"]
+      driver.app.study.fromStudy.pages = pages
       driver.app.nav.openPage(pages[0].path, "")
     }
   }

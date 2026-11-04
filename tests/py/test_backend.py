@@ -157,6 +157,50 @@ def test_related_falls_back_to_tags_only_when_no_card_matches(idx):
     assert all(r["via"] == "tags" for r in out)
 
 
+def test_a_card_touches_the_pages_that_list_it_and_no_others(idx):
+    assert rank.pages_of_card(idx["pages"], "fixturecard0001") == [{"path": "web/http-caching", "title": "HTTP Caching"}]
+    assert rank.pages_of_card(idx["pages"], "not-on-any-page") == []
+
+
+# ---- the pages study touched --------------------------------------------------------
+def test_study_pages_come_back_from_the_file_as_saved(tmp_path):
+    svc = Service(FIXTURE, state_dir=tmp_path / "new" / "dir")
+    assert svc.study_pages({}) == []
+    saved = [{"path": "security/csrf", "title": "CSRF", "lapsed": ["fixturecard0003"]},
+             {"path": "web/http-caching", "title": "HTTP Caching", "lapsed": []}]
+    assert svc.save_study_pages({"pages": saved}) == {"saved": 2}
+    assert Service(FIXTURE, state_dir=tmp_path / "new" / "dir").study_pages({}) == saved
+    assert [p.name for p in (tmp_path / "new" / "dir").iterdir()] == ["study-pages.json"]
+
+
+def test_study_pages_follow_the_wiki_gone_pages_out_and_titles_current(tmp_path):
+    svc = Service(FIXTURE, state_dir=tmp_path)
+    svc.save_study_pages({"pages": [{"path": "gone/page", "title": "Gone", "lapsed": []},
+                                    {"path": "security/csrf", "title": "Old title", "lapsed": []}]})
+    assert svc.study_pages({}) == [{"path": "security/csrf", "title": "CSRF", "lapsed": []}]
+
+
+@pytest.mark.parametrize("content", ["not json {", '{"not": "a list"}', '["not an entry", 3]', '[{"path": []}, {"path": "gone", "lapsed": null}]'])
+def test_a_broken_study_pages_file_reads_as_empty_and_is_replaced(tmp_path, content):
+    (tmp_path / "study-pages.json").write_text(content)
+    svc = Service(FIXTURE, state_dir=tmp_path)
+    assert svc.study_pages({}) == []
+    svc.save_study_pages({"pages": [{"path": "security/csrf", "title": "CSRF", "lapsed": []}]})
+    assert [p["path"] for p in svc.study_pages({})] == ["security/csrf"]
+
+
+def test_a_study_pages_entry_with_a_bad_lapsed_keeps_its_page(tmp_path):
+    (tmp_path / "study-pages.json").write_text('[{"path": "security/csrf", "lapsed": null}]')
+    assert Service(FIXTURE, state_dir=tmp_path).study_pages({}) == [{"path": "security/csrf", "title": "CSRF", "lapsed": []}]
+
+
+def test_study_pages_are_spoken_over_the_protocol(tmp_path):
+    handlers = Service(FIXTURE, state_dir=tmp_path).handlers()
+    assert json.loads(respond(handlers, {"id": 1, "method": "studyPages"}))["result"] == []
+    assert json.loads(respond(handlers, {"id": 2, "method": "pagesOfCard", "params": {"cardId": "fixturecard0003"}}))["result"][0]["path"] == "security/csrf"
+    assert json.loads(respond(handlers, {"id": 3, "method": "saveStudyPages", "params": {"pages": []}}))["result"] == {"saved": 0}
+
+
 def test_recent_ranks_by_last_review_then_coverage(idx):
     studied = [
         {"id": "fixturecard0001", "at": "2026-10-01"},

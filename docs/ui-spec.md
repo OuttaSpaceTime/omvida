@@ -123,8 +123,9 @@ leech, Enter on the summary.
 ## Wiki
 
 Left (280px, its right edge drags it from 200px up to where the page would drop below 85% of
-its measure): over either mode, while a session has left any, "From study" (its related pages,
-the open one marked, ✕ on hover, "clear all"); then Context (You are here, the folder's pages with the open page's sections under
+its measure): over either mode, while there are any, "From study" (every page whose card was rated, from the rating on,
+newest first, across sessions finished or not and across restarts, a page with a failed card in red, the open one marked; ✕ on hover and
+"clear all" are the only ways off); then Context (You are here, the folder's pages with the open page's sections under
 it, subfolders, Outgoing, Linked from, each section under a hairline) or Tree. Centre:
 breadcrumb, title, tags, updated and aliases (wrapped to the column), the cards button,
 Claude actions and an Explore per explorable (`Explore`, `Explore 2`..., each the page's
