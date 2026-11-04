@@ -42,7 +42,7 @@ OmvidaTest {
   function test_typing_runs_the_code_with_no_animation_and_no_rating() {
     onCard("fill")
     type("select")
-    tryVerify(function() { return study.codeResult !== null }, 5000, "it ran at the pause")
+    tryVerify(function() { return study.code.result !== null }, 5000, "it ran at the pause")
     tryCompare(item("codeActual:0"), "text", "[2]", 3000)
     compare(item("codeExpected:0").text, "[4]")
     compare(verdict(), "1 of 2 match")
@@ -66,7 +66,7 @@ OmvidaTest {
     onCard("fill")
     type("map {")
     wait(800)   // past the pause that runs it
-    compare(study.codeResult, null, "nothing said while typing")
+    compare(study.code.result, null, "nothing said while typing")
     compare(findNamed(target, "codeError"), null)
     key(Qt.Key_Return, Qt.ShiftModifier)
     tryVerify(function() { return item("codeError").text !== "" }, 5000, "the check says it")
@@ -76,7 +76,7 @@ OmvidaTest {
     // result that did compile stays through a line being typed.
     type("{")
     tryVerify(function() { return findNamed(target, "codeError") === null }, 5000, "the old error goes")
-    compare(study.codeResult, null)
+    compare(study.code.result, null)
   }
 
   function test_a_result_stays_through_code_that_stops_compiling() {
@@ -94,7 +94,7 @@ OmvidaTest {
   function pass() {
     key(Qt.Key_Return, Qt.ShiftModifier)
     tryCompare(study, "phase", "revealed", 5000)
-    compare(study.codeRating, 3)
+    compare(study.code.rating, 3)
   }
   function moveOn() {
     key(Qt.Key_Return, Qt.ShiftModifier)
@@ -138,7 +138,7 @@ OmvidaTest {
     type("map")
     key(Qt.Key_Return)
     tryCompare(study, "phase", "revealed", 5000)
-    compare(study.codeRating, 3)
+    compare(study.code.rating, 3)
   }
 
   function test_a_wrong_check_shakes_and_costs_nothing() {
@@ -172,7 +172,7 @@ OmvidaTest {
   function test_an_empty_check_counts_as_a_try_and_says_so_without_a_shake() {
     onCard("fill")
     key(Qt.Key_Return, Qt.ShiftModifier)
-    tryVerify(function() { return study.canGiveUp }, 5000, "the way out opens")
+    tryVerify(function() { return study.code.canGiveUp }, 5000, "the way out opens")
     compare(verdict(), "fill in the blanks")
     verify(!item("codeCard").shaking)
   }
@@ -190,7 +190,7 @@ OmvidaTest {
     onCard("predict")
     type("[2, 4]")
     wait(700)
-    compare(study.codeResult, null, "typing runs nothing: the code would answer it")
+    compare(study.code.result, null, "typing runs nothing: the code would answer it")
     key(Qt.Key_Return, Qt.ShiftModifier)
     tryVerify(function() { return item("codeCard").shaking }, 5000)
     compare(verdict(), "doesn't match")
@@ -222,7 +222,7 @@ OmvidaTest {
   // ---- a block to write ----------------------------------------------------------
   function test_a_block_takes_newlines_and_checks_on_shift_enter() {
     onCard("compose")
-    verify(study.codeBlockFocused, "the block has the keyboard")
+    verify(study.code.blockFocused, "the block has the keyboard")
     compare(item("codeBlank:0").text, "  ", "a method's body starts indented")
     type("x = n")
     key(Qt.Key_Return)
@@ -305,7 +305,7 @@ OmvidaTest {
     compare(study.phase, "answering", "not before a check has failed")
     type("select")
     key(Qt.Key_Return, Qt.ShiftModifier)
-    tryVerify(function() { return study.canGiveUp }, 5000)
+    tryVerify(function() { return study.code.canGiveUp }, 5000)
     key(Qt.Key_G, Qt.ControlModifier)
     tryCompare(study, "phase", "revealed", 5000)
     compare(item("codeBlank:0").text, "map", "the solution in the blank")
@@ -360,7 +360,7 @@ OmvidaTest {
     key(Qt.Key_S, Qt.ControlModifier)
     tryVerify(function() { return study.phase === "answering" && study.card.id !== cardId }, 5000)
     compare(reviews().length, 0)
-    compare(study.codeResult, null)
+    compare(study.code.result, null)
   }
 
   // ---- what else can happen to a card up ---------------------------------------
@@ -369,7 +369,7 @@ OmvidaTest {
     onCard("fill")
     type("select")
     key(Qt.Key_Return, Qt.ShiftModifier)
-    tryVerify(function() { return study.canGiveUp }, 5000)
+    tryVerify(function() { return study.code.canGiveUp }, 5000)
     key(Qt.Key_G, Qt.ControlModifier)
     tryCompare(study, "phase", "revealed", 5000)
     var cardId = study.card.id
@@ -377,7 +377,7 @@ OmvidaTest {
     tryVerify(function() { return reviews().length === 1 }, 5000)
     key(Qt.Key_Z, Qt.ControlModifier)
     tryVerify(function() { return study.phase === "revealed" && study.card && study.card.id === cardId }, 8000)
-    verify(study.codeGaveUp)
+    verify(study.code.gaveUp)
     compare(verdict(), "the solution")
     verify(item("rate:1").marked, "Again, as given, to correct by hand")
   }
@@ -388,7 +388,7 @@ OmvidaTest {
     tryCompare(item("codeVerdict"), "text", "✓ matches", 5000)
     item("codeBlank:0").selectAll()
     key(Qt.Key_Delete)
-    tryCompare(study, "codeResult", null, 5000)
+    tryCompare(study.code, "result", null, 5000)
   }
 
   function exerciseWithTwoBlanks() {
@@ -410,11 +410,11 @@ OmvidaTest {
     rewrite(study.card.id, exerciseWithTwoBlanks())
     tryCompare(item("codeBrief"), "html", "Two blanks.", 15000)
     compare(item("codeBlank:0").text, "")
-    compare(study.codeAnswers, ["", ""])
+    compare(study.code.answers, ["", ""])
     tryVerify(function() { return item("codeBlank:0").activeFocus }, 3000, "the keyboard came back")
     type("1")
     tryCompare(item("codeBlank:0"), "text", "1", 3000)
-    compare(study.codeAnswers, ["1", ""])
+    compare(study.code.answers, ["1", ""])
   }
 
   function test_the_key_list_closing_hands_the_keyboard_back_to_the_same_blank() {
@@ -435,12 +435,47 @@ OmvidaTest {
     onCard("fill")
     var long = ""
     for (let i = 0; i < 200; i++) long += "x"
-    study.codeAnswers = [long]
-    study.codeAnswersSet()
+    study.code.answers = [long]
+    study.code.answersSet()
     var blank = item("codeBlank:0")
     var listing = item("codeListing")
     tryVerify(function() { return blank.lineCount > 1 }, 3000, "it wraps")
     tryVerify(function() { return blank.mapToItem(listing, blank.width, 0).x <= listing.width }, 3000,
               "right edge " + blank.mapToItem(listing, blank.width, 0).x + " of " + listing.width)
+  }
+
+  // ---- several blanks, one of them a block --------------------------------------
+  function mixedExercise() {
+    return JSON.stringify({
+      kind: "fill", lang: "ruby", brief: "An inline blank and a block.",
+      source: "a = {{c1::1}}\ndef f\n{{c1::  2\n}}end",
+      cases: [{ expr: "a + f", goal: "3" }],
+      explain: "Both."
+    })
+  }
+
+  function test_tab_and_ctrl_tab_move_between_blanks_and_the_key_list_says_which() {
+    onCard("fill")
+    rewrite(study.card.id, mixedExercise())
+    tryCompare(item("codeBrief"), "html", "An inline blank and a block.", 15000)
+    tryVerify(function() { return item("codeBlank:0").activeFocus }, 3000)
+    key(Qt.Key_Question, Qt.AltModifier)
+    compare(item("keyHelp:next blank").keys, "tab", "Tab moves on from an inline blank")
+    key(Qt.Key_Escape)
+    tryVerify(function() { return item("codeBlank:0").activeFocus }, 3000)
+    key(Qt.Key_Tab)
+    tryVerify(function() { return item("codeBlank:1").activeFocus }, 3000, "to the block")
+    verify(study.code.blockFocused)
+    var before = item("codeBlank:1").text
+    key(Qt.Key_Tab)
+    verify(item("codeBlank:1").text.length > before.length, "Tab indents in a block")
+    verify(item("codeBlank:1").activeFocus, "and stays in it")
+    key(Qt.Key_Question, Qt.AltModifier)
+    compare(item("keyHelp:next blank").keys, "ctrl+tab", "a block takes Tab for itself")
+    key(Qt.Key_Escape)
+    tryVerify(function() { return item("codeBlank:1").activeFocus }, 3000)
+    key(Qt.Key_Tab, Qt.ControlModifier)
+    tryVerify(function() { return item("codeBlank:0").activeFocus }, 3000, "Ctrl+Tab wraps round to the first")
+    verify(!study.code.blockFocused)
   }
 }

@@ -79,7 +79,7 @@ Item {
       if (pos !== "") out.push({ text: pos, color: Theme.ink })
       out.push({ text: s.card.deck })
       if (s.next.repeat) out.push({ text: "repeat" })
-      if (s.isCode && s.codeGaveUp) out.push({ text: "the solution", color: Theme.orangeText })
+      if (s.isCode && s.code.gaveUp) out.push({ text: "the solution", color: Theme.orangeText })
       if (root.app.store.notes[s.card.id]) out.push({ text: "noted", color: Theme.accentColor })
       return out
     }
@@ -131,24 +131,24 @@ Item {
     var undoOnly = s.canUndo ? [undoRow] : []
     // A code card has no rating to choose, on purpose: see StudySession.
     if (s.isCode && phase === "answering") {
-      let block = s.codeBlockFocused
+      let block = s.code.blockFocused
       let several = s.card.exercise.answers > 1
       // Which blank has the keyboard says what Enter and Tab do (CodeBlank.qml).
       // The rows with no `run` are a legend: they are keys for typing.
-      let rows = [{ keys: block ? "shift+enter" : "enter, shift+enter", label: "check", run: function() { s.checkCode() } }]
+      let rows = [{ keys: block ? "shift+enter" : "enter, shift+enter", label: "check", run: function() { s.code.check() } }]
       if (block) rows.push({ keys: "enter", label: "new line, indented" },
                            { keys: "tab", label: "indent" },
                            { keys: "shift+tab", label: "outdent" })
       if (several) rows.push({ keys: block ? "ctrl+tab" : "tab", label: "next blank" })
       let giveUp = { keys: "ctrl+G", label: "give up" }
-      if (s.canGiveUp) giveUp.run = function() { s.giveUp() }
+      if (s.code.canGiveUp) giveUp.run = function() { s.code.giveUp() }
       rows.push(giveUp)
       // With code typed, Ctrl+Z is the box's (StudyKeys.js), and worth saying so.
       let typing = s.hasTyped ? [{ keys: "ctrl+Z", label: "undo typing" }] : []
       return rows.concat(cardKeys, history, typing)
     }
-    if (s.isCode && s.codeRating > 0)
-      return [{ keys: "shift+enter", label: s.codeGaveUp ? "next, rated " + Format.ratingName(s.codeRating).toLowerCase() : "next", run: function() { s.submit(s.codeRating) } }]
+    if (s.isCode && s.code.rating > 0)
+      return [{ keys: "shift+enter", label: s.code.gaveUp ? "next, rated " + Format.ratingName(s.code.rating).toLowerCase() : "next", run: function() { s.submit(s.code.rating) } }]
         .concat(cardKeys, history)
     if (s.frontShown) return [
       { keys: "shift+enter", label: "reveal", run: function() { s.reveal(false) } },

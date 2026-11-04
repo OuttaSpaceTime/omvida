@@ -190,13 +190,13 @@ Rectangle {
     var study = driver.study
     if (what === "") return
     if (what === "giveup") {
-      study.codeChecks = Config.codeGiveUpAfter
-      study.giveUp()
+      study.code.checks = Config.codeGiveUpAfter
+      study.code.giveUp()
       return
     }
-    study.codeAnswers = [driver.codeAnswersFor[study.card.exercise.kind][what]]
-    study.codeAnswersSet()
-    study.checkCode()
+    study.code.answers = [driver.codeAnswersFor[study.card.exercise.kind][what]]
+    study.code.answersSet()
+    study.code.check()
   }
 
   // Rating every card Good until the queue is empty: the summary.

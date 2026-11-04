@@ -46,7 +46,7 @@ and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
 - Wiring (`docs/architecture.md`, "The parts"): a screen or dialog declares
   `required property App app` (typed, so qmllint checks every `app.` it writes), never
   `property var app`; a widget below a screen takes only what it shows and signals what was
-  clicked; a logic object (`Navigator`, `StudySession`) holds no `app` and signals what it
+  clicked; a logic object (`Navigator`, `StudySession`, `CodeAttempt`, `FromStudy`) holds no `app` and signals what it
   wants of the window; navigation is `app.nav`; a study phase's meaning is a property on
   `StudySession`, not a list of phases in a view. `Theme.qml` is looks, `Config.qml` timing
   and limits.

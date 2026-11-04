@@ -22,7 +22,8 @@ the app is `App.qml`, a type of its own, which holds the parts and the window. T
 types too: `Store.qml` (the data the screens share, the wiki index, the deck overview, all
 cards, and both backends), `Navigator.qml` (the screen, the open page, back and forward) and
 `StudySession.qml` (a study session, drawn by `StudyScreen`, with `FromStudy.qml` beside it for the
-pages it touches). `AskSession.qml` is one Ask,
+pages it touches and `CodeAttempt.qml` for a code card's try: its answers, last result and how it ends,
+which tells the session `settled` and leaves the phases to it). `AskSession.qml` is one Ask,
 drawn by `SearchPalette`. What runs over time sits apart from the view that shows it.
 
 The wiring follows QML's own advice: dependencies go down typed, events come up as signals.

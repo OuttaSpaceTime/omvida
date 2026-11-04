@@ -89,7 +89,7 @@ TextArea {
       anchors.bottom: parent.bottom
       width: parent.width
       height: Theme.borderWidth
-      color: root.session.codeResult && root.session.codeResult.status === "pass" ? Theme.greenText : Theme.accentColor
+      color: root.session.code.result && root.session.code.result.status === "pass" ? Theme.greenText : Theme.accentColor
     }
   }
 
@@ -111,18 +111,18 @@ TextArea {
   }
 
   Component.onCompleted: {
-    root.setAnswer(root.session.codeAnswers[root.blank] || "")
+    root.setAnswer(root.session.code.answers[root.blank] || "")
     root.card.register(root)
   }
   Component.onDestruction: root.card.unregister(root)
   Connections {
-    target: root.session
-    function onCodeAnswersSet() { root.setAnswer(root.session.codeAnswers[root.blank] || "") }
+    target: root.session.code
+    function onAnswersSet() { root.setAnswer(root.session.code.answers[root.blank] || "") }
   }
 
-  onTextChanged: root.session.setCodeAnswer(root.blank, root.text)
+  onTextChanged: root.session.code.setAnswer(root.blank, root.text)
   onActiveFocusChanged: if (activeFocus) {
-    root.session.codeBlockFocused = root.multiline
+    root.session.code.blockFocused = root.multiline
     root.card.lastBlank = root.blank
   }
   Keys.onPressed: function(event) {

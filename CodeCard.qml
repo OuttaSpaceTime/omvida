@@ -4,8 +4,8 @@ import QtQuick
 import "Exercise.js" as Exercise
 import "Format.js" as Format
 
-// A code card: a card answered by running it (StudySession's "code cards",
-// flashcard-mcp's exercises.ts).
+// A code card: a card answered by running it (CodeAttempt, flashcard-mcp's
+// exercises.ts).
 //
 //   what to solve, large
 //   the code on its fill, the blanks in place; for a prediction, under each
@@ -17,7 +17,7 @@ import "Format.js" as Format
 // the results shake on a wrong answer or an error, and flash green on a pass, in
 // the same breath as the words, so neither depends on seeing the motion. An error stays
 // on screen until the code changes. Code that doesn't compile says so only on a
-// check (StudySession.runLive): while typing it mostly doesn't, yet. A pass stays
+// check (CodeAttempt.runLive): while typing it mostly doesn't, yet. A pass stays
 // up with its why until Shift+Enter moves on.
 Column {
   id: root
@@ -25,11 +25,11 @@ Column {
   required property StudySession session
   spacing: Theme.spaceLg
 
-  readonly property var result: root.session.codeResult
+  readonly property var result: root.session.code.result
   readonly property var exercise: root.session.isCode ? root.session.card.exercise : null
   readonly property bool predict: root.exercise !== null && root.exercise.kind === "predict"
   readonly property color verdictColor: {
-    if (!root.result || root.session.codeGaveUp) return Theme.dim
+    if (!root.result || root.session.code.gaveUp) return Theme.dim
     if (root.result.status === "pass") return Theme.greenText
     if (root.result.status === "incomplete") return Theme.dim
     return root.result.status === "wrong" ? Theme.orangeText : Theme.redText
@@ -85,8 +85,8 @@ Column {
   readonly property bool flashing: flash.running
 
   Connections {
-    target: root.session
-    function onCodeChecked(status) {
+    target: root.session.code
+    function onChecked(status) {
       if (status === "pass") flash.restart()
       else if (status !== "incomplete") shake.restart()
     }
@@ -149,7 +149,7 @@ Column {
                 color: Theme.ink
                 text: {
                   if (piece.isBlank) return ""
-                  var html = root.session.codeHtml[piece.modelData.segment]
+                  var html = root.session.code.html[piece.modelData.segment]
                   return Theme.richTextStyle + "<pre style=\"white-space:pre-wrap\">" + (html !== undefined ? html : Format.escapeHtml(piece.modelData.text)) + "</pre>"
                 }
               }
@@ -240,7 +240,7 @@ Column {
         objectName: "codeVerdict"
         visible: root.result !== null
         // The solution passes, of course. That is no "✓ matches" for having given up.
-        text: root.session.codeGaveUp ? "the solution" : (root.result && root.result.status === "pass" ? "✓ " : "") + Exercise.verdict(root.result)
+        text: root.session.code.gaveUp ? "the solution" : (root.result && root.result.status === "pass" ? "✓ " : "") + Exercise.verdict(root.result)
         font.pixelSize: Theme.bodySmallSize
         font.bold: true
         color: root.verdictColor
@@ -330,9 +330,9 @@ Column {
       // Once it is over, the why: the card's whole lesson.
       CardFace {
         objectName: "codeExplain"
-        visible: root.session.codeExplain !== ""
+        visible: root.session.code.explain !== ""
         width: parent.width
-        html: root.session.codeExplain
+        html: root.session.code.explain
         size: Theme.bodySize
       }
     }
