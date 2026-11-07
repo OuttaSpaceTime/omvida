@@ -19,6 +19,14 @@ TestCase {
     verify(prompt.indexOf("Suggested rating: Hard (2). Missing the unit.") !== -1)
   }
 
+  function test_discuss_loads_flashcard_tools_up_front_and_without_ponytail() {
+    var argv = L.discussArgv("/s", card, "", null)
+    compare(argv[9], "--mcp-config")
+    compare(JSON.parse(argv[10]).mcpServers["flashcard-mcp"].alwaysLoad, true)
+    compare(argv[11], "--settings")
+    compare(JSON.parse(argv[12]).enabledPlugins["ponytail@ponytail"], false)
+  }
+
   function test_add_commands_call_the_skills() {
     compare(L.skillArgv("/s", "t", "/study-flashcard", " HTTP caching ", "")[8], "/study-flashcard HTTP caching")
     compare(L.skillArgv("/s", "t", "/study-walkthrough --write", "ETags", "wiki page web/http-caching")[8], "/study-walkthrough --write ETags\n\nContext: wiki page web/http-caching")

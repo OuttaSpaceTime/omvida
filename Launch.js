@@ -49,8 +49,21 @@ function discussPrompt(card, answer, suggestion) {
   return lines.join("\n")
 }
 
+// Discuss reaches for the flashcard tools at once (update_card, the code-card
+// ones), so they load up front instead of behind ToolSearch: `alwaysLoad` on a
+// --mcp-config server of the same name overrides the study repo's .mcp.json
+// entry (checked 2026-11-06). Ponytail's lazy-dev prompt is switched off for
+// the session: a Socratic talk is not a coding task. Both flags come after the
+// prompt, since --mcp-config takes any number of values (see headlessArgv).
+// shortcut: the server command repeats the study repo's .mcp.json; if that
+// changes, change it here too, or move alwaysLoad into that file.
+var DISCUSS_FLAGS = [
+  "--mcp-config", JSON.stringify({ mcpServers: { "flashcard-mcp": { command: "scripts/flashcard-mcp-server", alwaysLoad: true } } }),
+  "--settings", JSON.stringify({ enabledPlugins: { "ponytail@ponytail": false } })
+]
+
 function discussArgv(studyDir, card, answer, suggestion) {
-  return kittyArgv(studyDir, "Omvida · Discuss", [discussPrompt(card, answer, suggestion)])
+  return kittyArgv(studyDir, "Omvida · Discuss", [discussPrompt(card, answer, suggestion)].concat(DISCUSS_FLAGS))
 }
 
 // A skill on a topic: `/study-flashcard` (Add -> Flashcards: suggest fronts,

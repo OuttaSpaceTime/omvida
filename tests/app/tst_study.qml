@@ -381,8 +381,9 @@ OmvidaTest {
     key(Qt.Key_D, Qt.ControlModifier)
     tryVerify(function() { return kittyCalls().length === before + 1 }, 3000)
     var argv = kittyCalls()[before]
-    compare(argv[argv.length - 2], "claude")
-    var prompt = argv[argv.length - 1]
+    var at = argv.indexOf("claude")
+    var prompt = argv[at + 1]
+    compare(argv[at + 2], "--mcp-config", "the flashcard tools load up front")
     verify(prompt.indexOf("Socratic mode") !== -1)
     verify(prompt.indexOf("My answer:\nmy attempt") !== -1)
     verify(prompt.indexOf("Suggested rating: Good (3)") !== -1)
