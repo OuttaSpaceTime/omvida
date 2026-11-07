@@ -38,55 +38,59 @@ OmvidaTest {
     compare(item("codeActual:0").text, "–")
   }
 
-  // ---- the output follows the typing, quietly ----------------------------------
-  function test_typing_runs_the_code_with_no_animation_and_no_rating() {
+  // ---- nothing runs while typing --------------------------------------------------
+  function test_typing_runs_nothing() {
     onCard("fill")
     type("select")
-    tryVerify(function() { return study.code.result !== null }, 5000, "it ran at the pause")
-    tryCompare(item("codeActual:0"), "text", "[2]", 3000)
-    compare(item("codeExpected:0").text, "[4]")
-    compare(verdict(), "1 of 2 match")
-    verify(!item("codeCard").shaking, "no shake from typing")
+    wait(900)   // far past any pause a run could have hung on
+    compare(study.code.result, null, "no run")
+    compare(item("codeActual:0").text, "–")
+    compare(findNamed(target, "codeVerdict"), null, "nothing said")
     compare(study.phase, "answering")
     compare(reviews().length, 0)
-    compare(item("codeOutput").text, "loaded", "what it printed shows too")
   }
 
-  function test_a_mistake_shows_the_real_error_quietly_as_it_is_typed() {
+  // What a check said was about the old code: typing takes it off, and the next
+  // check says it again.
+  function test_typing_clears_what_a_check_said() {
     onCard("fill")
     type("nope")
-    tryVerify(function() { return item("codeActual:0").text.indexOf("NoMethodError") !== -1 }, 5000, "the error is the output")
+    key(Qt.Key_Return, Qt.ShiftModifier)
+    tryVerify(function() { return item("codeActual:0").text.indexOf("NoMethodError") !== -1 }, 5000, "the check shows the error")
     verify(item("codeActual:0").text.indexOf("main.rb:2") !== -1, "with the line: " + item("codeActual:0").text)
-    compare(verdict(), "error")
-    verify(!item("codeCard").shaking)
+    verify(item("codeCard").shaking)
+    type("x")
+    compare(study.code.result, null)
+    compare(item("codeActual:0").text, "–")
+    wait(600)
+    compare(study.code.result, null, "and nothing brought it back")
   }
 
-  // Half-typed code doesn't compile at nearly every pause: no red until a check.
-  function test_a_syntax_error_waits_for_a_check() {
+  // A check still running when the code changes was about the old code: its
+  // answer is dropped, not shown over the new one.
+  function test_typing_drops_a_check_still_running() {
+    onCard("fill")
+    type("map")
+    key(Qt.Key_Return, Qt.ShiftModifier)
+    type("x")   // before the deck server answers
+    wait(900)
+    compare(study.code.result, null, "the old check's answer never shows")
+    compare(study.code.checks, 0)
+    compare(study.phase, "answering")
+  }
+
+  // A syntax error is said by a check, like any other.
+  function test_a_syntax_error_is_said_by_a_check() {
     onCard("fill")
     type("map {")
-    wait(800)   // past the pause that runs it
-    compare(study.code.result, null, "nothing said while typing")
     compare(findNamed(target, "codeError"), null)
     key(Qt.Key_Return, Qt.ShiftModifier)
     tryVerify(function() { return item("codeError").text !== "" }, 5000, "the check says it")
     verify(item("codeError").text.indexOf("main.rb") !== -1, item("codeError").text)
     verify(item("codeCard").shaking)
-    // It goes once the code has changed and still doesn't compile, and the last
-    // result that did compile stays through a line being typed.
     type("{")
     tryVerify(function() { return findNamed(target, "codeError") === null }, 5000, "the old error goes")
     compare(study.code.result, null)
-  }
-
-  function test_a_result_stays_through_code_that_stops_compiling() {
-    onCard("fill")
-    type("select")
-    tryCompare(item("codeActual:0"), "text", "[2]", 5000)
-    type(" {")
-    wait(800)
-    compare(item("codeActual:0").text, "[2]", "the last run stands")
-    compare(findNamed(target, "codeError"), null)
   }
 
   // ---- a check -------------------------------------------------------------------
@@ -380,15 +384,6 @@ OmvidaTest {
     verify(study.code.gaveUp)
     compare(verdict(), "the solution")
     verify(item("rate:1").marked, "Again, as given, to correct by hand")
-  }
-
-  function test_a_pass_shown_goes_once_the_answer_is_gone() {
-    onCard("fill")
-    type("map")
-    tryCompare(item("codeVerdict"), "text", "✓ matches", 5000)
-    item("codeBlank:0").selectAll()
-    key(Qt.Key_Delete)
-    tryCompare(study.code, "result", null, 5000)
   }
 
   function exerciseWithTwoBlanks() {

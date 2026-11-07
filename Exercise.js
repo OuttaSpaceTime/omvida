@@ -43,13 +43,6 @@ function segments(parts) {
   return all
 }
 
-// A run stopped before any case: a syntax error, most of all. Half-typed code is
-// that at nearly every pause, so it is said only once it is asked for, by a
-// check. An error raised in a case is the case's output, and shows as typed.
-function stoppedEarly(result) {
-  return !!result && result.status === "error" && !!result.error
-}
-
 // ---- indenting a block ---------------------------------------------------------
 // Two spaces, as the cards' Ruby is written. Pure text, no parser: it reads one
 // line at a time, enough to be right on the bodies a card asks for, and a line it
@@ -131,8 +124,7 @@ function matched(result) {
   return result.cases.filter(function(c) { return c.pass }).length
 }
 
-// One line on a result. Live results say the same as checked ones: the
-// animation is what tells a check apart.
+// One line on a result.
 function verdict(result) {
   if (!result) return ""
   switch (result.status) {

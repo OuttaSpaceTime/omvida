@@ -88,8 +88,8 @@ while it fits.
   as one bold line ("✓ matches", "1 of 2 match", "error") and each case, its expression small over
   `output` beside `expected`, the output green on a match and red otherwise, an error being its output,
   in full. Syntax errors above the cases, what was printed below. No result, no such rows, for a
-  prediction: it shows nothing of the real value until it is right. It updates as you pause typing,
-  silently, except that code which doesn't compile says nothing until a check. Shift+Enter checks (Enter too in an inline blank): the results shake (400ms, 6px) on
+  prediction: it shows nothing of the real value until it is right. Nothing runs while you type, and
+  typing clears the last check's result. Shift+Enter checks (Enter too in an inline blank): the results shake (400ms, 6px) on
   a wrong answer or an error, and flash green (450ms) on one, which stays up with the card's one-clause why until a second
   Shift+Enter moves on, rated Good (Esc there ends the session, the pass written). The words carry it without the motion. Ctrl+G gives up once a check has
   failed: the solution in the blanks, the why, and the next Shift+Enter rates it Again.

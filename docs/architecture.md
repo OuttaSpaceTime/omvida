@@ -113,10 +113,10 @@ ever shows it.
 **Code cards** are cards answered by running them, after Execute Program, which the developer has
 used and rates highly. What a card is and what counts as passing are flashcard-mcp's (its
 `exercises.ts` and `exercise-sandbox.ts`): `nextCard` sends what to draw and no answer, `runExercise`
-and `revealExercise` send back verdicts, shown verbatim. The app runs a card at each pause in the
-typing, quietly, and on a check with the animation; a prediction runs only on a check, as its
-output is the answer, and code that doesn't compile says so only on a check, as it mostly doesn't yet
-at a pause in the typing. A pass writes Good, however many tries it took, and giving up writes Again,
+and `revealExercise` send back verdicts, shown verbatim. The app runs a card only on a check, with the
+animation, never at a pause in the typing: the developer asked for that, some runs are slow
+(TypeScript's compiler, Postgres), and a prediction's output would be its answer. Typing clears what the last
+check said, since it was about the old code. A pass writes Good, however many tries it took, and giving up writes Again,
 each when Shift+Enter moves on from the result (or Esc ends the session on it): wrong tries cost
 nothing, and no rating is asked for. That replaced the "suggest, you confirm" this began with, because
 Execute Program asks for no grade either. It moved on by itself at first; the developer wants to read the result. A slip can still be fixed: Ctrl+Z brings the card back, with the keycaps. `StudySession` holds

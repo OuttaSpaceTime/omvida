@@ -40,7 +40,7 @@ there; after the reveal the four ratings are keycaps under the card.
 
 **Code cards** come up in the same queue, after [Execute Program](https://www.executeprogram.com):
 what you type is really run, in the deck server's sandbox, and compared by value, so any equivalent
-answer passes. The output follows your typing. **Shift+Enter** checks (Enter too in a one-line
+answer passes. Nothing runs while you type. **Shift+Enter** checks (Enter too in a one-line
 blank), and a wrong try costs nothing. A pass is rated Good, after a second Shift+Enter; once a check
 has failed, **Ctrl+G** gives up, shows the solution and rates Again. **Tab** moves between blanks;
 in a block to write, Tab indents and **Ctrl+Tab** moves on. There is no rating to choose, though

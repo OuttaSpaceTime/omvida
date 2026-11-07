@@ -11,8 +11,9 @@ import "Exercise.js" as Exercise
 // over; what that does to the phases (a second Shift+Enter writes the rating) is
 // the session's, so undo, catching up and the log need nothing of code cards.
 //
-// It needs no reveal and no grade. It runs at each pause in the typing, a check
-// is the same run with the animation (`checked`), and a pass waits for one more
+// It needs no reveal and no grade. It runs only on a check, never while typing:
+// the developer asked for that, and some runs are slow (TypeScript's compiler,
+// Postgres) or would answer the card (a prediction). A pass waits for one more
 // Shift+Enter, with no step of choosing a rating. What a pass rates, and that a
 // wrong try costs nothing, are the deck server's: `rating` comes with the result.
 //
@@ -46,14 +47,8 @@ QtObject {
   signal settled()      // a pass or a give-up: the card is over, until Shift+Enter moves on
   signal toastRequested(string text)
 
-  property Timer runTimer: Timer {
-    interval: Config.codeRunDebounce
-    onTriggered: root.runLive()
-  }
-
   function reset() {
     root.seq++
-    runTimer.stop()
     root.answers = []
     root.result = null
     root.html = ({})
@@ -93,15 +88,16 @@ QtObject {
     var next = root.answers.slice()
     next[index] = text
     root.answers = next
-    // A prediction shows nothing until it is checked, or the code would answer
-    // it. Otherwise the output follows the typing.
-    if (root.card.exercise.kind !== "predict") runTimer.restart()
+    // What a check said was about the code before this change: it goes, and the
+    // next check says it again. So does a check still on its way (`seq`), or its
+    // answer would land on code that is no longer there.
+    root.seq++
+    root.result = null
   }
 
   // A call about the card up, replacing the one before: its answer counts only
   // while it is the latest and the card is still being answered.
   function request(method, params, then) {
-    runTimer.stop()
     var mine = ++root.seq
     deck.call(method, Object.assign({ cardId: root.card.id }, params), function(err, res) {
       if (mine !== root.seq || !root.answering) return
@@ -114,23 +110,6 @@ QtObject {
     root.rating = rating
     root.explain = explain
     root.settled()
-  }
-
-  function runLive() {
-    if (!root.answering || !root.active) return
-    request("runExercise", { answers: root.answers }, function(res) {
-      // Half-filled says nothing, and leaves the last result where it is. Nor does
-      // code that doesn't compile yet, which is most pauses in a line being typed:
-      // a check is where that gets said. Two things do go, the code having changed
-      // since: an error a check said, and a pass, which is no longer true.
-      var early = Exercise.stoppedEarly(res)
-      if (res.status === "incomplete" || early) {
-        let shown = root.result
-        if (shown && (shown.status === "pass" || (early && Exercise.stoppedEarly(shown)))) root.result = null
-        return
-      }
-      root.result = res
-    })
   }
 
   // A try, whatever comes of it. A wrong one and an error count only towards

@@ -13,12 +13,11 @@ import "Format.js" as Format
 //   each case, expression over what it gives beside what it should
 //   the error, if there is one, and what the code printed
 //
-// The output follows the typing, quietly. A check (Shift+Enter) is what moves:
-// the results shake on a wrong answer or an error, and flash green on a pass, in
-// the same breath as the words, so neither depends on seeing the motion. An error stays
-// on screen until the code changes. Code that doesn't compile says so only on a
-// check (CodeAttempt.runLive): while typing it mostly doesn't, yet. A pass stays
-// up with its why until Shift+Enter moves on.
+// Nothing runs while typing; a check (Shift+Enter) is the only run. The results
+// shake on a wrong answer or an error, and flash green on a pass, in the same
+// breath as the words, so neither depends on seeing the motion. What a check said
+// stays on screen until the code changes. A pass stays up with its why until
+// Shift+Enter moves on.
 Column {
   id: root
 

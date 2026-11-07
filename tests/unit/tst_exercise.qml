@@ -53,19 +53,6 @@ TestCase {
     compare(E.printed({ output: "hi", stderr: "careful" }), "hi\ncareful")
   }
 
-  // ---- what waits for a check -------------------------------------------------
-  function test_a_run_stopped_before_any_case_is_stopped_early() {
-    verify(E.stoppedEarly({ status: "error", error: "main.rb:4: syntax errors found", cases: [] }))
-  }
-
-  function test_an_error_in_a_case_and_the_runner_failing_are_not() {
-    verify(!E.stoppedEarly({ status: "error", error: null, cases: [{ error: "NoMethodError" }] }))
-    verify(!E.stoppedEarly({ status: "timeout", error: "stopped after 5s", cases: [] }))
-    verify(!E.stoppedEarly({ status: "unavailable", error: "no ruby", cases: [] }))
-    verify(!E.stoppedEarly({ status: "pass", error: null, cases: [] }))
-    verify(!E.stoppedEarly(null))
-  }
-
   // ---- indenting a block --------------------------------------------------------
   function test_a_block_starts_at_the_body_of_what_comes_before_it() {
     compare(E.bodyIndent("def double(n)\n"), "  ")
