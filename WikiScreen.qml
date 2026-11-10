@@ -218,7 +218,7 @@ Item {
       id: flick
       objectName: "wikiFlick"
       anchors.fill: parent
-      contentHeight: col.implicitHeight + Theme.space3xl * 2
+      contentHeight: col.implicitHeight + Theme.space3xl * 2 + root.app.checkCover
       ScrollBar.vertical: ScrollBar {}
 
       Column {

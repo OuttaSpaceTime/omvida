@@ -286,11 +286,12 @@ OmvidaTest {
   }
 
   // Ctrl+Q hands the card to the study repo's /study-card-check, headless, and
-  // the session goes on. Its report docks above the status line, in the layout,
-  // and stays until dismissed. A second Ctrl+Q while it runs starts no second check.
+  // the session goes on. Its report is drawn over the screen's bottom, so the
+  // layout does not jump, and stays until dismissed. A second Ctrl+Q while it runs starts no second check.
   function test_ctrl_q_reports_in_the_slot_until_dismissed() {
     startSession()
     var id = study.card.id
+    var screenHeight = studyView.height
     var before = cardCheckCalls().length
     compare(app.cardCheck.reports.length, 0, "nothing to show yet")
     key(Qt.Key_Q, Qt.ControlModifier)
@@ -307,12 +308,20 @@ OmvidaTest {
     compare(app.cardCheck.count, 0, "none left running")
     wait(4200)
     verify(item("checkSlot").visible, "unlike a toast, it does not go away on its own")
-    // The screen gave up the room rather than being drawn over.
-    var slotTop = item("checkSlot").mapToItem(target, 0, 0).y
-    var bottom = studyView.mapToItem(target, 0, studyView.height).y
-    verify(bottom <= slotTop, "the screen ends above the slot: " + bottom + " vs " + slotTop)
+    compare(studyView.height, screenHeight, "the screen keeps its room: the slot is drawn over it")
+    verify(studyView.keyList.some(function(h) { return h.label === "dismiss the check" }), "its keys are in the key list")
+    compare(app.checkCover, item("checkSlot").height, "the screens get scroll room past it")
+    // Drawn after the screens, it would cover the key list's last rows.
+    key(Qt.Key_Question, Qt.AltModifier | Qt.ShiftModifier)
+    item("keyHelp:dismiss the check")
+    verify(findNamed(target, "checkSlot") === null, "it steps aside for the key list")
+    compare(app.checkCover, 0, "and gives back the scroll room")
+    key(Qt.Key_Escape)
+    tryVerify(function() { return findNamed(target, "checkSlot") !== null }, 2000, "and is back once it closes")
     click("checkDismiss:0")
     tryVerify(function() { return app.cardCheck.reports.length === 0 })
+    compare(studyView.height, screenHeight, "nor does it jump on dismiss")
+    verify(!studyView.keyList.some(function(h) { return h.label === "dismiss the check" }), "gone with it")
     compare(study.phase, "answering")
   }
 

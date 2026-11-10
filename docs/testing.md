@@ -87,7 +87,7 @@ and stops.
 | `statusLine`, `statusMode`, `statusSegment:<i>`, `statusHints` (their row), `statusHint:<label>`, `statusAlert:<i>` | the status line (each has a plain `text`; hints are buttons: `statusHint:keys` on Study, `statusHint:delete` on Cards...) |
 | `keyHelp:<label>` | Study's key list (Alt+?), its rows: `keyHelp:reveal`, `keyHelp:skip`, `keyHelp:check quality`, `keyHelp:undo rating`, `keyHelp:redo rating`... |
 | `toast` (its `text`) | the window's toast |
-| `checkSlot`, `checkReport:<i>`, `checkHeadline:<i>`, `checkFront:<i>`, `checkText:<i>`, `checkAsked:<i>`, `checkExtra:<i>`, `checkCard:<i>:<j>`, `checkDiscuss:<i>`, `checkDismiss:<i>` | Ctrl+Q's results, docked above the status line |
+| `checkSlot`, `checkReport:<i>`, `checkHeadline:<i>`, `checkFront:<i>`, `checkText:<i>`, `checkAsked:<i>`, `checkExtra:<i>`, `checkCard:<i>:<j>`, `checkDismiss:<i>` | Ctrl+Q's results, over the screen above the status line; `checkDismiss` is the ✕ |
 | `studyCard` (its `opacity` fades between rated cards), `answerField`, `cardFront`, `cardRecap`, `cardBack`, `suggestionBox`, `suggestionLine` (`verdict`, `reason`) | the study card |
 | `rate:<1-4>` (`suggested`, `marked` (picked or taken), `chosen`; its `interval` label), `startSessionButton`, `studyAgainButton` | the study controls |
 | `codeCard` (`shaking`, `flashing`: the last check's animation), `codeBrief`, `codeListing`, `codeBlank:<i>`, `codeVerdict`, `codeCase:<i>`, `codeActual:<i>`, `codeExpected:<i>`, `codeError`, `codeOutput`, `codeExplain`, `codeResults` | a code card |

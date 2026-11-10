@@ -105,7 +105,7 @@ and drops the stale suggestion, a deleted one moves the session on, and a fixed 
 the block. Two runs are headless, with tools pre-allowed: Ask, `claude -p` under the Query
 Protocol, with only read-only lookups and `Edit/Write(logs/**)`; and Ctrl+Q's card check
 (`CardCheck.qml`), `claude -p "/study-card-check <id>"` (Sonnet), which may write that card and
-its split parts (`Launch.CARD_CHECK_TOOLS`), and reports through a JSON schema (`Launch.CARD_CHECK_SCHEMA`) into a slot docked above the status line (`CheckSlot.qml`), where it stays to be dismissed or discussed. Every card write in
+its split parts (`Launch.CARD_CHECK_TOOLS`), and reports through a JSON schema (`Launch.CARD_CHECK_SCHEMA`) into a slot drawn over the screen's bottom, above the status line (`CheckSlot.qml`), where it stays to be dismissed (its ✕, Ctrl+Shift+Q) or discussed (Ctrl+Shift+D; both in Study's key list). Every card write in
 the study repo, the check's included, passes the repo's card-quality gate, a PreToolUse hook that
 judges the card with `claude -p` and refuses a flawed one, so a flaw is stopped before a review
 ever shows it.

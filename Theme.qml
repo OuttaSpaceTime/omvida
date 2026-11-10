@@ -359,7 +359,7 @@ QtObject {
   // arriving from somewhere.
   readonly property int sheetDuration: 180
   readonly property int toastDuration: 4000
-  // The tallest Ctrl+Q's results may push the screen above them before they scroll (CheckSlot.qml).
+  // The tallest Ctrl+Q's results may cover the screen's bottom before they scroll (CheckSlot.qml).
   readonly property int checkSlotMaxHeight: space4xl * 4
   readonly property int graphTickInterval: 16
   // How long a new graph may lay itself out before its first paint; past it,

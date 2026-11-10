@@ -4,24 +4,23 @@ import QtQuick.Controls
 
 import "Format.js" as Format
 
-// Where Ctrl+Q's checks show: docked above the status line and in the layout,
-// so the screen gives up the room rather than being covered, and a result can
-// be read while the card above it is still being answered. Each stays until it
-// is dismissed; it can be discussed in Claude Code first. A toast said this
+// Where Ctrl+Q's checks show: docked above the status line, drawn over the
+// bottom of the screen. It was in the layout until 2026-11-10, and the screen
+// jumped each time a result came or went. Each stays until it is dismissed; it
+// can be discussed in Claude Code first. A toast said this
 // until 2026-11-03: one line for four seconds, about a card that had perhaps
 // just been deleted and split. A modal was the other way, rejected: the point
 // of Ctrl+Q is that the session goes on.
 //
 // A widget: it shows what it is given and signals what was clicked (the window
-// holds the checks, CardCheck.qml). Its keys are the window's, ctrl+shift+Q and
-// ctrl+shift+D, on the oldest finished report, which is `settled`.
+// holds the checks, CardCheck.qml). Its only button is a report's ✕: the keys,
+// ctrl+shift+Q and ctrl+shift+D on the oldest finished report, are the
+// window's and listed in Study's key list (StudyScreen.qml), not written here.
 Rectangle {
   id: root
 
   property var reports: []
-  property var settled: null
   signal dismissAsked(var report)
-  signal discussAsked(var report)
 
   // A line of a report, gone when it has nothing to say.
   component ReportLine: UiText {
@@ -63,19 +62,18 @@ Rectangle {
           required property var modelData
           required property int index
           readonly property bool running: modelData.state === "running"
-          readonly property bool isSettled: root.settled !== null && root.settled.key === modelData.key
           objectName: "checkReport:" + index
           width: col.width
           spacing: Theme.spaceXs
 
           Item {
             width: parent.width
-            implicitHeight: Math.max(headline.implicitHeight, actions.implicitHeight)
+            implicitHeight: Math.max(headline.implicitHeight, close.implicitHeight)
             UiText {
               id: headline
               objectName: "checkHeadline:" + report.index
               anchors.left: parent.left
-              anchors.right: actions.left
+              anchors.right: close.left
               anchors.rightMargin: Theme.spaceLg
               anchors.verticalCenter: parent.verticalCenter
               elide: Text.ElideRight
@@ -86,24 +84,15 @@ Rectangle {
                      : report.modelData.outcome === "fixed" || report.modelData.outcome === "split" ? Theme.accentColor
                      : Theme.dim
             }
-            Row {
-              id: actions
+            PlainButton {
+              id: close
+              objectName: "checkDismiss:" + report.index
               anchors.right: parent.right
               anchors.verticalCenter: parent.verticalCenter
-              spacing: Theme.spaceLg
               visible: !report.running
-              PlainButton {
-                objectName: "checkDiscuss:" + report.index
-                keys: report.isSettled ? "ctrl+shift+D" : ""
-                label: "discuss"
-                onActivated: root.discussAsked(report.modelData)
-              }
-              PlainButton {
-                objectName: "checkDismiss:" + report.index
-                keys: report.isSettled ? "ctrl+shift+Q" : ""
-                label: "dismiss"
-                onActivated: root.dismissAsked(report.modelData)
-              }
+              icon: "close"
+              tip: "Dismiss"
+              onActivated: root.dismissAsked(report.modelData)
             }
           }
           ReportLine {

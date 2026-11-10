@@ -124,6 +124,9 @@ Scope {
     id: checks
     onCountChanged: root.quitIfDone()
   }
+  // How much of a screen's bottom the slot covers: each screen's scroll room
+  // grows by it, so the end of a page can still be scrolled clear of it.
+  readonly property int checkCover: checkSlot.height
   // What the slot's buttons and keys ask (the keys take the oldest finished report).
   function dismissCheck(report) { checks.dismiss(report.key) }
   function discussCheck(report) {
@@ -287,7 +290,7 @@ Scope {
         anchors.left: sidebar.right
         anchors.right: parent.right
         anchors.top: topBar.bottom
-        anchors.bottom: checkSlot.top
+        anchors.bottom: statusLine.top
 
         // The screen on show, for the status line.
         readonly property var current: ({ home: homeScreen, study: studyScreen, wiki: wikiScreen,
@@ -326,18 +329,21 @@ Scope {
         }
       }
 
-      // In the layout, not over it: the screen gives up the room, so a result
-      // stays on show while the card above it can still be answered.
+      // Over the screen's bottom, not in the layout: in it, the screen jumped
+      // every time a result came or went (2026-11-10). It is opaque, not a scrim.
+      // Being drawn after the screens, it would also cover the overlays inside
+      // them (Study's key list, Cards' tag sheet), so it steps aside while one
+      // is up. Moving those to the window, as its dialogs are, was the other
+      // way: more wiring for the same result.
       CheckSlot {
         id: checkSlot
         objectName: "checkSlot"
+        visible: reports.length > 0 && !studyScreen.keysOpen && !cardsScreen.tagPanelOpen
         anchors.left: sidebar.right
         anchors.right: parent.right
         anchors.bottom: statusLine.top
         reports: checks.reports
-        settled: checks.settled
         onDismissAsked: function(report) { root.dismissCheck(report); root.focusScreen() }
-        onDiscussAsked: function(report) { root.discussCheck(report) }
       }
 
       // The bottom line, as an editor's: each screen's mode, place, keys and

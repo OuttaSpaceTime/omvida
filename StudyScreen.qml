@@ -105,9 +105,18 @@ Item {
   // The status line names one key, the one that lists the others: Study's
   // keys change with every phase, and a row of them under the card was more
   // to read than the card. The list (KeyHelp.qml) is `keyList`, whose rows
-  // run what their keys do.
+  // run what their keys do. Ctrl+Q's result (CheckSlot.qml) adds its two,
+  // the window's keys, while there is a finished one to act on.
   readonly property var statusHints: [{ keys: "alt+?", label: "keys", run: function() { keysHelp.open() } }]
   readonly property var keyList: {
+    var settled = root.app.cardCheck.settled
+    if (!settled) return phaseKeys
+    return phaseKeys.concat([
+      { keys: "ctrl+shift+D", label: "discuss the check", run: function() { root.app.discussCheck(settled) } },
+      { keys: "ctrl+shift+Q", label: "dismiss the check", run: function() { root.app.dismissCheck(settled) } }
+    ])
+  }
+  readonly property var phaseKeys: {
     var s = root.session
     var discuss = { keys: "ctrl+D", label: "discuss", run: function() { s.discuss() } }
     var skip = { keys: "ctrl+S", label: "skip", run: function() { s.skip() } }
@@ -217,7 +226,7 @@ Item {
   GlideFlickable {
     id: flick
     anchors.fill: parent
-    contentHeight: Math.max(height, col.implicitHeight + Theme.space3xl * 2)
+    contentHeight: Math.max(height, col.implicitHeight + Theme.space3xl * 2 + root.app.checkCover)
     ScrollBar.vertical: ScrollBar {}
 
     Column {
@@ -278,6 +287,7 @@ Item {
     }
   }
 
+  readonly property bool keysOpen: keysHelp.opened
   KeyHelp {
     id: keysHelp
     anchors.fill: parent
