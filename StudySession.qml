@@ -208,6 +208,12 @@ QtObject {
 
   function start() {
     root.phase = "syncing"   // first: leaving the summary writes its log entry
+    // A session that failed never reached the summary: its entry is still owed. The
+    // callback skips writeLog's own Anki sync, which this start is about to run.
+    root.writeLog(function() {})
+    // Likewise the deck's session of a failed one: finish() never closed it.
+    if (root.sessionId !== "") deck.call("endSession", { sessionId: root.sessionId }, function() {})
+    root.sessionId = ""
     root.rec = Session.empty()
     root.rated = []
     root.undone = []
@@ -322,6 +328,8 @@ QtObject {
     root.moves = []
     root.errorText = String(msg)
     root.phase = "error"
+    // What was rated still counts, and the error screen is as far as it may get.
+    if (root.rec.reviews.length > 0) root.logPending = true
   }
 
   // ---- one card -------------------------------------------------------------------
@@ -668,10 +676,19 @@ QtObject {
   // End early: what was reviewed still counts, and the session is closed. That
   // takes in a code card passed or given up on and not yet moved on from.
   function endNow() {
-    if (root.phase === "idle" || root.phase === "done") return
+    // Not while a rating is in flight: finish() would see no review and write no entry, and
+    // the rating then lands in the deck unlogged. It is a moment (settleMs), and Esc works after.
+    if (root.phase === "idle" || root.phase === "done" || root.phase === "submitting") return
     if (root.phase === "revealed" && root.code.rating > 0) { root.submit(root.code.rating, true); return }
     root.forgetGrade()
     root.finish()
+  }
+
+  // The window closing mid-session: what was rated is logged, though the summary never
+  // came. The session is left open rather than ended (endNow on a decided code card is
+  // async, and the quit has a deadline); the deck server never needed it closed here.
+  function logOnQuit() {
+    if (root.running && root.rec.reviews.length > 0) root.logPending = true
   }
 
   // A page opened from the summary (or anywhere, mid-session) goes in the log's

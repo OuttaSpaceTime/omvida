@@ -78,7 +78,7 @@ Item {
   function loadOverview() {
     root.refreshedAt = Date.now()
     deckClient.call("overview", { pendingLimit: 0 }, function(err, o) {
-      if (err) { root.status = "deck: " + err; return }
+      if (err) { root.status = "deck: " + err; root.deckStamp = ""; return }
       root.put("overview", o)
     })
   }
@@ -89,7 +89,7 @@ Item {
 
   function loadCards() {
     deckClient.call("cards", {}, function(err, cards) {
-      if (err) { root.status = "deck: " + err; return }
+      if (err) { root.status = "deck: " + err; root.deckStamp = ""; return }
       root.put("allCards", cards)
       root.cardsLoaded = true
     })
@@ -97,7 +97,7 @@ Item {
 
   function loadNotes() {
     deckClient.call("notes", {}, function(err, list) {
-      if (err) { root.status = "deck: " + err; return }
+      if (err) { root.status = "deck: " + err; root.notesStamp = ""; return }
       var m = {}
       list.forEach(function(n) { m[n.cardId] = n })
       root.put("notes", m)
@@ -154,6 +154,10 @@ Item {
   // a session (`studying`); the notes have their own part, which reloads only
   // them. Past sessions follow the deck and the notes. `overviewToo` re-reads
   // the overview even if nothing moved: its due counts move with the clock.
+  // checkDeck stores the new stamps before the loads answer, so a load that
+  // fails clears its stamp (deckStamp, notesStamp): a restarted server reports
+  // the same stamp, and the next poll must still see a change. No tight loop:
+  // the retry waits for the poll, and checkDeck returns while the client is down.
   function checkDeck(overviewToo) {
     if (!deckClient.ready) return
     deckClient.call("stamp", {}, function(err, s) {

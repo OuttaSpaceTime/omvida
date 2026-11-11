@@ -78,4 +78,31 @@ OmvidaTest {
     compare(hung.err, "echo stopped")
     compare(Object.keys(c.pending).length, 0)
   }
+
+  // restarts: 3 stands for the three restarts already spent, so the test
+  // does not wait out 3 x 1.5s of restart timer.
+  function test_a_call_after_the_restarts_are_used_up_fails_at_once() {
+    var c = client(["--die"])
+    c.restarts = 3
+    tryVerify(function() { return c.failure !== "" }, 5000)
+    var r = recorder()
+    c.call("echo", {}, r.cb)
+    verify(r.done, "answered inside the call, not queued")
+    compare(r.err, c.failure)
+    compare(Object.keys(c.pending).length, 0)
+  }
+
+  // The store keeps the stamp it was told before the load answers; a load
+  // the deck server dies in must not leave it, or the restarted server's
+  // same stamp reads as "nothing changed" and the cards stay empty.
+  function test_a_failed_deck_load_is_retried_on_the_next_check() {
+    waitReady()
+    var store = app.store
+    store.allCards = []
+    store.loadCards()
+    store.deck.failAll("deck stopped")   // the request is written, not yet answered
+    compare(store.allCards.length, 0)
+    store.checkDeck()
+    tryVerify(function() { return store.allCards.length > 0 }, 5000)
+  }
 }

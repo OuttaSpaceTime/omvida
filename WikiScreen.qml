@@ -310,9 +310,11 @@ Item {
               onActivated: root.app.openAdd("flashcard", root.meta.title, "wiki page [[" + root.meta.path + "]]")
             }
             // One per explorable, main one first; "Explore 2" for the rest,
-            // since a page rarely has more than one.
+            // since a page rarely has more than one. Only http(s) ones, like
+            // every other link: frontmatter is data, and a file: URL or a
+            // value starting with "-" must not reach omarchy-launch-webapp.
             Repeater {
-              model: root.meta ? root.meta.explorables : []
+              model: root.meta ? root.meta.explorables.filter(Format.isExternalUrl) : []
               delegate: PlainButton {
                 id: exploreButton
                 required property string modelData

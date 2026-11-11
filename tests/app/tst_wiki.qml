@@ -64,6 +64,8 @@ OmvidaTest {
     compare(findNamed(target, "pageExplore:0"), null)
     app.nav.openPage("security/csrf", "")
     tryVerify(function() { return wiki.loadedPath === "security/csrf" }, 8000)
+    // The fixture lists a file: URL first; it gets no button and no number.
+    compare(findNamed(target, "pageExplore:1"), null)
     click("pageExplore:0")
     tryVerify(function() { return webappCalls().length === 1 }, 4000)
     compare(webappCalls()[0], ["https://claude.ai/artifact/fixture-csrf"])

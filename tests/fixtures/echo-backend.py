@@ -3,12 +3,16 @@
 protocol: {"ready": true} once, then each request answered with its own params.
 "hang" is never answered and "exit" ends the process (code 3), the two ways a
 real backend fails. --slow-start SECONDS waits before the ready line, as the
-wiki service does on its first launch."""
+wiki service does on its first launch. --die exits (code 3) before the ready
+line, a backend that cannot start."""
 
 import json
 import sys
 import time
 
+if "--die" in sys.argv:
+    print("cannot start", file=sys.stderr, flush=True)
+    sys.exit(3)
 if len(sys.argv) > 2 and sys.argv[1] == "--slow-start":
     time.sleep(float(sys.argv[2]))
 print(json.dumps({"ready": True}), flush=True)

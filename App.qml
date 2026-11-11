@@ -175,6 +175,7 @@ Scope {
       root.quitting = true
       quitDeadline.interval = checks.count > 0 ? Config.cardCheckQuitDeadline : Config.quitDeadline
       quitDeadline.start()
+      studySession.logOnQuit()
       if (!studySession.logPending) { root.logWritten = true; root.quitIfDone(); return }
       studySession.writeLog(function() { root.logWritten = true; root.quitIfDone() })
     }

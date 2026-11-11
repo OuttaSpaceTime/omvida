@@ -217,9 +217,15 @@ function resumeArgv(studyDir, sessionId) {
 
 // The tools a headless Ask may use without a prompt: read-only lookups, and
 // appending its Query entry to today's log. Nothing else: no Bash, no edits
-// outside logs/.
+// outside logs/. Read, Glob and Grep are deliberately NOT listed: a bare name
+// allows them on any path, and a fetched page with injected instructions could
+// then read a private file and send it out through a WebFetch URL. Without a
+// rule they still run inside the working directory (the study repo) with no
+// prompt, and outside it they would prompt, which a headless run denies
+// (checked with Claude Code 2.1.322: ./in.txt read, a file outside refused).
+// A path-scoped Read(...) allow would not help: Glob(path) and Grep(path)
+// rules never match, only Read(path) does, and the default already covers it.
 var ASK_TOOLS = [
-  "Read", "Glob", "Grep",
   "mcp__qmd__query", "mcp__qmd__search", "mcp__qmd__get",
   "mcp__flashcard-mcp__search_cards", "mcp__flashcard-mcp__get_card",
   "WebSearch", "WebFetch",

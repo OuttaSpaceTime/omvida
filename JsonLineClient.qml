@@ -12,6 +12,9 @@ import Quickshell.Io
 // restarted after 1.5s, up to three times in a row: a
 // crash during one request should not cost the rest of the session. Every
 // call in flight when it exits gets an error, so no screen waits forever.
+// Once the restarts are used up `failure` is set, nothing restarts, and a
+// call() is answered with that failure at once: queued, it would never be
+// sent and never time out.
 // Nor when it hangs without exiting: a request unanswered for `timeout`
 // (Config.requestTimeout) gets an error too, and its answer, should one
 // come, is dropped. The clock starts when the line is written, not when it
@@ -39,6 +42,7 @@ Item {
 
   // cb(error, result): error is null or a message string.
   function call(method, params, cb) {
+    if (root.failure !== "") { cb(root.failure, null); return }
     var id = root.nextId++
     root.pending[id] = { cb: cb, method: method, sentAt: 0,
                          line: JSON.stringify({ id: id, method: method, params: params || {} }) }

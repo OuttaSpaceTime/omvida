@@ -49,6 +49,8 @@ TestCase {
     verify(tools.indexOf("Bash") === -1)
     verify(tools.indexOf("Write(logs/**)") !== -1)
     verify(tools.indexOf("Edit") === -1)
+    // A bare Read/Glob/Grep would allow any path, exfiltration included.
+    verify(tools.indexOf("Read") === -1 && tools.indexOf("Glob") === -1 && tools.indexOf("Grep") === -1)
     compare(argv.slice(0, 3), ["claude", "-p", "What is HSTS?"], "the prompt before --allowedTools, which would take it as a tool")
   }
 

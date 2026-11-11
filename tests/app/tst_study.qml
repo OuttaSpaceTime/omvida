@@ -764,4 +764,59 @@ OmvidaTest {
     tryVerify(function() { return field.activeFocus }, 2000, "the answer box has the keyboard back")
     compare(field.text, "half")
   }
+
+  // Study entries in today's log file: one per session that reviewed something.
+  function logEntries() {
+    var d = new Date()
+    var m = d.getMonth() + 1
+    var day = d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (d.getDate() < 10 ? "0" : "") + d.getDate()
+    var t = readFile(studyDir + "/logs/" + (m < 10 ? "0" : "") + m + "/" + day + ".md")
+    return t === null ? 0 : t.split("— Study (").length - 1
+  }
+
+  // An error after ratings never reaches the summary, and "try again" starts a
+  // new record: the entry for what was rated has to be written first.
+  function test_an_error_after_ratings_still_logs_them_on_try_again() {
+    var before = logEntries()
+    startSession()
+    var a = study.card.id
+    rate(4)
+    nextCardAfter(a)
+    study.fail("boom")
+    compare(study.phase, "error")
+    study.start()
+    tryVerify(function() { return logEntries() === before + 1 }, 5000, "the rated card's entry is in the log")
+    tryCompare(study, "phase", "answering", 15000)
+  }
+
+  // The window closing mid-session logs what was rated, though no summary came.
+  function test_closing_mid_session_logs_the_ratings() {
+    var before = logEntries()
+    startSession()
+    var a = study.card.id
+    rate(4)
+    nextCardAfter(a)
+    study.logOnQuit()
+    verify(study.logPending)
+    var done = false
+    study.writeLog(function() { done = true })
+    tryVerify(function() { return done }, 5000)
+    compare(logEntries(), before + 1)
+  }
+
+  // A rating still in flight is not ended over: finish() would see no review.
+  function test_end_waits_for_a_rating_in_flight() {
+    startSession()
+    type("abc")
+    key(Qt.Key_Return, Qt.ShiftModifier)
+    tryCompare(study, "phase", "revealed", 8000)
+    study.submit(3)
+    compare(study.phase, "submitting")
+    study.endNow()
+    compare(study.phase, "submitting", "no end while submitting")
+    tryVerify(function() { return study.phase === "answering" || study.phase === "done" }, 8000)
+    study.endNow()
+    tryCompare(study, "phase", "done", 3000)
+    verify(study.logPending, "the rating is in the log's record")
+  }
 }

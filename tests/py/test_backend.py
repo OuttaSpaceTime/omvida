@@ -58,7 +58,7 @@ def test_page_meta_reads_frontmatter(idx):
 
 
 def test_page_meta_reads_explorables(idx):
-    assert page(idx, "security/csrf")["explorables"] == ["https://claude.ai/artifact/fixture-csrf"]
+    assert page(idx, "security/csrf")["explorables"] == ["file:///etc/passwd", "https://claude.ai/artifact/fixture-csrf"]
 
 
 def test_tree_puts_folders_and_pages_in_order(idx):

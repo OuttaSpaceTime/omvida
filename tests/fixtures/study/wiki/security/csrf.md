@@ -8,6 +8,7 @@ source_skill: study-walkthrough
 flashcard_ids:
 - fixturecard0003
 explorables:
+- file:///etc/passwd
 - https://claude.ai/artifact/fixture-csrf
 ---
 
