@@ -195,7 +195,8 @@ Item {
   }
 
   // Pressure, from this session's start (or the deck overview before one),
-  // shown only when it is not ok; new cards the server held back for it; and
+  // shown only when it is not ok; new cards the server held back for it; due
+  // reviews the daily review limit held back; and
   // the Anki sync's note, which a click repeats as a toast.
   readonly property var statusAlerts: {
     var s = root.session
@@ -204,6 +205,8 @@ Item {
     var out = StatusBits.pressure(root.app, pressure, Overview.clearance(root.app.store.overview), Theme.verdictColor)
     if (s.info && s.info.newHeldBack > 0 && phase !== "done")
       out.push({ text: s.info.newHeldBack + " new held back", tip: "new cards held back while pressure is " + pressure.verdict })
+    if (s.info && s.info.reviewsHeldBack > 0 && phase !== "done")
+      out.push({ text: s.info.reviewsHeldBack + " reviews held back", tip: "due reviews past Anki's daily review limit wait for tomorrow" })
     var note = s.syncNote
     if (note !== "") {
       let failed = note.indexOf("Anki sync failed") === 0

@@ -12,6 +12,21 @@ OmvidaTest {
   function init() {
     if (study.phase !== "idle" && study.phase !== "done") study.endNow()
     sqlWrite("UPDATE Card SET due = '2020-01-01T00:00:00.000+00:00' WHERE suspended = 0")
+    sqlWrite("UPDATE Config SET reviewsPerDay = 200, newPerDay = 20")   // Anki's defaults, after the limit test
+  }
+
+  // Past Anki's daily review limit the session is empty, and says why: due
+  // cards wait for tomorrow, which "all caught up" would hide.
+  function test_an_empty_session_names_the_daily_review_limit() {
+    sqlWrite("INSERT OR IGNORE INTO Config (id) VALUES ('default')")
+    sqlWrite("UPDATE Config SET reviewsPerDay = 0, newPerDay = 0")
+    // Learning steps are never limited; out of the way, so only the limit decides.
+    sqlWrite("UPDATE Card SET due = '2099-01-01T00:00:00.000+00:00' WHERE state IN (1, 3)")
+    app.nav.setScreen("study")
+    study.start()
+    tryCompare(study, "phase", "done", 15000)
+    var text = item("summaryEmpty").text
+    verify(text.indexOf("Daily review limit reached: ") === 0 && text.indexOf("held back until tomorrow") !== -1, text)
   }
 
   function test_a_session_opens_on_a_card_with_the_answer_focused() {

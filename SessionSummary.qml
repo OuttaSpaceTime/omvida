@@ -20,11 +20,14 @@ Column {
   required property StudySession session
   spacing: Theme.spaceXl
 
+  // An empty session is "caught up" only if the daily review limit held nothing back.
   UiText {
+    objectName: "summaryEmpty"
     visible: root.session.summaryData !== null && root.session.summaryData.reviews === 0
-    text: root.session.info && root.session.info.total === 0
-      ? "Nothing due. You're all caught up."
-      : "Nothing was reviewed."
+    text: !root.session.info || root.session.info.total !== 0 ? "Nothing was reviewed."
+      : root.session.info.reviewsHeldBack > 0
+        ? "Daily review limit reached: " + Format.plural(root.session.info.reviewsHeldBack, "due card") + " held back until tomorrow."
+        : "Nothing due. You're all caught up."
     font.pixelSize: Theme.subtitleSize
   }
 

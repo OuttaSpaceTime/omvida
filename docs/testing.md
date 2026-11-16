@@ -92,7 +92,7 @@ and stops.
 | `rate:<1-4>` (`suggested`, `marked` (picked or taken), `chosen`; its `interval` label), `startSessionButton`, `studyAgainButton` | the study controls |
 | `codeCard` (`shaking`, `flashing`: the last check's animation), `codeBrief`, `codeListing`, `codeBlank:<i>`, `codeVerdict`, `codeCase:<i>`, `codeActual:<i>`, `codeExpected:<i>`, `codeError`, `codeOutput`, `codeExplain`, `codeResults` | a code card |
 | `leechRewrite`, `leechSplit`, `leechDrop`, `leechDropConfirm`, `leechKeep`, `leechContinue` | a leech |
-| `summary`, `summaryLine`, `related:<path>` | the session summary |
+| `summary`, `summaryLine`, `summaryEmpty` (nothing reviewed: caught up, or the daily limit), `related:<path>` | the session summary |
 | `pageTitle`, `wikiFlick`, `pageCardsButton`, `pageAddCards`, `pageExplore:<n>`, `pageDeeper`, `heading:<anchor>` | a wiki page |
 | `panelMode:context`, `panelMode:tree`, `tree:<path>`, `sibling:<path>`, `section:<anchor>` | the wiki side panel |
 | `folderTitle`, `folder:<path>`, `folderPage:<path>` | a folder |
