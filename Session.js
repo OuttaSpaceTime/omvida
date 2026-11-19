@@ -51,6 +51,25 @@ function explored(rec, path) {
   return rec.wikiExplored.indexOf(path) !== -1 ? rec : patch(rec, { wikiExplored: rec.wikiExplored.concat([path]) })
 }
 
+// A past session's record, from the deck server's `sessions` (every review
+// in its window), so Home can show its summary as the end of a session does.
+// The server keeps no suggested rating or leech decision, so those stay
+// empty; a card rated again in the window is a repeat, as it was live.
+function fromPast(session) {
+  var seen = {}
+  var reviews = session.reviews.map(function(r) {
+    var repeat = !!seen[r.cardId]
+    seen[r.cardId] = true
+    return { cardId: r.cardId, front: Format.stripHtml(r.front), tags: r.tags || [], rating: r.rating,
+             suggested: 0, repeat: repeat, ratedMs: Date.parse(r.reviewedAt) }
+  })
+  return patch(empty(), {
+    reviews: reviews,
+    firstShownMs: Date.parse(session.startTime),
+    lastRatedMs: reviews.length ? reviews[reviews.length - 1].ratedMs : 0
+  })
+}
+
 function shorten(s, n) { return s.length > n ? s.slice(0, n - 1) + "…" : s }
 
 // Unique cards, repeats, accuracy (Good or Easy share), lapses, overrides.
@@ -87,6 +106,20 @@ function studiedCards(rec) {
     if (rv.rating === 1) byId[rv.cardId].lapsed = true
   })
   return order.map(function(id) { return byId[id] })
+}
+
+// Each card a session rated, once, in the order it came up, with every
+// rating it was given there: the session page's list (SessionScreen).
+function ratedCards(rec) {
+  var byId = {}, order = []
+  rec.reviews.forEach(function(rv) {
+    if (!byId[rv.cardId]) {
+      byId[rv.cardId] = { id: rv.cardId, front: rv.front, ratings: [] }
+      order.push(byId[rv.cardId])
+    }
+    byId[rv.cardId].ratings.push(rv.rating)
+  })
+  return order
 }
 
 // The session log entry the wiki service writes (logs.py format_entry).

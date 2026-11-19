@@ -274,6 +274,8 @@ QtObject {
   // day letters (today is the last, accent bar).
   readonly property int glanceSparkHeight: 24
   readonly property int glanceSparkBarWidth: spaceSm
+  // The tallest bar of Home's reviews-by-day chart (LoadChart).
+  readonly property int loadChartHeight: 96
 
   // The reading column: the viewer's max-w-3xl, in characters of the body
   // font so it follows the type size.
@@ -331,12 +333,6 @@ QtObject {
   // it scrolls.
   readonly property int noteDialogWidth: 720
   readonly property int noteEditorLines: 8
-  // Per past session on Home, this many of the cards it lapsed or noted
-  // before "N more" (how many sessions is Config.homeSessions).
-  readonly property int sessionFlawsShown: 3
-  // The "lapsed" / "noted" column before each card there, so the fronts
-  // start on one edge.
-  readonly property int sessionFlawKindWidth: 64
 
   // ---- motion ----------------------------------------------------------------------
   // A card turning over, or turning in as you page: slow enough to read as

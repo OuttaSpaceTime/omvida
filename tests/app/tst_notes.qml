@@ -162,23 +162,46 @@ OmvidaTest {
     tryVerify(function() { return !cards.filters.noted }, 2000)
   }
 
-  // Home: the past sessions with what they lapsed and noted, and "fix all"
-  // with every note.
+  // Home: the past sessions as rows of figures, each opening its summary,
+  // and "fix all" with every note.
   function test_home_lists_past_sessions_and_fixes_all() {
     compare(run(["python3", repo + "/tests/fixtures/seed_deck.py", deckDb, "--notes"]).code, 0, "seeded")
     app.store.refreshDeck()
     app.nav.setScreen("home")
-    tryVerify(function() { return app.store.sessions.some(function(s) { return s.id === "fixturesession" }) }, 5000)
-    item("flaw:lapsed:fixturecard0003")
-    item("flaw:noted:fixturecard0001")
+    var i = -1
+    tryVerify(function() { i = app.store.sessions.findIndex(function(s) { return s.id === "fixturesession" }); return i !== -1 }, 5000)
+    var row = item("session:" + i)
+    compare(row.badge, "2 lapses")
+    compare(row.note, "4 reviews · 14 min · accuracy 50% · 1 noted")
     compare(item("homeFixAll").label, "fix all · 2 notes")
     var before = kittyCalls().length
     click("homeFixAll")
     tryVerify(function() { return kittyCalls().length === before + 1 }, 3000)
     compare(kittyCalls()[before].slice(-1)[0], "/study-fix-notes", "every open note")
-    click("flaw:noted:fixturecard0001")
-    tryVerify(function() { return app.noteOpen }, 3000, "a noted card opens its note")
-    compare(item("noteEditor").text, "**Reword**: say what the 60 counts from")
+
+    // A row opens the session's page: the summary a session ends on, then
+    // every card with its ratings, from the deck's reviews.
+    click("session:" + i)
+    tryCompare(app.nav, "currentScreen", "session", 3000)
+    var page = item("sessionScreen")
+    compare(item("summaryLine").text, "3 cards (+1 repeats) in 14 min")
+    compare(item("summaryNoted").text, "Noted 1 card")
+    compare(findNamed(page, "studyAgainButton"), null, "no way on from a past session")
+    compare(page.cards.map(function(c) { return c.id + ":" + c.ratings.join(",") }),
+            ["fixturecard0003:1,3", "fixturecard0002:1", "fixturecard0001:3"])
+    // A click shows a card's back in its place.
+    var tile = item("sessionCard:fixturecard0003")
+    compare(tile.ratings, [1, 3], "the tile carries its ratings")
+    var front = tile.faceText
+    click("sessionCard:fixturecard0003")
+    verify(tile.faceText !== front && tile.faceText.indexOf("cookies") !== -1, "the back in the front's place")
+    // A related page goes to the wiki, and back returns to the session.
+    tryVerify(function() { return page.related.length > 0 }, 5000, "related pages")
+    click("related:" + page.related[0].path)
+    tryCompare(app.nav, "currentScreen", "wiki", 3000)
+    app.nav.goBack()
+    tryCompare(app.nav, "currentScreen", "session", 3000)
+    compare(app.nav.sessionId, "fixturesession")
   }
 
   // The wiki's left panel drags wider by its right edge, and no further

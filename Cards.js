@@ -23,6 +23,19 @@ function tileCaption(card, withDeck, noted) {
   return parts.join(" · ")
 }
 
+// A card's ratings in one session as runs of the same rating, for its tile
+// (CardTile): [1, 1, 1, 3] is "again ×3 good", so a card that lapsed again
+// and again still fits the tile's caption line.
+function ratingRuns(ratings) {
+  var out = []
+  ratings.forEach(function(r) {
+    var last = out[out.length - 1]
+    if (last && last.rating === r) last.count++
+    else out.push({ rating: r, count: 1 })
+  })
+  return out
+}
+
 function searchableText(card) {
   return (card.front + " " + card.back + " " + (card.tags || []).join(" "))
     .replace(/<[^>]*>/g, " ").toLowerCase()

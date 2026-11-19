@@ -284,8 +284,13 @@ Item {
       SessionSummary {
         visible: root.phase === "done"
         width: parent.width
-        session: root.session
         app: root.app
+        summaryData: root.session.summaryData
+        info: root.session.info
+        leeches: root.session.rec.leeches
+        noted: root.session.noted
+        related: root.session.related
+        onAgain: root.session.start()
       }
     }
   }

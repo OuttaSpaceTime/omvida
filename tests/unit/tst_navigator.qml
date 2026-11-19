@@ -16,6 +16,7 @@ TestCase {
     nav.currentScreen = "home"
     nav.wikiPath = ""
     nav.wikiFolder = ""
+    nav.sessionId = ""
     nav.graphLocal = false
     nav.forgetHistory()
     navigating.clear()
@@ -28,6 +29,20 @@ TestCase {
     compare(nav.currentScreen, "cards")
     compare(nav.history.length, 1, "the same screen again is no step")
     compare(nav.history[0].screen, "home")
+  }
+
+  function test_a_session_page_is_a_step_back_and_forward() {
+    nav.openSession("s1")
+    nav.openSession("s1")
+    compare(nav.history.length, 1, "the same session again is no step")
+    nav.openSession("s2")
+    nav.goBack()
+    compare(nav.currentScreen, "session")
+    compare(nav.sessionId, "s1")
+    nav.goBack()
+    compare(nav.currentScreen, "home")
+    nav.goForward()
+    compare(nav.sessionId, "s1")
   }
 
   function test_back_and_forward_restore_the_page_too() {

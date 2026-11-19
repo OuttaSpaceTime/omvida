@@ -158,6 +158,7 @@ Rectangle {
     onRunningChanged: if (!running) {
       driver.app.store.refreshDeck()
       if (driver.action === "notes:cards") driver.cardsScreen.setFilter("noted", true)
+      if (driver.action === "notes:session") driver.app.nav.openSession("fixturesession")
     }
   }
 

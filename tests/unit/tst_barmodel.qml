@@ -62,6 +62,18 @@ TestCase {
     compare(M.glanceLine(null), "")
   }
 
+  function test_load_bars_are_the_decks_own() {
+    var bars = [{ label: "Mo", reviews: 4, again: 1, due: 0 }, { label: "Tu", reviews: 12, again: 0, due: 5 }]
+    compare(M.loadBars(overview(5, "ok", { load: bars })), bars)
+    compare(M.loadPeak(bars), 17)
+  }
+
+  function test_load_bars_without_any() {
+    compare(M.loadBars(overview(0, "ok")), [])
+    compare(M.loadBars(null), [])
+    compare(M.loadPeak([]), 1)
+  }
+
   function test_retention_line_keeps_the_verdict_verbatim() {
     compare(M.retentionLine(overview(1, "ok"), "#123456"),
             'Retention 86% over 30 days · <font color="#123456">calibrated</font>')

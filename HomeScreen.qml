@@ -5,7 +5,7 @@ import QtQuick.Controls
 import "Format.js" as Format
 import "StatusBits.js" as StatusBits
 import "WikiTree.js" as WikiTree
-import "NoteEdit.js" as NoteEdit
+import "Session.js" as Session
 
 // Home: what to do now, then the Next.js viewer's dashboard (last studied
 // pages, recently updated pages, the topics).
@@ -29,22 +29,6 @@ Item {
   readonly property var index: app.store.wikiIndex
   readonly property var overview: app.store.overview
   readonly property Store store: app.store
-
-  // What a past session exposed, as one list: the cards it lapsed (red),
-  // then those noted during it (accent, with the note's first line), each
-  // card once. A card both lapsed and noted shows as noted: the note says
-  // what to do about it.
-  function flaws(session) {
-    var byId = root.store.cardsById
-    var noted = session.noted.filter(function(id) { return root.store.notes[id] && byId[id] })
-    var out = session.lapses.filter(function(l) { return noted.indexOf(l.cardId) === -1 }).map(function(l) {
-      return { kind: "lapsed", cardId: l.cardId, text: Format.stripHtml(l.front) }
-    })
-    return out.concat(noted.map(function(id) {
-      return { kind: "noted", cardId: id, card: byId[id],
-               text: Format.stripHtml(byId[id].front) + " — " + NoteEdit.firstLine(root.store.notes[id].body) }
-    }))
-  }
 
   // ---- the window's status line ---------------------------------------------
   readonly property var statusSegments: root.index ? [{
@@ -111,16 +95,20 @@ Item {
         }
       }
 
+      LoadChart {
+        width: parent.width
+        overview: root.overview
+      }
+
       // ---- past sessions ------------------------------------------------------
-      // The last few sessions and what each exposed: lapses and the cards
-      // noted on the way (Ctrl+N). "fix all" hands every open note to one
+      // The last few sessions, each a row of figures that opens its page
+      // (SessionScreen). "fix all" hands every open note to one
       // Claude Code session (app.fixNotes), which resolves each as it goes;
       // the list then loses them on the deck's next reload.
       Column {
         objectName: "homeSessions"
         visible: root.store.sessions.length > 0 || root.store.noteCount > 0
         width: parent.width
-        spacing: Theme.spaceSm
         Item {
           width: parent.width
           height: sessionsLabel.implicitHeight
@@ -137,56 +125,27 @@ Item {
             onActivated: root.app.fixNotes(null)
           }
         }
+        // One row a session, its figures only: what it lapsed is on its
+        // page, a click away. The lapses are the one figure in colour,
+        // since they are what a session leaves to do.
         Repeater {
           model: root.store.sessions
-          delegate: Column {
-            id: sessionItem
+          delegate: ListRow {
+            id: sessionRow
             required property var modelData
             required property int index
-            objectName: "session:" + sessionItem.index
-            readonly property var flaws: root.flaws(sessionItem.modelData)
+            readonly property var s: sessionRow.modelData
+            readonly property int noted: root.store.notedIds(sessionRow.s.noted).length
+            readonly property string minutes: Format.durationText(Session.summary(Session.fromPast(sessionRow.s)).minutes)
+            objectName: "session:" + sessionRow.index
             width: col.width
-            spacing: Theme.spaceXs
-            topPadding: sessionItem.index > 0 ? Theme.spaceSm : 0
-            Row {
-              spacing: Theme.spaceMd
-              UiText { id: whenText; text: Format.sessionWhen(sessionItem.modelData.startTime) }
-              UiText {
-                text: Format.plural(sessionItem.modelData.cardsReviewed, "review") + " · accuracy " + Format.pct(sessionItem.modelData.accuracy)
-                font.pixelSize: Theme.bodySmallSize
-                color: Theme.dim
-                anchors.baseline: whenText.baseline
-              }
-            }
-            UiText {
-              visible: sessionItem.flaws.length === 0
-              text: "no lapses, nothing noted"
-              font.pixelSize: Theme.bodySmallSize
-              color: Theme.faint
-            }
-            Repeater {
-              model: sessionItem.flaws.slice(0, Theme.sessionFlawsShown)
-              // A noted card opens its note; a lapse has nothing to open.
-              delegate: MarkedRow {
-                id: flawRow
-                required property var modelData
-                objectName: "flaw:" + flawRow.modelData.kind + ":" + flawRow.modelData.cardId
-                width: col.width
-                lead: flawRow.modelData.kind
-                leadWidth: Theme.sessionFlawKindWidth
-                leadColor: flawRow.modelData.kind === "noted" ? Theme.accentColor : Theme.redText
-                text: flawRow.modelData.text
-                clickable: flawRow.modelData.kind === "noted"
-                onActivated: root.app.openNote(flawRow.modelData.card, "")
-              }
-            }
-            UiText {
-              visible: sessionItem.flaws.length > Theme.sessionFlawsShown
-              x: Theme.sessionFlawKindWidth
-              text: "+" + (sessionItem.flaws.length - Theme.sessionFlawsShown) + " more"
-              font.pixelSize: Theme.captionSize
-              color: Theme.faint
-            }
+            title: Format.sessionWhen(sessionRow.s.startTime)
+            badge: sessionRow.s.lapses.length > 0 ? Format.plural(sessionRow.s.lapses.length, "lapse") : ""
+            badgeColor: Theme.redText
+            note: [Format.plural(sessionRow.s.cardsReviewed, "review"), sessionRow.minutes,
+                   "accuracy " + Format.pct(sessionRow.s.accuracy),
+                   sessionRow.noted > 0 ? sessionRow.noted + " noted" : ""].filter(function(t) { return t !== "" }).join(" · ")
+            onActivated: root.app.nav.openSession(sessionRow.s.id)
           }
         }
       }

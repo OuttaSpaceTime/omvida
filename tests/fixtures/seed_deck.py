@@ -77,11 +77,14 @@ if sys.argv[2:] == ["--notes"]:
 
     db.execute(
         "INSERT OR REPLACE INTO StudySession (id, startTime, endTime, cardsReviewed, newCards, accuracy)"
-        " VALUES ('fixturesession', ?, ?, 9, 1, 0.67)", (ago(90), ago(70)))
-    for rid, cid, minutes in [("fixturelapse0", "fixturecard0003", 85), ("fixturelapse1", "fixturecard0002", 84)]:
+        " VALUES ('fixturesession', ?, ?, 4, 1, 0.5)", (ago(90), ago(70)))
+    # Two lapses among the session's reviews, and fixturecard0003 again later
+    # (a repeat), so its summary on Home has every figure.
+    for rid, cid, rating, minutes in [("fixturelapse0", "fixturecard0003", 1, 85), ("fixturelapse1", "fixturecard0002", 1, 84),
+                                      ("fixturegood0", "fixturecard0001", 3, 83), ("fixturegood1", "fixturecard0003", 3, 76)]:
         db.execute(
             "INSERT OR REPLACE INTO Review (id, cardId, rating, stability, difficulty, elapsedDays, reviewedAt)"
-            " VALUES (?, ?, 1, 1, 5, 1, ?)", (rid, cid, ago(minutes)))
+            " VALUES (?, ?, ?, 1, 5, 1, ?)", (rid, cid, rating, ago(minutes)))
     for cid, body, minutes in [("fixturecard0001", "**Reword**: say what the 60 counts from", 80),
                                ("fixturecard0004", "Why is the port part of it?", 30)]:
         db.execute("INSERT OR REPLACE INTO CardNote (cardId, body, createdAt, updatedAt) VALUES (?, ?, ?, ?)",

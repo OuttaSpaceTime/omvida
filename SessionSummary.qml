@@ -8,6 +8,11 @@ import "Launch.js" as Launch
 // connected to those cards (/study Phase 4), a walkthrough for what lapsed,
 // and the way on.
 //
+// It takes what it shows rather than a StudySession, because a past
+// session's page shows it too (SessionScreen, `past`): the same view, minus
+// today's streak and the ways on, which belong to a session just finished,
+// and the lapses line, since that page lists every card with its ratings.
+//
 // Quiet, like the card before it: sections apart by hairlines, faint small
 // caps labels, and its actions as plain words (PlainButton). The status line
 // says DONE with the count, duration and accuracy, and carries the same ways
@@ -17,53 +22,59 @@ Column {
   objectName: "summary"
 
   required property App app
-  required property StudySession session
+  property var summaryData: null   // Session.summary
+  property var info: null          // startSession's result, for an empty session
+  property var leeches: []
+  property var noted: []
+  property var related: []
+  property bool past: false
+  signal again()
   spacing: Theme.spaceXl
 
   // An empty session is "caught up" only if the daily review limit held nothing back.
   UiText {
     objectName: "summaryEmpty"
-    visible: root.session.summaryData !== null && root.session.summaryData.reviews === 0
-    text: !root.session.info || root.session.info.total !== 0 ? "Nothing was reviewed."
-      : root.session.info.reviewsHeldBack > 0
-        ? "Daily review limit reached: " + Format.plural(root.session.info.reviewsHeldBack, "due card") + " held back until tomorrow."
+    visible: root.summaryData !== null && root.summaryData.reviews === 0
+    text: !root.info || root.info.total !== 0 ? "Nothing was reviewed."
+      : root.info.reviewsHeldBack > 0
+        ? "Daily review limit reached: " + Format.plural(root.info.reviewsHeldBack, "due card") + " held back until tomorrow."
         : "Nothing due. You're all caught up."
     font.pixelSize: Theme.subtitleSize
   }
 
   Column {
-    visible: root.session.summaryData !== null && root.session.summaryData.reviews > 0
+    visible: root.summaryData !== null && root.summaryData.reviews > 0
     spacing: Theme.spaceSm
     UiText {
       objectName: "summaryLine"
-      text: root.session.summaryData
-        ? Format.plural(root.session.summaryData.cards, "card")
-          + (root.session.summaryData.repeats > 0 ? " (+" + root.session.summaryData.repeats + " repeats)" : "")
-          + (root.session.summaryData.minutes !== null ? " in " + Format.durationText(root.session.summaryData.minutes) : "")
+      text: root.summaryData
+        ? Format.plural(root.summaryData.cards, "card")
+          + (root.summaryData.repeats > 0 ? " (+" + root.summaryData.repeats + " repeats)" : "")
+          + (root.summaryData.minutes !== null ? " in " + Format.durationText(root.summaryData.minutes) : "")
         : ""
       font.pixelSize: Theme.headingSize
     }
     UiText {
-      text: root.session.summaryData
-        ? "Accuracy " + Format.pct(root.session.summaryData.accuracy)
-          + (root.app.store.overview && root.app.store.overview.streak > 0 ? " · " + Format.plural(root.app.store.overview.streak, "day") + " streak" : "")
-          + (root.session.summaryData.overrides > 0 ? " · " + Format.plural(root.session.summaryData.overrides, "suggestion") + " overridden" : "")
+      text: root.summaryData
+        ? "Accuracy " + Format.pct(root.summaryData.accuracy)
+          + (!root.past && root.app.store.overview && root.app.store.overview.streak > 0 ? " · " + Format.plural(root.app.store.overview.streak, "day") + " streak" : "")
+          + (root.summaryData.overrides > 0 ? " · " + Format.plural(root.summaryData.overrides, "suggestion") + " overridden" : "")
         : ""
       color: Theme.secondaryInk
     }
     UiText {
-      visible: root.session.summaryData && root.session.summaryData.lapses.length > 0
+      visible: !root.past && root.summaryData && root.summaryData.lapses.length > 0
       width: root.width
       wrapMode: Text.Wrap
-      text: root.session.summaryData ? "Lapses: " + root.session.summaryData.lapses.join("; ") : ""
+      text: root.summaryData ? "Lapses: " + root.summaryData.lapses.join("; ") : ""
       font.pixelSize: Theme.bodySmallSize
       color: Theme.redText
     }
     UiText {
-      visible: root.session.rec.leeches.length > 0
+      visible: root.leeches.length > 0
       width: root.width
       wrapMode: Text.Wrap
-      text: "Leeches: " + root.session.rec.leeches.join("; ")
+      text: "Leeches: " + root.leeches.join("; ")
       font.pixelSize: Theme.bodySmallSize
       color: Theme.orangeText
     }
@@ -72,11 +83,11 @@ Column {
   // The cards noted during the session (Ctrl+N), and the fix session for
   // them, which is the reason they were noted rather than fixed then.
   Row {
-    visible: root.session.noted.length > 0
+    visible: root.noted.length > 0
     spacing: Theme.spaceMd
     UiText {
       objectName: "summaryNoted"
-      text: "Noted " + Format.plural(root.session.noted.length, "card")
+      text: "Noted " + Format.plural(root.noted.length, "card")
       font.pixelSize: Theme.bodySmallSize
       color: Theme.accentColor
       anchors.verticalCenter: parent.verticalCenter
@@ -86,12 +97,12 @@ Column {
       label: "fix them in claude"
       tint: Theme.accentColor
       anchors.verticalCenter: parent.verticalCenter
-      onActivated: root.app.fixNotes(root.session.noted)
+      onActivated: root.app.fixNotes(root.noted)
     }
   }
 
   Rectangle {
-    visible: root.session.summaryData !== null && root.session.summaryData.reviews > 0
+    visible: root.summaryData !== null && root.summaryData.reviews > 0
     width: parent.width
     height: Theme.hairlineWidth
     color: Theme.hairline
@@ -99,18 +110,18 @@ Column {
 
   // /study Phase 4: pages connected to what was actually studied.
   Column {
-    visible: root.session.summaryData !== null && root.session.summaryData.reviews > 0
+    visible: root.summaryData !== null && root.summaryData.reviews > 0
     width: parent.width
     spacing: Theme.spaceSm
     SectionLabel { text: "Related pages" }
     UiText {
-      visible: root.session.related.length === 0
-      text: "Nothing in the wiki maps to today's cards."
+      visible: root.related.length === 0
+      text: "Nothing in the wiki maps to these cards."
       font.pixelSize: Theme.bodySmallSize
       color: Theme.faint
     }
     Repeater {
-      model: root.session.related
+      model: root.related
       delegate: ListRow {
         id: relatedRow
         required property var modelData
@@ -119,7 +130,7 @@ Column {
         title: relatedRow.modelData.title
         topic: relatedRow.modelData.path.split("/").slice(0, -1).join("/")
         badge: relatedRow.modelData.lapsed > 0 ? "includes a lapse" : ""
-        note: relatedRow.modelData.via === "cards" ? Format.plural(relatedRow.modelData.cards, "card") + " from today" : "shares a tag"
+        note: relatedRow.modelData.via === "cards" ? Format.plural(relatedRow.modelData.cards, "card") + " from this session" : "shares a tag"
         onActivated: root.app.nav.openPage(relatedRow.modelData.path, "")
       }
     }
@@ -128,12 +139,12 @@ Column {
   // Offers: a walkthrough for what lapsed, cards for the gaps. Each is the
   // skill's command as plain words.
   Column {
-    visible: root.session.summaryData !== null && root.session.summaryData.lapses.length > 0
+    visible: root.summaryData !== null && root.summaryData.lapses.length > 0
     width: parent.width
     spacing: Theme.spaceXs
     SectionLabel { text: "Go deeper" }
     Repeater {
-      model: root.session.summaryData ? root.session.summaryData.lapses.slice(0, 3) : []
+      model: root.summaryData ? root.summaryData.lapses.slice(0, 3) : []
       delegate: PlainButton {
         id: walkthroughButton
         required property var modelData
@@ -144,16 +155,17 @@ Column {
     }
   }
 
-  Rectangle { width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
+  Rectangle { visible: !root.past; width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
 
   Row {
+    visible: !root.past
     spacing: Theme.spaceXl
     PlainButton {
       objectName: "studyAgainButton"
       keys: "enter"
       label: "start another session"
       tint: Theme.accentColor
-      onActivated: root.session.start()
+      onActivated: root.again()
     }
     PlainButton { label: "browse the wiki"; onActivated: root.app.nav.setScreen("wiki") }
     PlainButton { label: "home"; onActivated: root.app.nav.setScreen("home") }

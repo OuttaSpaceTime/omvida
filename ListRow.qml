@@ -12,6 +12,7 @@ Rectangle {
   property string topic: ""
   property string note: ""
   property string badge: ""
+  property color badgeColor: Theme.accentColor
   property color dot: "transparent"
   property int inset: 0
   signal activated()
@@ -61,7 +62,7 @@ Rectangle {
       visible: root.badge !== ""
       text: root.badge
       font.pixelSize: Theme.captionSize
-      color: Theme.accentColor
+      color: root.badgeColor
     }
     UiText {
       visible: root.note !== ""

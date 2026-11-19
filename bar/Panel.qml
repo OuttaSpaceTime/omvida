@@ -7,10 +7,11 @@ import "Model.js" as Model
 // The panel under the Omvida icon: a glance at where studying stands, then
 // the way in. The count due with the pressure verdict as a small chip; one
 // sentence on what clears it; how the deck has matured, as one bar;
-// retention with the calibration verdict; and one primary action, Study now,
-// beside two icon buttons. Verdicts are the deck's own words. No list of the
-// cards waiting and no week chart: the panel is opened for a glance, and
-// Omvida's Home has the rest.
+// retention with the calibration verdict; reviews studied and expected around
+// today, as a chart; and one primary action, Study now, beside two icon
+// buttons. Verdicts are the deck's own words. No list of the cards waiting or
+// of single sessions: the panel is opened for a glance, and Omvida's Home has
+// the rest.
 //
 // Keys (PanelKeyCatcher): Enter studies now, Esc closes, Tab moves to the
 // neighbouring bar panel.
@@ -28,6 +29,8 @@ Panel {
   readonly property color dim: Qt.rgba(fg.r, fg.g, fg.b, 0.62)
   readonly property color faint: Qt.rgba(fg.r, fg.g, fg.b, 0.42)
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
+  // As rich text in the chart's legend, so a #rrggbb without alpha.
+  readonly property color studiedColor: Qt.tint(Color.background, Qt.rgba(fg.r, fg.g, fg.b, 0.55))
 
   function open() {
     if (hostWidget) hostWidget.refresh()
@@ -178,6 +181,82 @@ Panel {
           color: root.dim
           font.family: root.fontFamily
           font.pixelSize: Style.font.bodySmall
+        }
+
+        // ---- reviews by day: studied behind today, expected ahead. Further
+        // from today a bar adds up 2, 4, then 8 days (the deck's `load`).
+        Column {
+          id: load
+          visible: load.bars.length > 0
+          width: parent.width
+          spacing: Style.space(8)
+          readonly property var bars: Model.loadBars(root.o)
+          readonly property int peak: Model.loadPeak(load.bars)
+          readonly property real barSpace: Style.space(64)
+
+          PanelSeparator { foreground: root.fg }
+          Item {
+            width: parent.width
+            height: loadTitle.implicitHeight
+            PanelSectionHeader { id: loadTitle; foreground: root.fg; fontFamily: root.fontFamily; text: "Reviews by day" }
+            Text {
+              anchors.right: parent.right
+              anchors.baseline: loadTitle.baseline
+              textFormat: Text.StyledText
+              text: "<font color=\"" + root.studiedColor + "\">■</font> studied  "
+                  + "<font color=\"" + Color.urgent + "\">■</font> again  "
+                  + "<font color=\"" + Color.accent + "\">■</font> expected"
+              color: root.faint
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+            }
+          }
+          Row {
+            id: loadRow
+            width: parent.width
+            spacing: Style.space(2)
+            Repeater {
+              model: load.bars
+              delegate: Column {
+                id: dayColumn
+                required property var modelData
+                readonly property int total: modelData.reviews + modelData.due
+                // The smallest count still shows.
+                function barHeight(n) { return n > 0 ? Math.max(Style.space(2), load.barSpace * n / load.peak) : 0 }
+                width: (loadRow.width - loadRow.spacing * (load.bars.length - 1)) / load.bars.length
+                spacing: Style.space(3)
+                Item {
+                  width: parent.width
+                  height: load.barSpace + dayCount.implicitHeight
+                  Column {
+                    anchors.bottom: parent.bottom
+                    width: parent.width
+                    Text {
+                      id: dayCount
+                      width: parent.width
+                      horizontalAlignment: Text.AlignHCenter
+                      text: dayColumn.total > 0 ? dayColumn.total : ""
+                      color: dayColumn.modelData.today ? root.fg : root.dim
+                      font.family: root.fontFamily
+                      font.pixelSize: Style.font.caption
+                    }
+                    Rectangle { width: parent.width; height: dayColumn.barHeight(dayColumn.modelData.due); color: Color.accent }
+                    Rectangle { width: parent.width; height: dayColumn.barHeight(dayColumn.modelData.reviews - dayColumn.modelData.again); color: root.studiedColor }
+                    Rectangle { width: parent.width; height: dayColumn.barHeight(dayColumn.modelData.again); color: Color.urgent }
+                  }
+                }
+                Text {
+                  width: parent.width
+                  horizontalAlignment: Text.AlignHCenter
+                  text: dayColumn.modelData.label
+                  color: dayColumn.modelData.today ? root.fg : root.faint
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.caption
+                  font.bold: dayColumn.modelData.today
+                }
+              }
+            }
+          }
         }
 
         // ---- the way in: one primary action, two icon buttons ----

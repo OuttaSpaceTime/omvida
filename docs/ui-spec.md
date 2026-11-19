@@ -66,10 +66,12 @@ small sparkline (Again in red, hidden when the week is empty) and the pressure v
 outlined chip on the right; a dim sentence (clearance, cards added today, today's reviews and
 streak, the new pool); maturity as a thin segmented bar and its legend; "Retention 75% over
 115 reviews, 30 days · <calibration verdict>". No list of the pending reviews. Then the footer:
-Study now, filled, with the deck and the wiki as square icons. Below, each under a hairline and a caption: past
-sessions (the last five that reviewed something: when, reviews, accuracy, then up to three cards
-it exposed, `lapsed` in red or `noted` in the accent with the note's first line, a noted one
-opening its note; `fix all · N notes` on the caption's right, in the accent), last
+Study now, filled, with the deck and the wiki as square icons. Below, each under a hairline and a caption: reviews
+by day (today in the middle, studied behind it with Again in red, expected ahead in the accent; five single days each
+side, then 2, 4 and 8 day totals, each bar's count above it; the bar overlay has the same chart), past
+sessions (the last five that reviewed something, a row each: when, then reviews, minutes,
+accuracy and how many were noted, dim, with "N lapses" in red; a click opens the session's page;
+`fix all · N notes` on the caption's right, in the accent), last
 studied pages (latest review first, then coverage), recently updated, topic tiles (equal
 height, a hairline in the topic's colour over the name and three pages). Status line: HOME,
 the wiki's counts, ctrl+2 study, the shared hints, the pressure verdict while it is not ok.
@@ -196,6 +198,14 @@ region of the graph (there are no index pages to hold it together). Topic legend
 pages and the hovered node's neighbours labelled; click opens, drag pins, wheel zooms. Status
 line: GRAPH, the pages and links drawn, and that mouse help (it used to be a line beside the
 chips), with "dashed: shares a tag" around a page.
+
+## Session
+
+A past session's page, from a row of Home's past sessions. "Session · <when>", then the summary a
+session ends on (Study's, without the streak, the lapses line and the ways on), then every card it
+rated as the Cards screen's tiles, each with its ratings in order on the caption's right in their
+colours ("again ×2 good"); a click shows the back in the front's place. A card deleted since keeps
+its front, captioned "deleted". Status line: SESSION and when it was.
 
 ## Overlays
 

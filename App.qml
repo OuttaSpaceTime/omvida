@@ -295,7 +295,8 @@ Scope {
 
         // The screen on show, for the status line.
         readonly property var current: ({ home: homeScreen, study: studyScreen, wiki: wikiScreen,
-                                           cards: cardsScreen, graph: graphScreen })[navigator.currentScreen] || null
+                                           cards: cardsScreen, graph: graphScreen,
+                                           session: sessionScreen })[navigator.currentScreen] || null
 
         HomeScreen {
           id: homeScreen
@@ -326,6 +327,12 @@ Scope {
           id: graphScreen
           anchors.fill: parent
           visible: navigator.currentScreen === "graph"
+          app: root
+        }
+        SessionScreen {
+          id: sessionScreen
+          anchors.fill: parent
+          visible: navigator.currentScreen === "session"
           app: root
         }
       }

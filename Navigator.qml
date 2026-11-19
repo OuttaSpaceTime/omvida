@@ -16,10 +16,11 @@ import "Format.js" as Format
 QtObject {
   id: root
 
-  property string currentScreen: "home" // home | study | wiki | cards | graph
+  property string currentScreen: "home" // home | study | wiki | cards | graph | session
   property string wikiPath: ""          // the open page, or "" for a folder
   property string wikiFolder: ""        // the open folder when no page is
-  property var history: []              // previous {screen, path, folder}
+  property string sessionId: ""         // the past session on show (SessionScreen)
+  property var history: []              // previous {screen, path, folder, session}
   property var forwardStack: []
   // The graph screen: two hops around the open page, or every page.
   property bool graphLocal: false
@@ -43,7 +44,7 @@ QtObject {
     root.forwardStack = []
   }
 
-  function here() { return { screen: root.currentScreen, path: root.wikiPath, folder: root.wikiFolder } }
+  function here() { return { screen: root.currentScreen, path: root.wikiPath, folder: root.wikiFolder, session: root.sessionId } }
 
   function pushHistory() {
     root.history = root.history.concat([here()]).slice(-50)
@@ -53,6 +54,7 @@ QtObject {
   function restore(entry) {
     root.wikiPath = entry.path
     root.wikiFolder = entry.folder
+    root.sessionId = entry.session
     root.currentScreen = entry.screen
   }
 
@@ -85,6 +87,14 @@ QtObject {
     root.wikiPath = ""
     root.wikiFolder = folder
     root.currentScreen = "wiki"
+  }
+
+  // A past session's page, from Home's list.
+  function openSession(id) {
+    if (root.currentScreen === "session" && root.sessionId === id) return
+    pushHistory()
+    root.sessionId = id
+    root.currentScreen = "session"
   }
 
   function openGraph(local) {

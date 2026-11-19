@@ -30,8 +30,9 @@ and stops.
 - `master.db`: the fixture deck, built by `tests/fixtures/make-deck.sh` with flashcard-mcp's
   own `db:sync` (its start-up `prisma db push`, so its schema can never drift) and seeded by `seed_deck.py`: three
   review cards due, one new, one suspended, a few days of history. The card ids are the
-  fixture wiki's `flashcard_ids`. `seed_deck.py <db> --notes` adds a past session with two
-  lapses and two card notes, for Home and the Cards "noted" filter (tst_notes, `bin/shot -a notes`).
+  fixture wiki's `flashcard_ids`. `seed_deck.py <db> --notes` adds a past session (four
+  reviews, two of them lapses, one a repeat) and two card notes, for Home and the Cards "noted"
+  filter (tst_notes, `bin/shot -a notes`, `-a notes:session` for its summary).
 - `out/`: where the fakes record their calls.
 - A fake Claude API, `tests/fixtures/fake-anthropic.py`, on a free local port, with
   `ANTHROPIC_BASE_URL` and a fake `ANTHROPIC_API_KEY` set for the deck server (so
@@ -108,7 +109,9 @@ and stops.
 | `noteDialog` (`app.noteOpen` says whether it is up), `noteCardFront`, `noteEditor`, `notePreview`, `noteSave`, `noteDelete` | a card's note |
 | `summaryNoted`, `summaryFixNotes` | the summary's noted cards |
 | `notedChip`, `selected:noted:yes`, `fixNoted`, `stageNote` | the deck explorer's noted filter, its fix, the stage card's note |
-| `homeSessions`, `session:<i>`, `flaw:<lapsed|noted>:<card id>`, `homeFixAll` | Home's past sessions |
+| `homeSessions`, `session:<i>` (a row; opens its page), `homeFixAll` | Home's past sessions |
+| `sessionScreen`, `sessionCard:<card id>` (a CardTile; a click shows its back), `tileRatings`; the summary's names above | a past session's page |
+| `loadChart`, `loadBar:<i>`, `loadCount:<i>` | Home's reviews-by-day chart |
 | `homeScreen`, `homeStudyButton`, `homeCardsButton`, `homeWikiButton`, `recent:<path>`, `topic:<path>`, `dueFigure`, `pressureVerdict`, `calibrationVerdict` | home |
 
 ## What the tests don't cover

@@ -23,6 +23,21 @@ TestCase {
     compare(s.minutes, 1)
   }
 
+  function test_a_past_session_reads_as_a_record() {
+    var r = S.fromPast({ startTime: "2026-11-17T06:00:00.000Z", reviews: [
+      { cardId: "a", front: "<b>A</b>", tags: ["web"], rating: 1, reviewedAt: "2026-11-17T06:01:00.000Z" },
+      { cardId: "b", front: "B", tags: [], rating: 3, reviewedAt: "2026-11-17T06:02:00.000Z" },
+      { cardId: "a", front: "<b>A</b>", tags: ["web"], rating: 3, reviewedAt: "2026-11-17T06:05:00.000Z" }
+    ] })
+    var s = S.summary(r)
+    compare(s.cards, 2)
+    compare(s.repeats, 1, "a's second rating")
+    compare(s.lapses, ["A"])
+    compare(s.minutes, 5, "from the session's start to its last rating")
+    compare(S.studiedCards(r), [{ id: "a", tags: ["web"], lapsed: true }, { id: "b", tags: [], lapsed: false }])
+    compare(S.ratedCards(r), [{ id: "a", front: "A", ratings: [1, 3] }, { id: "b", front: "B", ratings: [3] }])
+  }
+
   function test_records_are_never_edited_in_place() {
     var a = S.empty()
     var b = S.rated(a, card("x"), 3, 3, false, 5)

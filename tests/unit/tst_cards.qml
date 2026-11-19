@@ -18,6 +18,11 @@ TestCase {
     compare(C.tileCaption({ deck: "Web", tags: [], lapses: 0 }, false, false), "")
   }
 
+  function test_rating_runs() {
+    compare(C.ratingRuns([1, 1, 1, 3, 1]), [{ rating: 1, count: 3 }, { rating: 3, count: 1 }, { rating: 1, count: 1 }])
+    compare(C.ratingRuns([]), [])
+  }
+
   function test_filters_combine() {
     compare(ids(C.filterCards(deck, { query: "hsts", state: null, tags: [], deck: null })), ["a"])
     compare(ids(C.filterCards(deck, { query: "", state: "suspended", tags: [], deck: null })), ["c"])

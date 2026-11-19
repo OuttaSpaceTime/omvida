@@ -89,6 +89,15 @@ function weekPeak(o) {
   return peak
 }
 
+// The chart's bars, the deck's own (overview.ts `load`). None from a deck
+// server started before it had them: the panel then leaves the chart out.
+function loadBars(o) { return o && o.load ? o.load : [] }
+
+// The tallest bar's total, at least 1 so an empty chart divides safely.
+function loadPeak(bars) {
+  return bars.reduce(function(peak, b) { return Math.max(peak, b.reviews + b.due) }, 1)
+}
+
 function expandHome(path, home) {
   var p = String(path || "")
   if (p.indexOf("~/") === 0) return home + p.slice(1)

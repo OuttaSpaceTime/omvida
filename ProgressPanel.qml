@@ -16,10 +16,8 @@ import "bar/Model.js" as Overview
 // bar/Model.js's; this panel puts its sentence and its retention line
 // together itself, with the review count the bar leaves out.
 //
-// A small sparkline sits beside the figure: Glance has no chart, but the
-// week (and the Again share in red) is the only place the app shows how the
-// last days went, so it stays, at a size that does not compete with the
-// figure.
+// A small sparkline sits beside the figure, the week at a size that does not
+// compete with it. Home's LoadChart has the days in full.
 Column {
   id: root
 

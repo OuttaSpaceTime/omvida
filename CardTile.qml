@@ -1,8 +1,10 @@
 import QtQuick
 
 import "Cards.js" as Cards
+import "Format.js" as Format
 
-// A card in a grid, the Cards screen's and a page's (PageCardsDialog): its
+// A card in a grid, the Cards screen's, a page's (PageCardsDialog) and a past
+// session's (SessionScreen): its
 // state's dot and a caption over a few lines of plain text, under a hairline.
 // One tile for both, so a card looks the same wherever a grid shows it; the
 // page's grid had a filled, bordered box of its own, and a wall of boxes is
@@ -19,6 +21,10 @@ Item {
   property string caption: ""
   // The card's place in the grid, faint on the right; "" for none.
   property string number: ""
+  // The ratings a session gave it, in order, each in its colour on the right
+  // (SessionScreen): "again good" is a lapse caught up. Rating numbers, 1-4;
+  // repeats of one show once with a count (Cards.ratingRuns).
+  property var ratings: []
   property string text: ""
   // The text is the card's back (a page's tile, clicked): dimmer, and the
   // rule over the tile in the accent colour.
@@ -58,7 +64,7 @@ Item {
       UiText {
         id: captionText
         x: dot.width + Theme.spaceSm
-        width: parent.width - x - numberText.implicitWidth - Theme.spaceSm
+        width: parent.width - x - numberText.implicitWidth - ratingRow.implicitWidth - Theme.spaceSm
         elide: Text.ElideRight
         text: root.full ? "X" : root.caption
         font.pixelSize: Theme.captionSize
@@ -70,6 +76,21 @@ Item {
         text: root.number
         font.pixelSize: Theme.captionSize
         color: Theme.faint
+      }
+      Row {
+        id: ratingRow
+        objectName: "tileRatings"
+        anchors.right: numberText.left
+        spacing: Theme.spaceSm
+        Repeater {
+          model: Cards.ratingRuns(root.ratings)
+          delegate: UiText {
+            required property var modelData
+            text: Format.ratingName(modelData.rating).toLowerCase() + (modelData.count > 1 ? " ×" + modelData.count : "")
+            font.pixelSize: Theme.captionSize
+            color: Theme.ratingColor(modelData.rating)
+          }
+        }
       }
     }
     UiText {

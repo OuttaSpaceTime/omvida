@@ -145,7 +145,9 @@ and `qs.Ui` (Panel, KeyboardPanel, PanelKeyCatcher) and none of this repo's QML.
 come from `bin/omvida-overview`, which prints flashcard-mcp's overview, the same object the app
 shows. It runs that every ten minutes and when the panel opens; while the app is open, the app
 also hands the bar each new overview it loads (`omarchy-shell -q omvida.bar setOverview`), so
-the count follows a session rating by rating.
+the count follows a session rating by rating. The reviews-by-day chart, in the panel and on Home,
+is that same object too: `load`, bars the deck server has already grouped (five single days each side
+of today, then 2, 4 and 8 day totals), so the two surfaces cannot differ.
 
 ## What was copied, and from where
 

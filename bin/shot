@@ -20,7 +20,8 @@
 #       graphlocal (the graph screen around the page -s opened) |
 #       panels[:side,graph] (on a wiki page: fold the side panel, open the graph) |
 #       note[:text] (the note dialog over a card, never saved) |
-#       notes[:cards] (notes and a past session in the deck; :cards picks "noted") |
+#       notes[:cards|session] (notes and a past session in the deck; :cards picks "noted",
+#       :session opens its page) |
 #       studypages (the wiki panel's "From study" list) |
 #       code:<predict|fill|compose>[:wrong|pass|error|giveup] (a code card; -f catches its animation)
 #   -w/-h size, -f frames (ms, comma-separated), -t settle ms, -o out dir

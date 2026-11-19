@@ -17,6 +17,18 @@ OmvidaTest {
     compare(item("calibrationVerdict").text.indexOf(o.calibration.verdict), 0, "verbatim")
   }
 
+  // The deck server groups the bars; Home draws them as they come, today
+  // holding what was studied and what is still due.
+  function test_the_load_chart_draws_the_decks_bars() {
+    var bars = app.store.overview.load
+    compare(bars.length, 17)
+    compare(bars.slice(0, 3).map(function(b) { return b.label }), ["8d", "4d", "2d"])
+    verify(bars[8].today)
+    verify(item("loadChart").visible)
+    compare(item("loadCount:8").text, String(bars[8].reviews + bars[8].due))
+    verify(item("loadBar:16") !== null)
+  }
+
   // The deck and the wiki moved from a bordered "Browse the deck" button to
   // square icons beside Study now.
   function test_square_icons_open_the_deck_and_the_wiki() {
