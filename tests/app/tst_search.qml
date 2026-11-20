@@ -23,6 +23,24 @@ OmvidaTest {
     tryVerify(function() { return searchPalette.rows.some(function(r) { return r.kind === "card" }) }, 5000, "a card hit")
   }
 
+  // A card hit shows its back on activation and hides it on the next one,
+  // and the other rows stay as they were.
+  function test_activating_a_card_hit_toggles_its_back() {
+    app.openSearch("ETag")
+    tryVerify(function() { return searchPalette.rows.some(function(r) { return r.kind === "card" }) }, 5000, "a card hit")
+    var i = searchPalette.rows.findIndex(function(r) { return r.kind === "card" })
+    var row = item("result:card:" + i)
+    compare(row.revealed, false)
+    searchPalette.activate(i)
+    compare(row.revealed, true, "the back shows")
+    verify(searchPalette.opened, "the palette stays open")
+    searchPalette.rows.forEach(function(r, k) {
+      if (k !== i && r.kind === "card") compare(item("result:card:" + k).revealed, false, "only that row")
+    })
+    searchPalette.activate(i)
+    compare(row.revealed, false, "and hides again")
+  }
+
   function test_ctrl_enter_asks_claude_and_continue_resumes_in_kitty() {
     app.openSearch("What is an origin?")
     key(Qt.Key_Return, Qt.ControlModifier)

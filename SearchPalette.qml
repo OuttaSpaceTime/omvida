@@ -135,11 +135,12 @@ Item {
     if (!r) return
     if (r.kind === "page" || r.kind === "text") root.app.nav.openPage(r.path, "")
     else if (r.kind === "ask") root.ask()
-    else if (r.kind === "card") {
-      let item = resultsRep.itemAt(i)
-      if (item) item.revealed = !item.revealed
-    }
+    else if (r.kind === "card") root.revealToggled(i)
   }
+  // A card row shows its back on its own activation: the row toggles itself on
+  // this signal. Reaching into resultsRep.itemAt(i) instead read `revealed`
+  // through a plain Item, which qmllint can't check.
+  signal revealToggled(int index)
 
   // ---- ask -------------------------------------------------------------------------
   function ask() {
@@ -244,6 +245,10 @@ Item {
               required property var modelData
               required property int index
               property bool revealed: false
+              Connections {
+                target: root
+                function onRevealToggled(index) { if (index === rowItem.index) rowItem.revealed = !rowItem.revealed }
+              }
               objectName: "result:" + rowItem.modelData.kind + ":" + rowItem.index
               width: results.width
               height: rc.implicitHeight + Theme.spaceSm * 2

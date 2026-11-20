@@ -168,21 +168,21 @@ TestCase {
   }
 
   // ---- processes and files ------------------------------------------------------
-  Component {
-    id: processComponent
-    Process {
-      id: proc
-      property bool finished: false
-      property int code: -1
-      property string out: ""
-      property bool streamDone: false
-      stdout: StdioCollector { onStreamFinished: { proc.out = text; proc.streamDone = true } }
-      onExited: function(exitCode) { proc.code = exitCode; proc.finished = true }
-    }
+  // An inline component, not a bare Component, so run() can cast what
+  // createObject returns (a plain QObject) and qmllint checks the reads.
+  component TestProcess: Process {
+    id: proc
+    property bool finished: false
+    property int code: -1
+    property string out: ""
+    property bool streamDone: false
+    stdout: StdioCollector { onStreamFinished: { proc.out = text; proc.streamDone = true } }
+    onExited: function(exitCode) { proc.code = exitCode; proc.finished = true }
   }
+  Component { id: processComponent; TestProcess {} }
 
   function run(argv, ms) {
-    var p = processComponent.createObject(base, { command: argv })
+    var p = processComponent.createObject(base, { command: argv }) as TestProcess
     p.running = true
     var limit = ms || 10000
     for (let t = 0; t < limit && !p.finished; t += 10) wait(10)

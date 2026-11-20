@@ -12,11 +12,15 @@ Column {
   signal linkActivated(string link)
   spacing: Theme.spaceMd
 
-  // The y of the heading with this anchor, or -1.
+  // The y of the heading with this anchor, or -1. The heading is looked up in
+  // the blocks, not on the delegates: itemAt returns a plain Item, so a
+  // property of the delegate's own would be invisible to qmllint.
   function anchorY(anchor) {
-    for (let i = 0; i < rep.count; i++) {
+    for (let i = 0; i < root.blocks.length && i < rep.count; i++) {
+      let b = root.blocks[i]
+      if (b.kind !== "heading" || b.anchor !== anchor) continue
       let it = rep.itemAt(i)
-      if (it && it.anchorName === anchor) return it.y
+      return it ? it.y : -1
     }
     return -1
   }
@@ -28,7 +32,6 @@ Column {
       id: blockItem
       required property var modelData
       required property int index
-      readonly property string anchorName: blockItem.modelData.kind === "heading" ? blockItem.modelData.anchor : ""
       // A heading after other blocks gets room above it.
       readonly property int gap: blockItem.modelData.kind === "heading" && blockItem.index > 0 ? Theme.spaceLg : 0
       width: root.width
@@ -50,84 +53,75 @@ Column {
           default: return rich
           }
         }
-        onLoaded: item.block = Qt.binding(function() { return blockItem.modelData })
       }
-    }
-  }
 
-  // Each block's component takes the block as `block`, set by the Loader.
-  Component {
-    id: heading
-    RichBlock {
-      id: h
-      property var block: ({})
-      onLinkActivated: function(link) { root.linkActivated(link) }
-      objectName: "heading:" + (h.block.anchor || "")
-      width: root.width
-      html: h.block.html || ""
-      size: h.block.level <= 2 ? Theme.headingSize - Theme.spaceXs : (h.block.level === 3 ? Theme.titleSize + Theme.spaceXxs : Theme.subtitleSize)
-      font.bold: true
-    }
-  }
-  Component {
-    id: rich
-    RichBlock {
-      id: r
-      property var block: ({})
-      onLinkActivated: function(link) { root.linkActivated(link) }
-      width: root.width
-      html: r.block.html || ""
-    }
-  }
-  Component {
-    id: code
-    CodeBlock {
-      id: c
-      property var block: ({})
-      width: root.width
-      html: c.block.html || ""
-      code: c.block.text || ""
-      lang: c.block.lang || ""
-    }
-  }
-  Component {
-    id: callout
-    Rectangle {
-      id: co
-      property var block: ({})
-      width: root.width
-      height: cc.implicitHeight + Theme.spaceMd * 2
-      color: Theme.accentFill
-      Rectangle { width: Theme.selectionBarWidth; height: parent.height; color: Theme.accentColor }
-      Column {
-        id: cc
-        x: Theme.spaceLg
-        y: Theme.spaceMd
-        width: parent.width - Theme.spaceLg * 2
-        spacing: Theme.spaceXs
-        SectionLabel { text: co.block.label || ""; color: Theme.accentColor }
-        RichBlock { width: parent.width; html: co.block.html || ""; onLinkActivated: function(link) { root.linkActivated(link) } }
+      // One component per kind of block. They live in the delegate, so each reads
+      // its block straight from blockItem.modelData; declared once beside the Repeater, they
+      // took it from the Loader's onLoaded, through `item`, which is typed as a
+      // bare QObject, so the assignment was untyped.
+      Component {
+        id: heading
+        RichBlock {
+          onLinkActivated: function(link) { root.linkActivated(link) }
+          objectName: "heading:" + (blockItem.modelData.anchor || "")
+          width: root.width
+          html: blockItem.modelData.html || ""
+          size: blockItem.modelData.level <= 2 ? Theme.headingSize - Theme.spaceXs : (blockItem.modelData.level === 3 ? Theme.titleSize + Theme.spaceXxs : Theme.subtitleSize)
+          font.bold: true
+        }
       }
-    }
-  }
-  Component {
-    id: quote
-    Item {
-      id: q
-      property var block: ({})
-      width: root.width
-      height: qb.implicitHeight
-      Rectangle { width: Theme.selectionBarWidth; height: parent.height; color: Theme.hairline }
-      RichBlock { id: qb; x: Theme.spaceLg; width: parent.width - Theme.spaceLg; html: q.block.html || ""; color: Theme.secondaryInk; onLinkActivated: function(link) { root.linkActivated(link) } }
-    }
-  }
-  Component {
-    id: rule
-    Item {
-      property var block: ({})
-      width: root.width
-      height: Theme.spaceLg
-      Rectangle { anchors.verticalCenter: parent.verticalCenter; width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
+      Component {
+        id: rich
+        RichBlock {
+          onLinkActivated: function(link) { root.linkActivated(link) }
+          width: root.width
+          html: blockItem.modelData.html || ""
+        }
+      }
+      Component {
+        id: code
+        CodeBlock {
+          width: root.width
+          html: blockItem.modelData.html || ""
+          code: blockItem.modelData.text || ""
+          lang: blockItem.modelData.lang || ""
+        }
+      }
+      Component {
+        id: callout
+        Rectangle {
+          width: root.width
+          height: cc.implicitHeight + Theme.spaceMd * 2
+          color: Theme.accentFill
+          Rectangle { width: Theme.selectionBarWidth; height: parent.height; color: Theme.accentColor }
+          Column {
+            id: cc
+            x: Theme.spaceLg
+            y: Theme.spaceMd
+            width: parent.width - Theme.spaceLg * 2
+            spacing: Theme.spaceXs
+            SectionLabel { text: blockItem.modelData.label || ""; color: Theme.accentColor }
+            RichBlock { width: parent.width; html: blockItem.modelData.html || ""; onLinkActivated: function(link) { root.linkActivated(link) } }
+          }
+        }
+      }
+      Component {
+        id: quote
+        Item {
+          width: root.width
+          height: qb.implicitHeight
+          Rectangle { width: Theme.selectionBarWidth; height: parent.height; color: Theme.hairline }
+          RichBlock { id: qb; x: Theme.spaceLg; width: parent.width - Theme.spaceLg; html: blockItem.modelData.html || ""; color: Theme.secondaryInk; onLinkActivated: function(link) { root.linkActivated(link) } }
+        }
+      }
+      Component {
+        id: rule
+        Item {
+          width: root.width
+          height: Theme.spaceLg
+          Rectangle { anchors.verticalCenter: parent.verticalCenter; width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
+        }
+      }
     }
   }
 }
