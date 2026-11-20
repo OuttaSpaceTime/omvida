@@ -29,14 +29,27 @@ function cardBlock(card) {
     + "\nBack:\n" + Format.htmlToText(card.back)
 }
 
-// Discuss: /study's Socratic mode on one card, outside the session. The
-// rating stays with the app (the developer rates when back), so Claude must
-// not submit a review of its own.
+// Discuss: one card, outside the session, for two kinds of talk. Learning the
+// concept is /study's Socratic mode. Working on the card itself (its wording,
+// a wrong or missing back, a split) is plain talk ending in a saved edit: the
+// first version of this prompt was Socratic only, and its never-reveal rule
+// turned "is this back right?" or "change it to..." into questions back. An
+// edit follows the same rules as the leech and check prompts (draft first, the
+// content format, the quality reference), and the study session picks the
+// saved card up by itself (StudySession.catchUp). The rating stays with the
+// app (the developer rates when back), so Claude must not submit a review.
 function discussPrompt(card, answer, suggestion) {
   var lines = [
-    "I'm studying in the Omvida app and want to discuss this flashcard. Use the /study skill's Socratic mode "
-    + "(\"Fast Feedback by Default, Socratic on Request\"): decompose with small concrete questions, don't hand me the answer. "
-    + "Don't rate the card or call submit_review: Omvida records my rating. If the card itself has a quality problem, say so and offer to fix it with update_card (update_code_card for a code card).",
+    "I'm studying in the Omvida app and want to discuss this flashcard. Two kinds of talk can happen here; follow which one I'm in.\n"
+    + "- Learning the concept (I'm trying to recall or understand it): use the /study skill's Socratic mode "
+    + "(\"Fast Feedback by Default, Socratic on Request\"): decompose with small concrete questions, don't hand me the answer.\n"
+    + "- The card itself (whether its back is right or complete, how it's worded, what it should ask, splitting it, or I ask you to change it): "
+    + "this is not a recall exercise, so answer plainly and work on the card with me. When I ask for a change or agree to one you propose, "
+    + "follow /study-flashcard's card content format and .claude/skills/references/card-quality.md, show me the new card, and save it once I agree "
+    + "(right away if I dictated the change): update_card (update_code_card for a code card, per .claude/skills/references/code-cards.md), "
+    + "or create_card with inheritFrom: \"" + card.id + "\" then delete_card for a split. Omvida shows the saved card at once.\n"
+    + "If you notice a quality problem with the card yourself, say so and offer to fix it. "
+    + "Don't rate the card or call submit_review: Omvida records my rating.",
     "",
     cardBlock(card),
     "",

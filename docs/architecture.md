@@ -85,7 +85,8 @@ and was rejected: a QML MCP client means the initialize handshake and tool-resul
 hand, for nothing the app needs. The CLI per call was rejected for its second-long start.
 
 **Claude Code** does everything that writes cards or pages, in kitty, in the study repo where
-the skills and AGENTS.md live: Discuss (Socratic mode on one card), Add → Flashcards
+the skills and AGENTS.md live: Discuss (one card: Socratic about the concept, and plain
+talk about the card itself that ends in an `update_card` once the developer agrees), Add → Flashcards
 (`/study-flashcard`), Add → Wiki entry (`/study-walkthrough --write`), a leech rewrite or split,
 "Continue in Claude" after an Ask; and Ctrl+Q's card check, headless (below). Their results show up on their own.
 The wiki: the app polls the wiki service's stamp. The deck: the study repo's PostToolUse hook

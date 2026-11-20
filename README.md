@@ -21,7 +21,7 @@ A card's front, and the answer box already focused. Type an answer, or don't.
 | **Shift+Enter** again | submit the rating in play: the one Shift+1–4 picked, else Claude's suggestion, else **Good** |
 | **Alt+Enter** | accept the suggestion. Before the reveal: reveal, and accept it the moment it arrives |
 | **Shift+1–4** | pick Again / Hard / Good / Easy, overriding the suggestion; before the reveal it reveals too. The same digit again (or Shift+Enter) submits the pick, another digit changes it |
-| **Ctrl+D** | discuss the card in Claude Code (kitty), Socratic mode, with your answer and the suggestion |
+| **Ctrl+D** | discuss the card in Claude Code (kitty), with your answer and the suggestion: Socratic about the concept, plain about the card itself, which it updates once you agree; the session shows the new card |
 | **Ctrl+Q** | check the card's quality in the background: Claude Code (`/study-card-check`, headless) fixes it if it is flawed, and a slot above the status line says what it did until dismissed (**Ctrl+Shift+Q**; **Ctrl+Shift+D** discusses it) |
 | **Ctrl+S** | skip; the card stays due |
 | **Ctrl+Z** | undo the last rating, and again for the one before: the card comes back revealed, with your answer and Claude's verdict, and no new grade. It also works on a leech and on the summary, which it reopens, until the session's log entry is written. With an answer typed, Ctrl+Z edits it |

@@ -13,6 +13,13 @@ TestCase {
     var prompt = argv[8]
     verify(prompt.indexOf("Socratic mode") !== -1)
     verify(prompt.indexOf("Don't rate the card or call submit_review") !== -1)
+    // The card itself can be worked on in the same session: plain talk, not
+    // Socratic, ending in a saved edit under the study repo's content rules.
+    verify(prompt.indexOf("The card itself") !== -1)
+    verify(prompt.indexOf("answer plainly") !== -1)
+    verify(prompt.indexOf("update_card") !== -1 && prompt.indexOf("update_code_card") !== -1)
+    verify(prompt.indexOf("card-quality.md") !== -1)
+    verify(prompt.indexOf("inheritFrom: \"c1\"") !== -1)
     verify(prompt.indexOf("Front:\nWhat does max-age do?") !== -1)
     verify(prompt.indexOf("Back:\nKeeps it fresh\nfor N seconds") !== -1)
     verify(prompt.indexOf("My answer:\nit caches") !== -1)
