@@ -57,6 +57,15 @@
 //                 keyboard. On a leech, Esc ends the session too.
 // Plain Enter types a newline: answers are often code.
 //
+// On a rest day (Easy Days at Minimum, StudySession.restDay), with no card up:
+//   Enter         starts nothing: a rest day is off by default, and a reflex
+//                 Enter on Study must not undo that. (On an error it still
+//                 tries again: that session was asked for.)
+//   A             study ahead: today's share of the week (flashcard-mcp's
+//                 study-ahead.ts), the one session a rest day offers. A key
+//                 of its own, so it is always a choice. Nothing once the share
+//                 is studied: there is no session to start.
+//
 // On a code card, being answered (Execute Program's keys):
 //   Shift+Enter   check: run it. Wrong is no penalty, so it can be pressed freely.
 //   Enter         the same, in an inline blank, which has no use for a newline.
@@ -89,7 +98,7 @@ var KEY = {
   Return: 0x01000004, Enter: 0x01000005, Escape: 0x01000000, Delete: 0x01000007,
   K1: 0x31, K2: 0x32, K3: 0x33, K4: 0x34,
   Exclam: 0x21, At: 0x40, QuoteDbl: 0x22, NumberSign: 0x23, Section: 0xa7, Dollar: 0x24,
-  D: 0x44, S: 0x53, N: 0x4e, Q: 0x51, Z: 0x5a, G: 0x47, Question: 0x3f, Slash: 0x2f
+  A: 0x41, D: 0x44, S: 0x53, N: 0x4e, Q: 0x51, Z: 0x5a, G: 0x47, Question: 0x3f, Slash: 0x2f
 }
 var MOD = { Shift: 0x02000000, Control: 0x04000000, Alt: 0x08000000, Meta: 0x10000000 }
 
@@ -117,7 +126,8 @@ function isEnter(key) { return key === KEY.Return || key === KEY.Enter }
 // is in doubt. Whether there is one to take back is the session's to say.
 var HISTORY_PHASES = ["answering", "grading", "revealed", "submitting", "loading", "blocked", "done"]
 
-// state: { phase, suggested, answerEmpty, picked, code }
+// state: { phase, suggested, answerEmpty, picked, code, restDay, aheadLeft }
+//   restDay: today is a rest day (above); aheadLeft: its share still holds a card
 //   code: on a code card, what its keys need: { enterChecks, canGiveUp, rating },
 //         enterChecks being whether the blank in hand is an inline one, and
 //         rating the one a pass or a give-up came with, waiting to be moved on from
@@ -137,7 +147,9 @@ var HISTORY_PHASES = ["answering", "grading", "revealed", "submitting", "loading
 //   undo, redo     take back the last rating, or give back one taken back
 //   help           show the keys (Alt+?, in every phase)
 //   codeCheck, giveUp  a code card's try, and its way out
-//   start          a new session (Enter with no card up: idle, done, error)
+//   start          a new session (Enter with no card up: idle, done, error), or on
+//                  an error the one that failed
+//   ahead          study ahead (A on a rest day, idle or done)
 //   continue       go on past a leech (Enter on one)
 function action(state, key, modifiers, scanCode) {
   var phase = state.phase
@@ -147,6 +159,8 @@ function action(state, key, modifiers, scanCode) {
   if ((modifiers & MOD.Control) && !(modifiers & (MOD.Alt | MOD.Meta)) && key === KEY.Z
       && HISTORY_PHASES.indexOf(phase) !== -1 && (phase !== "answering" || state.answerEmpty))
     return { action: (modifiers & MOD.Shift) ? "redo" : "undo" }
+  if (state.restDay && (phase === "idle" || phase === "done"))
+    return key === KEY.A && !modifiers && state.aheadLeft ? { action: "ahead" } : null
   if (phase === "idle" || phase === "done" || phase === "error") return isEnter(key) ? { action: "start" } : null
   if (phase === "blocked") {
     if (isEnter(key)) return { action: "continue" }

@@ -135,6 +135,16 @@ home; the cards noted, with "fix them in claude"), error (`enter try again`). Th
 (`PlainButton.qml`), never a row of boxes. Keys: README's table; Enter and Esc also work on a
 leech, Enter on the summary.
 
+A rest day (a weekday Anki's Easy Days set to Minimum; the overview's `ahead`) is off by
+default: coming to Study starts nothing, Enter starts nothing, and there is no "start another
+session". Under the progress, or the summary, `AheadPanel.qml` offers studying ahead, the deck
+server's share of the week: "REST DAY" over a hairline, "If you have time: 10 cards ahead",
+what it holds ("8 reviews (2 due now) · 2 new, borrowed from Mo (it keeps 3 of 5)"), the study
+days as scheduled and as the share leaves them, dim ("Mo 15→12 · Tu 3 · …", left out when all
+are 0), and `a study ahead`. Once studied: "Today's share is studied. The rest of the day is
+off.", and no way in. Home's button says Study, never Study now, and the progress sentence
+"Rest day".
+
 ## Wiki
 
 Left (280px, its right edge drags it from 200px up to where the page would drop below 85% of

@@ -33,7 +33,8 @@ Column {
   function sentence() {
     if (!p) return "Loading the deck…"
     var parts = []
-    if (p.verdict === "ok" && p.flashcardsDue === 0) parts.push("Nothing due. You're caught up")
+    if (Overview.restDay(root.overview)) parts.push("Rest day")
+    else if (p.verdict === "ok" && p.flashcardsDue === 0) parts.push("Nothing due. You're caught up")
     var clear = Overview.clearance(root.overview)
     if (clear !== "") parts.push(clear)
     if (p.newToday > 0) parts.push(p.newToday + " added today")

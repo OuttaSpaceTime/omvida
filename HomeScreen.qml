@@ -74,7 +74,8 @@ Item {
               objectName: "homeStudyButton"
               filled: true
               prominent: true
-              label: root.overview && root.overview.pressure.flashcardsDue > 0 ? "Study now" : "Study"
+              // A rest day's Study offers studying ahead and starts nothing, so no "now".
+              label: root.overview && root.overview.pressure.flashcardsDue > 0 && !root.overview.ahead ? "Study now" : "Study"
               onActivated: root.app.startStudy()
             }
             ActionButton {

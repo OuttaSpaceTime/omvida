@@ -3,6 +3,7 @@ import QtQuick
 import "StudyKeys.js" as StudyKeys
 import "Launch.js" as Launch
 import "Session.js" as Session
+import "bar/Model.js" as Overview
 
 // A study session: the /study skill's loop, as state and actions with no view.
 // StudyScreen draws it; App.qml owns it (app.study), beside the store, so the
@@ -62,6 +63,19 @@ QtObject {
   }
   property var info: null        // startSession's result
   property var next: null        // nextCard's result
+
+  // ---- rest days ------------------------------------------------------------------
+  // A rest day (Easy Days at Minimum, mirrored from Anki) is off by default:
+  // Study opens on nothing, and what it offers is studying ahead, today's
+  // share of the week (flashcard-mcp's study-ahead.ts, the overview's
+  // `ahead`, null on a study day). The share and its mix are the deck
+  // server's; this only shows them and asks for them.
+  readonly property var aheadPlan: store.overview && store.overview.ahead ? store.overview.ahead : null
+  readonly property bool restDay: aheadPlan !== null
+  readonly property int aheadLeft: Overview.aheadCount(aheadPlan)
+  // Whether the session started (or last tried) studies ahead: a retry after
+  // an error asks for the same kind again.
+  property bool ahead: false
   readonly property var card: next && next.card ? next.card : null
   property var suggestion: null
   property string gradeError: ""
@@ -202,11 +216,35 @@ QtObject {
   }
 
   // ---- the session ----------------------------------------------------------------
+  // Coming to Study from elsewhere starts a session, except on a rest day,
+  // where the screen offers studying ahead instead and waits for A. Decided
+  // only on an overview read today: with none yet (the app just opened) or one
+  // from yesterday (left open overnight), it is read first, and the start
+  // waits for it (storeWatch), so a Saturday never opens on a plain session.
+  property bool startWhenKnown: false
   function startIfIdle() {
-    if (!running) start()
+    if (running) return
+    if (!store.overviewCurrent()) {
+      root.startWhenKnown = true
+      store.loadOverview()
+      return
+    }
+    if (!restDay) start(false)
+  }
+  property Connections storeWatch: Connections {
+    target: root.store
+    function onOverviewChanged() {
+      if (!root.startWhenKnown || !root.store.overviewCurrent()) return
+      root.startWhenKnown = false
+      if (!root.running && !root.restDay) root.start(false)
+    }
   }
 
-  function start() {
+  // A session; `ahead`, a rest day's share (the deck server refuses it on a
+  // study day, and the error says so).
+  function start(ahead) {
+    root.startWhenKnown = false
+    root.ahead = ahead === true
     root.phase = "syncing"   // first: leaving the summary writes its log entry
     // A session that failed never reached the summary: its entry is still owed. The
     // callback skips writeLog's own Anki sync, which this start is about to run.
@@ -234,8 +272,10 @@ QtObject {
   function openSession() {
     if (root.phase !== "syncing") return
     root.phase = "starting"
-    deck.call("startSession", {}, function(err, res) {
-      if (err) { root.fail(err); return }
+    deck.call("startSession", { ahead: root.ahead }, function(err, res) {
+      // A refused share means the day is no rest day after all (an overview from
+      // before midnight): read it again, so the retry asks for a plain session.
+      if (err) { if (root.ahead) root.store.loadOverview(); root.fail(err); return }
       root.sessionId = res.sessionId
       root.endedId = ""
       root.info = res
@@ -607,7 +647,7 @@ QtObject {
   // A key from the answer box (or, with no card up, the screen): true when
   // it was a study key, which the box then doesn't type.
   function handleKey(event) {
-    var a = StudyKeys.action({ phase: root.phase, suggested: root.suggestion ? root.suggestion.rating : 0, answerEmpty: !root.hasTyped, picked: root.picked,
+    var a = StudyKeys.action({ phase: root.phase, suggested: root.suggestion ? root.suggestion.rating : 0, answerEmpty: !root.hasTyped, picked: root.picked, restDay: root.restDay, aheadLeft: root.aheadLeft > 0,
                               code: root.isCode ? { enterChecks: !root.code.blockFocused, canGiveUp: root.code.canGiveUp, rating: root.code.rating } : null },
                              event.key, event.modifiers, event.nativeScanCode)
     if (!a) return false
@@ -628,7 +668,8 @@ QtObject {
     case "undo": root.undo(); break
     case "redo": root.redo(); break
     case "end": root.endNow(); break
-    case "start": root.start(); break
+    case "start": root.start(root.phase === "error" && root.ahead && root.restDay); break
+    case "ahead": root.start(true); break
     case "continue": root.loadNext(); break
     case "help": root.keysWanted(); break
     }

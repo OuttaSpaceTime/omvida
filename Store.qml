@@ -22,6 +22,9 @@ Item {
   property var allCards: []
   property bool cardsLoaded: false
   property var overview: null
+  // The local day the overview was read on: a rest day is the overview's
+  // (`ahead`), so one from yesterday must not decide today (overviewCurrent).
+  property string overviewDay: ""
   property var recentPages: []
   property string status: ""            // a one-line note for the top bar
   property double refreshedAt: 0
@@ -77,10 +80,25 @@ Item {
 
   function loadOverview() {
     root.refreshedAt = Date.now()
+    var day = root.today()
     deckClient.call("overview", { pendingLimit: 0 }, function(err, o) {
       if (err) { root.status = "deck: " + err; root.deckStamp = ""; return }
+      root.overviewDay = day   // first: overviewChanged handlers ask overviewCurrent()
       root.put("overview", o)
     })
+  }
+
+  function today() { return Qt.formatDate(new Date(), "yyyy-MM-dd") }
+
+  // An overview read today: what Study may decide a rest day by.
+  function overviewCurrent() { return root.overview !== null && root.overviewDay === root.today() }
+
+  // An overview the clock has moved on from with no write to say so: read on
+  // another day, or a rest day's share, whose learning steps come due.
+  function overviewAged() {
+    if (root.overview === null) return false
+    return root.overviewDay !== root.today()
+        || (!!root.overview.ahead && Date.now() - root.refreshedAt > Config.restDayOverviewInterval)
   }
 
   // The bar shows this same overview; hand it each new one (its setOverview,
@@ -170,7 +188,7 @@ Item {
       root.notesStamp = s.notes
       var deck = cards || ((reviews || root.scheduleStale) && !root.studying)
       if (reviews && !deck) root.scheduleStale = true
-      if (deck || reviews || overviewToo) root.loadOverview()
+      if (deck || reviews || overviewToo || root.overviewAged()) root.loadOverview()
       if (deck) {
         root.scheduleStale = false
         root.loadCards()

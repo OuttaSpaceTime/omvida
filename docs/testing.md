@@ -70,6 +70,10 @@ and stops.
   runs code cards against the deck server's real sandbox, on `seed_deck.py <db> --code`, which also
   suspends every other card).
   tst_studypages rates cards and watches the wiki panel's "From study" list and its file.
+  tst_restday sets the fixture deck's Easy Days so today is a rest day: Study opens on the offer,
+  Enter starts nothing, A studies the share, and nothing more is offered after it; a share the
+  deck server refuses (the day changed under the app) reads the day again and retries plain, and
+  coming to Study on an overview from another day reads it first (`store.overviewDay`).
   tst_client drives `JsonLineClient.qml` alone against `tests/fixtures/echo-backend.py`, a
   backend that hangs or exits on request: queued calls, the request timeout, a crash. It is an
   app test only because Quickshell's `Process` exists only inside `qs`.
@@ -93,7 +97,8 @@ and stops.
 | `rate:<1-4>` (`suggested`, `marked` (picked or taken), `chosen`; its `interval` label), `startSessionButton`, `studyAgainButton` | the study controls |
 | `codeCard` (`shaking`, `flashing`: the last check's animation), `codeBrief`, `codeListing`, `codeBlank:<i>`, `codeVerdict`, `codeCase:<i>`, `codeActual:<i>`, `codeExpected:<i>`, `codeError`, `codeOutput`, `codeExplain`, `codeResults` | a code card |
 | `leechRewrite`, `leechSplit`, `leechDrop`, `leechDropConfirm`, `leechKeep`, `leechContinue` | a leech |
-| `summary`, `summaryLine`, `summaryEmpty` (nothing reviewed: caught up, or the daily limit), `related:<path>` | the session summary |
+| `summary`, `summaryLine`, `summaryEmpty` (nothing reviewed: caught up, the daily limit, or the rest day's share already studied), `related:<path>` | the session summary |
+| `aheadPanel`, `aheadHeadline`, `aheadLine`, `aheadDays`, `studyAheadButton` | a rest day's offer on Study (`study.restDay`, `study.aheadPlan`) |
 | `pageTitle`, `wikiFlick`, `pageCardsButton`, `pageAddCards`, `pageExplore:<n>`, `pageDeeper`, `heading:<anchor>` | a wiki page |
 | `panelMode:context`, `panelMode:tree`, `tree:<path>`, `sibling:<path>`, `section:<anchor>` | the wiki side panel |
 | `folderTitle`, `folder:<path>`, `folderPage:<path>` | a folder |

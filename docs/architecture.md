@@ -101,7 +101,10 @@ reload them twice. The stamp has three parts: the cards' content (a review keeps
 `updatedAt`, so it does not move this one), the reviews, and the notes. Reviews reload the deck,
 except during a study session, when each rating reloads only the overview (the due count, the
 bar) and the cards' scheduling waits for the session's end: it was a whole-deck read per rating
-for nothing on screen. A study session catches up with the card on screen (`StudySession.catchUp`): a rewritten card replaces the shown one
+for nothing on screen. The overview is also re-read when the clock has moved on with no write to
+say so (`Store.overviewAged`): read on another day, since whether today is a rest day is the
+overview's (`ahead`), or a rest day's a minute ago, as its share's learning steps come due. Study
+decides a rest day only on an overview read today (`overviewCurrent`), reading it first when not. A study session catches up with the card on screen (`StudySession.catchUp`): a rewritten card replaces the shown one
 and drops the stale suggestion, a deleted one moves the session on, and a fixed leech lifts
 the block. Two runs are headless, with tools pre-allowed: Ask, `claude -p` under the Query
 Protocol, with only read-only lookups and `Edit/Write(logs/**)`; and Ctrl+Q's card check

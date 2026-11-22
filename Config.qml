@@ -12,6 +12,9 @@ QtObject {
   // is three aggregate queries, so it can run more often.
   readonly property int wikiPollInterval: 3000
   readonly property int deckPollInterval: 2000
+  // On a rest day the overview's study-ahead share moves with the clock (a
+  // learning step coming due), with no write to move a stamp: re-read this often.
+  readonly property int restDayOverviewInterval: 60000
   // The deckChanged IPC comes once per card Claude writes: a batch of new
   // cards is one reload, not one each.
   readonly property int deckPushDebounce: 300

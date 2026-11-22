@@ -28,14 +28,18 @@ Column {
   property var noted: []
   property var related: []
   property bool past: false
+  // A rest day offers no other session: Study's AheadPanel, below, has the way on.
+  property bool restDay: false
   signal again()
   spacing: Theme.spaceXl
 
-  // An empty session is "caught up" only if the daily review limit held nothing back.
+  // An empty session is "caught up" only if the daily review limit held nothing back;
+  // an empty one ahead found today's share already studied.
   UiText {
     objectName: "summaryEmpty"
     visible: root.summaryData !== null && root.summaryData.reviews === 0
     text: !root.info || root.info.total !== 0 ? "Nothing was reviewed."
+      : root.info.ahead ? "Nothing left to study ahead today."
       : root.info.reviewsHeldBack > 0
         ? "Daily review limit reached: " + Format.plural(root.info.reviewsHeldBack, "due card") + " held back until tomorrow."
         : "Nothing due. You're all caught up."
@@ -162,6 +166,7 @@ Column {
     spacing: Theme.spaceXl
     PlainButton {
       objectName: "studyAgainButton"
+      visible: !root.restDay
       keys: "enter"
       label: "start another session"
       tint: Theme.accentColor

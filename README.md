@@ -29,6 +29,7 @@ A card's front, and the answer box already focused. Type an answer, or don't.
 | **Esc** | end the session; what was rated counts, and the summary follows |
 | **Del** | delete the card, after a confirm dialog; the session goes on. With an answer typed, Del edits it. Also on Cards, for the card on the stage |
 | Enter | a newline: answers are often code |
+| **A** | on a rest day, with no card up: study ahead (below). Enter starts nothing then |
 
 Shift+digit is matched on the physical key, so it works on US and German layouts alike
 (`StudyKeys.js` explains why). The grader's rubric is `/study`'s, fixed, and it only rates.
@@ -52,6 +53,12 @@ the pressure and calibration verdicts, new cards held back under pressure, the l
 related to what you studied, and a `## Session N — Study` entry in the study repo's log. Every page
 whose card you rate also stacks up in the wiki panel's "From study" list, across sessions and
 restarts, until you clear it.
+
+**Rest days** are the weekdays Anki's Easy Days set to Minimum. Study is off on them: Enter starts
+nothing. If you have time, **A** studies ahead: a seventh of what is left of the week, its reviews
+(lowest retrievability first) and new cards in the week's own mix. The new cards are borrowed from
+the study days after, never added, and the share is fixed for the day, so a rest day can't turn
+into a run of new cards. The deck server (flashcard-mcp's `study-ahead.ts`) decides all of it.
 
 ## The rest
 

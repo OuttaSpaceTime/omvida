@@ -180,16 +180,17 @@ Item {
       // first press picks, the second submits.
       return rows.concat([{ keys: "shift+1-4", label: "pick, twice to rate" }], cardKeys, history)
     }
+    let aheadKeys = s.aheadLeft > 0 ? [{ keys: "a", label: "study ahead", run: function() { s.start(true) } }] : []
     switch (phase) {
-    case "idle": return [{ keys: "enter", label: "start", run: function() { s.start() } }]
+    // A rest day offers only studying ahead, while its share lasts (AheadPanel).
+    case "idle": return s.restDay ? aheadKeys : [{ keys: "enter", label: "start", run: function() { s.start(false) } }]
     case "syncing": return [{ keys: "", label: "skip the sync", run: function() { s.skipSync() } }]
     case "blocked": return [{ keys: "enter", label: "continue", run: function() { s.loadNext() } }, end].concat(undoOnly)
-    case "error": return [{ keys: "enter", label: "try again", run: function() { s.start() } }]
-    case "done": return [
-      { keys: "enter", label: "study again", run: function() { s.start() } },
+    case "error": return [{ keys: "enter", label: "try again", run: function() { s.start(s.ahead && s.restDay) } }]
+    case "done": return (s.restDay ? aheadKeys : [{ keys: "enter", label: "study again", run: function() { s.start(false) } }]).concat([
       { keys: "", label: "wiki", run: function() { root.app.nav.setScreen("wiki") } },
       { keys: "", label: "home", run: function() { root.app.nav.setScreen("home") } }
-    ].concat(undoOnly)
+    ], undoOnly)
     }
     return []
   }
@@ -259,12 +260,12 @@ Item {
         }
         PlainButton {
           objectName: "startSessionButton"
-          visible: root.phase === "idle" || root.phase === "error"
+          visible: (root.phase === "idle" && !root.session.restDay) || root.phase === "error"
           keys: "enter"
           label: root.phase === "error" ? "try again" : "start a session"
           size: Theme.bodySize
           tint: Theme.accentColor
-          onActivated: root.session.start()
+          onActivated: root.session.start(root.phase === "error" && root.session.ahead && root.session.restDay)
         }
       }
 
@@ -290,7 +291,16 @@ Item {
         leeches: root.session.rec.leeches
         noted: root.session.noted
         related: root.session.related
-        onAgain: root.session.start()
+        restDay: root.session.restDay
+        onAgain: root.session.start(false)
+      }
+
+      // A rest day's offer, after the progress (idle) or the summary (done).
+      AheadPanel {
+        visible: root.session.restDay && (root.phase === "idle" || root.phase === "done")
+        width: parent.width
+        plan: root.session.aheadPlan
+        onStudyAhead: root.session.start(true)
       }
     }
   }

@@ -138,6 +138,21 @@ TestCase {
     compare(K.action(st("done"), Qt.Key_Escape, Qt.NoModifier, 0), null)
   }
 
+  // A rest day is off by default: Enter starts nothing, A studies ahead. An
+  // error still tries again, and with a card up nothing changes.
+  function test_a_rest_day_studies_ahead_on_a_only() {
+    var rest = { restDay: true, aheadLeft: true }
+    compare(K.action(st("idle", rest), Qt.Key_Return, Qt.NoModifier, 0), null)
+    compare(K.action(st("done", rest), Qt.Key_Enter, Qt.KeypadModifier, 0), null)
+    compare(K.action(st("idle", rest), Qt.Key_A, Qt.NoModifier, 0), { action: "ahead" })
+    compare(K.action(st("done", rest), Qt.Key_A, Qt.NoModifier, 0), { action: "ahead" })
+    compare(K.action(st("idle", rest), Qt.Key_A, Qt.ShiftModifier, 0), null)
+    compare(K.action(st("idle"), Qt.Key_A, Qt.NoModifier, 0), null)
+    compare(K.action(st("done", { restDay: true, aheadLeft: false }), Qt.Key_A, Qt.NoModifier, 0), null, "the share is studied")
+    compare(K.action(st("error", rest), Qt.Key_Return, Qt.NoModifier, 0), { action: "start" })
+    compare(K.action(st("revealed", { restDay: true, picked: 3 }), Qt.Key_Return, Qt.ShiftModifier, 0), { action: "submit", rating: 3 })
+  }
+
   // Ctrl+N notes the card mid-study, in every phase a card is up; with no
   // card it is not Study's (the window's Add has it).
   function test_ctrl_n_notes_the_card() {

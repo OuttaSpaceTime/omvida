@@ -28,7 +28,39 @@ function badge(o) {
 function headline(o) {
   if (!o) return "Loading…"
   var n = o.pressure.flashcardsDue
-  return n === 0 ? "nothing due" : (n === 1 ? "review due" : "reviews due")
+  if (n === 0) return restDay(o) ? "due · rest day" : "nothing due"
+  return n === 1 ? "review due" : "reviews due"
+}
+
+// ---- rest days ------------------------------------------------------------------
+// A rest day is a weekday Anki's Easy Days set to Minimum; the deck's overview
+// then carries `ahead`, the share of the week it offers to study ahead
+// (flashcard-mcp's study-ahead.ts), and null on a study day. Absent from a
+// deck server started before it had them: no rest day then.
+
+function restDay(o) { return !!(o && o.ahead) }
+
+// The cards today's share still holds, learning steps due included.
+function aheadCount(plan) { return plan ? plan.learning + plan.reviews + plan.newCards : 0 }
+
+// What the share is made of: "8 reviews (2 due now) · 2 new, borrowed from Mo (it keeps 3 of 5)".
+function aheadLine(plan) {
+  if (!plan) return ""
+  var parts = []
+  if (plan.learning > 0) parts.push(plural(plan.learning, "learning step"))
+  if (plan.reviews > 0) parts.push(plural(plan.reviews, "review") + (plan.dueNow > 0 ? " (" + plan.dueNow + " due now)" : ""))
+  if (plan.newCards > 0) {
+    var from = plan.days.length > 0 ? ", borrowed from " + plan.days[0].label + " (it keeps " + plan.nextDayNew + " of " + plan.newPerDay + ")" : ""
+    parts.push(plan.newCards + " new" + from)
+  }
+  return parts.join(" · ")
+}
+
+// The study days ahead, as scheduled and as the share leaves them: "Mo 15→12 · Tu 3".
+// Nothing when the week holds no reviews: a row of zeros says nothing.
+function aheadDays(plan) {
+  if (!plan || !plan.days.some(function(d) { return d.due > 0 })) return ""
+  return plan.days.map(function(d) { return d.label + " " + d.due + (d.after !== d.due ? "→" + d.after : "") }).join(" · ")
 }
 
 function clearance(o) {
@@ -43,6 +75,10 @@ function clearance(o) {
 // it holds back.
 function glanceLine(o) {
   if (!o) return ""
+  if (restDay(o)) {
+    var n = aheadCount(o.ahead)
+    return n > 0 ? "Rest day · " + n + " to study ahead, if you have time" : "Rest day · today's share is studied"
+  }
   var parts = []
   var c = clearance(o)
   if (c !== "") parts.push(c)

@@ -80,4 +80,26 @@ TestCase {
     var none = overview(1, "ok", { calibration: { verdict: "insufficient-data", true_retention: null, window_days: 30 } })
     compare(M.retentionLine(none, "#000000"), "")
   }
+
+  readonly property var plan: ({ learning: 0, reviews: 8, dueNow: 2, newCards: 2, newPerDay: 5, nextDayNew: 3,
+                                 days: [{ day: "2026-11-23", label: "Mo", due: 15, after: 12 }, { day: "2026-11-24", label: "Tu", due: 3, after: 3 }] })
+
+  function test_rest_day_comes_from_the_overviews_ahead() {
+    verify(M.restDay(overview(0, "ok", { ahead: plan })))
+    verify(!M.restDay(overview(0, "ok", { ahead: null })))
+    verify(!M.restDay(overview(0, "ok")), "a deck server without it")
+    compare(M.headline(overview(0, "ok", { ahead: plan })), "due · rest day")
+    compare(M.headline(overview(2, "ok", { ahead: plan })), "reviews due")
+  }
+
+  function test_ahead_says_its_share() {
+    compare(M.aheadCount(plan), 10)
+    compare(M.aheadLine(plan), "8 reviews (2 due now) · 2 new, borrowed from Mo (it keeps 3 of 5)")
+    compare(M.aheadDays(plan), "Mo 15→12 · Tu 3")
+    compare(M.aheadDays({ days: [{ day: "2026-11-23", label: "Mo", due: 0, after: 0 }] }), "", "no row of zeros")
+    compare(M.aheadLine({ learning: 1, reviews: 3, dueNow: 0, newCards: 0, newPerDay: 5, nextDayNew: 5, days: [] }), "1 learning step · 3 reviews")
+    compare(M.glanceLine(overview(0, "ok", { ahead: plan })), "Rest day · 10 to study ahead, if you have time")
+    compare(M.glanceLine(overview(0, "ok", { ahead: { learning: 0, reviews: 0, dueNow: 0, newCards: 0, newPerDay: 5, nextDayNew: 5, days: [] } })),
+            "Rest day · today's share is studied")
+  }
 }
