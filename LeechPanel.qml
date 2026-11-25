@@ -25,8 +25,8 @@ Column {
   }
 
   Rectangle { width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
-  CardFace { width: parent.width; html: root.session.blocked ? root.session.blocked.card.front : ""; size: Theme.subtitleSize }
-  CardFace { width: parent.width; html: root.session.blocked ? root.session.blocked.card.back : ""; color: Theme.dim }
+  CardFace { width: parent.width; html: root.session.blocked ? root.session.blocked.card.front : ""; tags: root.session.blocked ? root.session.blocked.card.tags : []; size: Theme.subtitleSize }
+  CardFace { width: parent.width; html: root.session.blocked ? root.session.blocked.card.back : ""; tags: root.session.blocked ? root.session.blocked.card.tags : []; color: Theme.dim }
   Rectangle { width: parent.width; height: Theme.hairlineWidth; color: Theme.hairline }
 
   // The decisions, as plain words.

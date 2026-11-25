@@ -223,6 +223,7 @@ Item {
     name: "wiki"
     command: [Paths.wikiBin]
     onReadyChanged: if (ready) root.loadIndex()
+    Component.onCompleted: CodeHighlight.client = wikiClient
   }
 
   // A page written by a Claude session shows up without a restart: the wiki

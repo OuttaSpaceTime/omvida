@@ -72,7 +72,7 @@ Every other Claude run stays Claude Code: in kitty, or headless for Ask and the 
 graph, its nodes carrying their tags) and renders a page as **blocks** for Qt: QML's rich text cannot scroll to
 an anchor, so a page is a column of items, and a heading link scrolls to one. Syntax
 highlighting is Pygments, collapsed to a dozen class names that `Theme.richTextStyle` colours,
-so a theme switch recolours without re-rendering. It also ranks pages (after a session, and
+so a theme switch recolours without re-rendering. Card HTML has no highlighted form of its own, so `CardFace` cuts it at its `<pre>` blocks (`CardHtml.js`; Qt's rich text draws a `<pre>` with a grey bar behind every line and cannot colour it) and draws each as a `CodeBlock`, asking the service through the `CodeHighlight` singleton, which Store hands the client and which caches the answers. The language is the block's own (`<code class="language-ruby">`) or the first of the card's tags Pygments knows; Pygments' `guess_lexer` was tried and rejected, it named a Ruby method Carbon and a JavaScript fetch GDScript. A block with neither is plain, which is right for a table of rows. It also ranks pages (after a session, and
 for Home), runs qmd, appends the session log entry, and keeps the wiki panel's "From study" list
 in `~/.local/state/omvida/study-pages.json` (`study_pages.py`; `FromStudy` adds a page as one of
 its cards is rated, and saves on each change, so sessions stack, finished or not, until cleared).

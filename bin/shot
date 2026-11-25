@@ -23,6 +23,7 @@
 #       notes[:cards|session] (notes and a past session in the deck; :cards picks "noted",
 #       :session opens its page) |
 #       studypages (the wiki panel's "From study" list) |
+#       precode (a study card with a <pre> block in its front, highlighted) |
 #       code:<predict|fill|compose>[:wrong|pass|error|giveup] (a code card; -f catches its animation)
 #   -w/-h size, -f frames (ms, comma-separated), -t settle ms, -o out dir
 #   -R  your real wiki and deck instead of the fixtures, to see the layout at

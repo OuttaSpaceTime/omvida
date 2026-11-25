@@ -175,6 +175,7 @@ FocusScope {
           readonly property real belowLabel: frontCol.y + frontLabel.height + frontCol.spacing
           y: root.stage ? Math.max(belowLabel, (parent.height - implicitHeight) / 2) : belowLabel
           html: root.card ? root.card.front : ""
+          tags: root.card ? root.card.tags : []
           size: root.stage ? root.frontFit : Theme.titleSize
         }
         // Unseen, the same front at a trial size: fitFront() measures with it.
@@ -183,6 +184,7 @@ FocusScope {
           visible: false
           width: frontFace.width
           html: frontFace.html
+          tags: frontFace.tags
         }
       }
       back: Rectangle {
@@ -199,7 +201,7 @@ FocusScope {
           width: parent.width - x * 2
           spacing: Theme.spaceMd
           SectionLabel { text: "Answer" }
-          CardFace { width: parent.width; html: root.card ? root.card.back : "" }
+          CardFace { width: parent.width; html: root.card ? root.card.back : ""; tags: root.card ? root.card.tags : [] }
           UiText {
             text: root.card ? "due " + root.card.dueDay + " · " + Format.plural(root.card.reps, "review") + " · " + Format.plural(root.card.lapses, "lapse") : ""
             font.pixelSize: Theme.captionSize

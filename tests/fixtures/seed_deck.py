@@ -34,6 +34,17 @@ def iso(d):
 
 db = sqlite3.connect(sys.argv[1])
 
+if sys.argv[2:] == ["--pre"]:
+    # Every card's front a question over a Ruby <pre> block, tagged ruby, for
+    # `bin/shot -a precode`: CardFace draws it as highlighted code, not rich text.
+    front = ("Why is this not a DRY violation, even though the two bodies are identical?<br><pre><code>"
+             "def validate_age(value)\n  validate_type(value, :integer)\n  validate_min_integer(value, 0)\nend\n\n"
+             "def validate_quantity(value)\n  validate_type(value, :integer)\n  validate_min_integer(value, 0)\nend"
+             "</code></pre>")
+    db.execute("UPDATE Card SET front = ?, tags = 'dry,ruby'", (front,))
+    db.commit()
+    sys.exit(0)
+
 if sys.argv[2:] == ["--code"]:
     # Code cards, due before anything else, with every other card suspended, so
     # a session is only these: a prediction, a fill with two cases and a block to

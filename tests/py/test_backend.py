@@ -268,3 +268,11 @@ def test_highlight_keeps_each_run_of_code_apart(svc):
 
 def test_highlight_of_an_unknown_language_is_only_escaped(svc):
     assert svc.highlight({"segments": ["a < b"], "lang": "nosuchlang"}) == ["a &lt; b"]
+
+
+def test_highlight_takes_its_language_from_the_first_tag_pygments_knows(svc):
+    out = svc.highlight({"segments": ["def double(n)"], "tags": ["dry", "ruby", "sql"]})
+    assert '<span class="kw">def</span>' in out[0]
+    assert svc.highlight({"segments": ["a < b"], "tags": ["dry", "web"]}) == ["a &lt; b"]
+    # A language the block names itself wins over the tags, even an unknown one.
+    assert svc.highlight({"segments": ["def f"], "lang": "nosuchlang", "tags": ["ruby"]}) == ["def f"]

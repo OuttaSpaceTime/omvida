@@ -141,7 +141,6 @@ OmvidaTest {
     var faceEnd = stage().mapToItem(null, 0, stage().height).y, asideEnd = aside.mapToItem(null, 0, aside.height).y
     verify(faceEnd >= asideEnd - 1, "the filter column ends with the card or above it: " + faceEnd + " vs " + asideEnd)
     var front = item("flipFront")
-    compare(front.horizontalAlignment, Text.AlignLeft)
     compare(front.x, face.width - front.x - front.width, "equal margins")
     var mid = front.y + front.height / 2
     verify(Math.abs(mid - face.height / 2) < face.height / 10, "the front sits mid-card: " + mid + " of " + face.height)

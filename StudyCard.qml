@@ -105,6 +105,7 @@ Column {
     visible: root.showCard && !root.session.backShown && !root.session.isCode
     width: parent.width
     html: root.session.card ? root.session.card.front : ""
+    tags: root.session.card ? root.session.card.tags : []
     size: Theme.cardFrontSize
     opacity: root.session.phase === "loading" ? 0.4 : 1
   }
@@ -225,6 +226,7 @@ Column {
         objectName: "cardBack"
         width: parent.width
         html: root.session.card ? root.session.card.back : ""
+        tags: root.session.card ? root.session.card.tags : []
         size: Theme.bodySize
       }
     }

@@ -53,7 +53,7 @@ and stops.
   sections, rendering (anchors, wikilinks, code classes, callouts, tables), ranking, the qmd
   output parser, the session log format and numbering, the protocol.
 - `tests/unit`: `StudyKeys.js` (every binding in every phase, US and German Shift+digit),
-  `Format.js`, `Cards.js`, `Graph.js`, `Launch.js` (the prompts and the Ask tool allowlist),
+  `Format.js`, `CardHtml.js` (a card's prose and `<pre>` blocks), `Cards.js`, `Graph.js`, `Launch.js` (the prompts and the Ask tool allowlist),
   `NoteEdit.js` (the note editor's list and bold/italic keys),
   `Session.js`, `StudyPages.js`, `Exercise.js` (a code card's lines, indenting, its results in words), `StatusBits.js` (the status line's shared hints and pressure alert), the
   bar's `Model.js`, and `Navigator.qml` (back and forward, links, the order of its signals),
@@ -69,6 +69,7 @@ and stops.
   does, and watches the session catch up; tst_notes writes card notes and past sessions; tst_code
   runs code cards against the deck server's real sandbox, on `seed_deck.py <db> --code`, which also
   suspends every other card).
+  tst_cardcode rewrites every card to hold a `<pre>` block and checks it is a `cardCode` block, coloured by its tag's language and plain without one (`bin/shot -a precode`).
   tst_studypages rates cards and watches the wiki panel's "From study" list and its file.
   tst_restday sets the fixture deck's Easy Days so today is a rest day: Study opens on the offer,
   Enter starts nothing, A studies the share, and nothing more is offered after it; a share the

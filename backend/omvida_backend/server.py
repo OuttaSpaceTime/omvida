@@ -95,8 +95,9 @@ class Service:
         return logs.append_session(self.study_dir, dict(p.get("entry", {})))
 
     def highlight(self, p: dict) -> list[str]:
-        """Code runs as highlighted html, for a code card, cut around its blanks."""
-        lang = str(p.get("lang", ""))
+        """Code runs as highlighted html: a code card's, cut around its blanks, or the
+        `<pre>` blocks of a plain card, which have `tags` to name the language by."""
+        lang = str(p.get("lang", "")) or render.first_known_lang(list(p.get("tags", [])))
         return [render.highlight(str(code), lang) for code in p.get("segments", [])]
 
     def handlers(self) -> dict[str, Callable[[dict], Any]]:

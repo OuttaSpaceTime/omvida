@@ -101,6 +101,8 @@ Rectangle {
     // code:<kind>:<what>. kind: predict, fill or compose. what: wrong, pass, error
     // or giveup, or nothing to leave it untouched. Refused under -R.
     else if (a === "code") codeDeck.running = (Quickshell.env("OMVIDA_SANDBOX") || "") !== ""
+    // A study card whose front holds a <pre> block (seed_deck.py --pre). Refused under -R.
+    else if (a === "precode") preDeck.running = (Quickshell.env("OMVIDA_SANDBOX") || "") !== ""
     else if (a === "pagecards") driver.wiki.openPageCards()
     // On Cards: page the stage forward n cards (default 3) as → would, or
     // flip its card as Space would.
@@ -160,6 +162,12 @@ Rectangle {
       if (driver.action === "notes:cards") driver.cardsScreen.setFilter("noted", true)
       if (driver.action === "notes:session") driver.app.nav.openSession("fixturesession")
     }
+  }
+
+  Process {
+    id: preDeck
+    command: ["python3", Paths.root + "/tests/fixtures/seed_deck.py", Quickshell.env("FLASHCARD_DB") || "", "--pre"]
+    onRunningChanged: if (!running) driver.study.start()
   }
 
   Process {

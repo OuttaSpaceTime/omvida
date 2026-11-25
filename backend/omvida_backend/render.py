@@ -87,6 +87,22 @@ def token_class(ttype: Any) -> str:
     return ""
 
 
+def first_known_lang(candidates: list[str]) -> str:
+    """The first of `candidates` Pygments has a lexer for, "" when none has.
+
+    A plain card's code block names no language, but its tags often do (`ruby`,
+    `sql`). Guessing from the code was tried and rejected: Pygments' guess_lexer
+    called a Ruby method Carbon and a JavaScript fetch GDScript, and wrong colours
+    are worse than none."""
+    for name in candidates:
+        try:
+            get_lexer_by_name(str(name).lower())
+            return str(name)
+        except ClassNotFound:
+            continue
+    return ""
+
+
 def highlight(code: str, lang: str) -> str:
     """Code as escaped text with `<span class=..>` per token, newlines kept."""
     try:

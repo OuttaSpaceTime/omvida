@@ -287,6 +287,7 @@ Item {
                     visible: rowItem.modelData.kind === "card" && rowItem.revealed
                     width: parent.width
                     html: rowItem.modelData.kind === "card" ? rowItem.modelData.card.back : ""
+                    tags: rowItem.modelData.kind === "card" ? rowItem.modelData.card.tags : []
                     size: Theme.bodySmallSize
                     color: Theme.secondaryInk
                   }
