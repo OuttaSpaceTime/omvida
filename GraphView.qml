@@ -19,6 +19,12 @@ Item {
   property string focusPath: ""
   property bool local: false
   property bool compact: false
+  // Topics switched on in the legend (top folder -> true): their pages are
+  // titled, and the rest dimmed while nothing is hovered.
+  property var activeTopics: ({})
+  readonly property bool anyTopic: Object.keys(activeTopics).length > 0
+  onActiveTopicsChanged: canvas.requestPaint()
+  function inTopic(n) { return activeTopics[String(n.folder || "").split("/")[0]] === true }
   // Until the layout comes to rest. The ticker runs only while this is set and
   // the graph is on screen, so a hidden graph costs nothing.
   property bool settling: false
@@ -30,6 +36,8 @@ Item {
   property real panX: 0
   property real panY: 0
   property var dragNode: null
+  // Where the last paint put each title, in canvas pixels, with its node.
+  property var titleBoxes: []
   // A node was clicked, not dragged: its page.
   signal pageChosen(string path)
 
@@ -53,7 +61,8 @@ Item {
     if (!shown) { layout = null; canvas.requestPaint(); return }
     var prev = {}
     if (layout) layout.nodes.forEach(function(n) { prev[n.id] = n })
-    var next = Graph.initLayout(shown, prev)
+    // Monospace at the caption size: a character is about 0.6 of the size.
+    var next = Graph.initLayout(shown, prev, { charWidth: Theme.captionSize * 0.6, lineHeight: Theme.captionSize + Theme.spaceXs })
     var kept = Object.keys(prev).length > 0
     if (kept) next.alpha = 0.3
     layout = next
@@ -91,6 +100,16 @@ Item {
     return out
   }
   function toLayout(x, y) { var f = fit(); return { x: (x - f.ox) / f.s, y: (y - f.oy) / f.s } }
+  // The node under the pointer: its dot, or else its title, so a title hovers,
+  // opens and drags like the dot it names.
+  function nodeAt(x, y) {
+    if (!layout) return null
+    var p = toLayout(x, y)
+    var n = Graph.hit(layout, p.x, p.y, 6 / Math.max(0.3, fit().s))
+    if (n) return n
+    var t = titleBoxes.filter(function(b) { return x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1 })[0]
+    return t ? t.n : null
+  }
 
   Timer {
     id: ticker
@@ -120,7 +139,10 @@ Item {
       var hv = root.hovered
       var nb = root.hoverNeighbours
       ctx.lineWidth = 1
-      var litLink = Theme.accentColor, plainLink = Theme.alpha(Theme.ink, hv !== "" ? 0.06 : 0.14)
+      // While hovering, what is not the hovered page's all but goes: at a
+      // quarter strength the rest of the graph still read as noise around
+      // the lit page and its titles.
+      var litLink = Theme.accentColor, plainLink = Theme.alpha(Theme.ink, hv !== "" ? 0.03 : 0.14)
       // An edge, lit when the hovered node is either end.
       function edge(a, b) {
         ctx.strokeStyle = hv !== "" && (a.id === hv || b.id === hv) ? litLink : plainLink
@@ -139,15 +161,18 @@ Item {
         L.nodes.forEach(function(n) { if (kin[n.id]) edge(centre, n) })
         ctx.setLineDash([])
       }
+      // Dots first, all of them, so the titles can then be placed around
+      // every dot rather than only the ones painted so far.
+      let dots = []
       L.nodes.forEach(function(n) {
-        var r = Graph.radius(n) * Math.max(0.7, Math.min(1.4, f.s))
-        var x = f.ox + n.x * f.s, y = f.oy + n.y * f.s
-        var dim = hv !== "" && n.id !== hv && !nb[n.id]
-        var c = Theme.topicColor(n.folder)
-        ctx.globalAlpha = dim ? 0.25 : 1
+        let r = Graph.radius(n) * Math.max(0.7, Math.min(1.4, f.s))
+        let x = f.ox + n.x * f.s, y = f.oy + n.y * f.s
+        let dim = hv !== "" ? n.id !== hv && !nb[n.id] : root.anyTopic && !root.inTopic(n)
+        dots.push({ n: n, x: x, y: y, r: r, dim: dim })
+        ctx.globalAlpha = dim ? (hv !== "" ? 0.1 : 0.25) : 1
         ctx.beginPath()
         ctx.arc(x, y, r, 0, Math.PI * 2)
-        ctx.fillStyle = c
+        ctx.fillStyle = Theme.topicColor(n.folder)
         ctx.fill()
         if (n.id === root.focusPath) {
           ctx.lineWidth = 2
@@ -156,21 +181,57 @@ Item {
           ctx.arc(x, y, r + 3, 0, Math.PI * 2)
           ctx.stroke()
         }
-        // Labels for the well-linked pages and for what the pointer is on:
-        // every label at once overprints itself in the middle of a wiki this size.
-        var label = n.id === hv || nb[n.id] || n.id === root.focusPath
-                    || (!root.compact && hv === "" && (n.linkCount >= 4 || L.nodes.length <= 20))
-        if (label) {
-          ctx.fillStyle = dim ? Theme.faint : (n.id === hv ? Theme.ink : Theme.dim)
-          ctx.font = (n.id === hv ? "bold " : "") + Theme.captionSize + "px monospace"
-          // To the right of the node, slid left as far as it must to stay on
-          // the canvas (a node at the rail's right edge).
-          let w = ctx.measureText(n.title).width
-          ctx.fillText(n.title, Math.max(0, Math.min(x + r + 3, width - w)), y + 4)
-        }
-        ctx.globalAlpha = 1
+      })
+      ctx.globalAlpha = 1
+      root.titleBoxes = root.paintTitles(ctx, dots, hv, nb)
+    }
+  }
+
+  // Titles, only for what was asked for: the hovered page and every page it
+  // links to, the open page, and the pages of the topics switched on in the
+  // legend. Every title at once was more than anyone reads. Each is placed
+  // where it prints over no other title and no other dot: to the right of its
+  // dot, else to its left, else not at all; the hovered page, its links and
+  // the open page get theirs anyway, and go first so the rest give way to
+  // them. Returns where each title went, so a title is a hover and click
+  // target like its dot.
+  function paintTitles(ctx, dots, hv, nb) {
+    function rank(d) {
+      if (d.n.id === hv) return 0
+      if (d.n.id === focusPath) return 1
+      if (nb[d.n.id]) return 2
+      if (inTopic(d.n)) return 3
+      return 4
+    }
+    var order = dots.filter(function(d) { return rank(d) < 4 })
+    order.sort(function(a, b) { return rank(a) - rank(b) || (b.n.linkCount || 0) - (a.n.linkCount || 0) })
+    var placed = []
+    var halfH = Theme.captionSize / 2 + 1
+    function free(x0, x1, y0, y1, self) {
+      if (x0 < 0 || x1 > width) return false
+      if (placed.some(function(p) { return x0 < p.x1 && x1 > p.x0 && y0 < p.y1 && y1 > p.y0 })) return false
+      // A dot is hit when the box's nearest point to its centre lies inside it.
+      return !dots.some(function(d) {
+        if (d === self) return false
+        let cx = Math.max(x0, Math.min(d.x, x1)), cy = Math.max(y0, Math.min(d.y, y1))
+        return (d.x - cx) * (d.x - cx) + (d.y - cy) * (d.y - cy) < d.r * d.r
       })
     }
+    order.forEach(function(d) {
+      ctx.font = (d.n.id === hv ? "bold " : "") + Theme.captionSize + "px monospace"
+      var w = ctx.measureText(d.n.title).width
+      var y0 = d.y - halfH, y1 = d.y + halfH
+      var right = d.x + d.r + Graph.LABEL_GAP, left = d.x - d.r - Graph.LABEL_GAP - w
+      var x = free(right, right + w, y0, y1, d) ? right
+            : free(left, left + w, y0, y1, d) ? left
+            : rank(d) < 3 ? Math.max(0, Math.min(right, width - w))
+            : -1
+      if (x < 0) return
+      placed.push({ x0: x - 2, x1: x + w + 2, y0: y0, y1: y1, n: d.n })
+      ctx.fillStyle = d.dim ? Theme.faint : (d.n.id === hv ? Theme.ink : Theme.dim)
+      ctx.fillText(d.n.title, x, d.y + 4)
+    })
+    return placed
   }
 
   MouseArea {
@@ -182,6 +243,10 @@ Item {
     property bool moved: false
     property real startPanX: 0
     property real startPanY: 0
+    // Where on the node it was picked up, in layout units: dragged by its
+    // title, the dot keeps its distance from the pointer instead of jumping to it.
+    property real grabX: 0
+    property real grabY: 0
     cursorShape: root.hovered !== "" ? Qt.PointingHandCursor : (pressed ? Qt.ClosedHandCursor : Qt.ArrowCursor)
 
     onPositionChanged: function(mouse) {
@@ -190,7 +255,7 @@ Item {
       if (pressed) {
         if (Math.abs(mouse.x - pressX) + Math.abs(mouse.y - pressY) > 3) moved = true
         if (root.dragNode) {
-          root.dragNode.x = p.x; root.dragNode.y = p.y
+          root.dragNode.x = p.x + grabX; root.dragNode.y = p.y + grabY
           root.layout.alpha = Math.max(root.layout.alpha, 0.2)
           root.settling = true
         } else {
@@ -200,7 +265,7 @@ Item {
         canvas.requestPaint()
         return
       }
-      var n = Graph.hit(root.layout, p.x, p.y, 6 / Math.max(0.3, root.fit().s))
+      var n = root.nodeAt(mouse.x, mouse.y)
       var id = n ? n.id : ""
       if (id !== root.hovered) {
         root.hovered = id
@@ -211,9 +276,8 @@ Item {
     onPressed: function(mouse) {
       pressX = mouse.x; pressY = mouse.y; moved = false
       startPanX = root.panX; startPanY = root.panY
-      if (!root.layout) return
-      var p = root.toLayout(mouse.x, mouse.y)
-      var n = Graph.hit(root.layout, p.x, p.y, 6 / Math.max(0.3, root.fit().s))
+      var n = root.nodeAt(mouse.x, mouse.y)
+      if (n) { let p = root.toLayout(mouse.x, mouse.y); grabX = n.x - p.x; grabY = n.y - p.y }
       root.dragNode = n
       if (n) n.pinned = true
     }

@@ -361,6 +361,9 @@ QtObject {
   // How long a new graph may lay itself out before its first paint; past it,
   // the rest settles on screen.
   readonly property int graphSettleBudget: 250
+  // The graph screen keeps its topic legend docked beside the graph only while
+  // the graph still gets this much width; narrower, the legend folds to a chip.
+  readonly property int graphMinWidth: 960
 
   // ---- loading the theme ------------------------------------------------------------
   function parseToml(text) {

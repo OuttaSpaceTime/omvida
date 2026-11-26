@@ -55,7 +55,13 @@ function rng(seed) {
 
 // Nodes get x, y, vx, vy, placed on a jittered circle. `previous` (id -> node)
 // keeps positions across a rebuild, so switching local/all does not scramble.
-function initLayout(graph, previous) {
+// `text` sizes each node's title box for the collision pass in step():
+// { charWidth, lineHeight } in pixels, the caption font's. The box is in layout
+// units, which are pixels at a scale of 1; a bigger canvas only adds room, and
+// a smaller one is the paint's job (GraphView drops what then collides).
+function initLayout(graph, previous, text) {
+  var charWidth = text && text.charWidth || 7
+  var lineHeight = text && text.lineHeight || 14
   var rand = rng(graph.nodes.length * 7919 + graph.links.length)
   var n = graph.nodes.length
   var nodes = graph.nodes.map(function(src, i) {
@@ -64,6 +70,7 @@ function initLayout(graph, previous) {
     var r = 120 + rand() * 80
     return {
       id: src.id, title: src.title, folder: src.folder, tags: src.tags || [], linkCount: src.linkCount,
+      labelW: LABEL_GAP + (src.title || "").length * charWidth, labelH: lineHeight,
       x: p ? p.x : Math.cos(a) * r, y: p ? p.y : Math.sin(a) * r, vx: 0, vy: 0
     }
   })
@@ -101,10 +108,54 @@ function tagPairs(nodes) {
 
 // Below this alpha the layout is at rest: nothing moves visibly any more.
 var REST_ALPHA = 0.02
+// Between a node and its title, in pixels (GraphView paints at this gap too).
+var LABEL_GAP = 4
+// Kept clear around each title box, so neighbouring titles do not touch.
+var LABEL_MARGIN = 6
+
+// A node's box: the dot, and its title to the right, where GraphView draws it
+// when that side is free.
+function box(nd) {
+  var r = radius(nd), h = Math.max(r * 2, nd.labelH || 0) / 2 + LABEL_MARGIN / 2
+  return { x0: nd.x - r - LABEL_MARGIN / 2, x1: nd.x + r + (nd.labelW || 0) + LABEL_MARGIN / 2, y0: nd.y - h, y1: nd.y + h }
+}
+
+// Pushes apart every two nodes whose boxes overlap until they touch, half each
+// (all of it on the free one when the other is being dragged), along the axis
+// they overlap least on (titles are wide, so mostly up and down: a column of
+// titles reads, a row of them overprints). Positional, like d3's forceCollide,
+// and not scaled by alpha: titles that print over each other are what made
+// the graph unreadable, and a repulsion strong enough to keep them apart from
+// the centres alone blew the topics' clusters apart.
+function collide(nodes) {
+  var boxes = nodes.map(box)
+  function shift(i, dx, dy) {
+    nodes[i].x += dx; nodes[i].y += dy
+    var bx = boxes[i]
+    bx.x0 += dx; bx.x1 += dx; bx.y0 += dy; bx.y1 += dy
+  }
+  for (var i = 0; i < nodes.length; i++) {
+    for (var j = i + 1; j < nodes.length; j++) {
+      var a = boxes[i], b = boxes[j]
+      var ox = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)
+      var oy = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0)
+      if (ox <= 0 || oy <= 0) continue
+      // The push on i; j takes the rest of it the other way.
+      var dx = 0, dy = 0
+      if (ox < oy) dx = a.x0 + a.x1 <= b.x0 + b.x1 ? -ox : ox
+      else dy = nodes[i].y <= nodes[j].y ? -oy : oy
+      var share = nodes[i].pinned ? 0 : (nodes[j].pinned ? 1 : 0.5)
+      shift(i, dx * share, dy * share)
+      shift(j, -dx * (1 - share), -dy * (1 - share))
+    }
+  }
+}
 
 // One tick. Returns the new alpha; the caller stops ticking below REST_ALPHA.
 function step(layout) {
-  var repulsion = 2400, springLen = 70, springK = 0.05, kinLen = 90, kinK = 0.02, gravity = 0.02, damping = 0.82
+  // Spread wider than it was (2400, 70, 90): at those the dots sat a title's
+  // height apart and every title overprinted its neighbours.
+  var repulsion = 4000, springLen = 90, springK = 0.05, kinLen = 100, kinK = 0.02, gravity = 0.02, damping = 0.82
   var nodes = layout.nodes, alpha = layout.alpha
   var i, j
   for (i = 0; i < nodes.length; i++) {
@@ -138,6 +189,8 @@ function step(layout) {
     nd.x += nd.vx
     nd.y += nd.vy
   }
+  // Twice: separating one pair can push a node into a third.
+  collide(nodes); collide(nodes)
   layout.alpha = alpha * 0.985
   return layout.alpha
 }
@@ -182,7 +235,8 @@ function tagOnly(layout, id) {
   return out
 }
 
-// The layout's bounding box, to fit it to the canvas.
+// The layout's bounding box, to fit it to the canvas. Titles are left out:
+// most are hidden, and one at the right edge goes left of its dot (GraphView).
 function bounds(layout) {
   if (layout.nodes.length === 0) return { x: -1, y: -1, w: 2, h: 2 }
   var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity

@@ -204,10 +204,15 @@ the window's status line (`statusMode`, `statusSegments`, `statusHints`, `status
 
 All pages, or around the open page: two hops of links plus every page sharing one of its tags,
 the tag-only ones on dashed lines. Pages that share a tag are pulled together, so a topic is a
-region of the graph (there are no index pages to hold it together). Topic legend; well-linked
-pages and the hovered node's neighbours labelled; click opens, drag pins, wheel zooms. Status
-line: GRAPH, the pages and links drawn, and that mouse help (it used to be a line beside the
-chips), with "dashed: shares a tag" around a page.
+region of the graph; the layout keeps each dot's title box clear of the others, so a title
+that shows does not overprint. No titles unasked (all of them at once was more than anyone
+reads): the open page's, the hovered page's and those of every page it links to, and every
+page of a topic switched on in the legend (the rest dim). A title hovers, opens and drags like
+its dot. The topic legend (a `Topics` chip at the top right) docks beside the graph while the
+graph keeps `Theme.graphMinWidth` without it; narrower, it is folded and opens over the graph on
+a solid panel; a click on the chip overrides either until the window crosses the line. Click
+opens, drag pins, wheel zooms. Status line: GRAPH, the pages and links drawn, and that mouse
+help (it used to be a line beside the chips), with "dashed: shares a tag" around a page.
 
 ## Session
 

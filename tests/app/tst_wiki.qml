@@ -27,6 +27,56 @@ OmvidaTest {
     compare(view.settling, false)
   }
 
+  // The topic legend never prints over the graph: docked, the graph is
+  // fitted beside it; folded, the Topics chip opens it on a solid panel, and
+  // a second click folds it again.
+  function test_the_topic_legend_docks_or_folds() {
+    app.nav.setScreen("graph")
+    var screen = item("graphScreen"), view = item("graphView"), legend = item("graphLegend")
+    compare(screen.legendOpen, screen.roomy, "open by default only when there is room")
+    if (screen.legendDocked)
+      verify(view.x + view.width <= legend.x, "the graph ends before the legend: " + (view.x + view.width) + " vs " + legend.x)
+    click("graphTopics")
+    compare(screen.legendOpen, !screen.roomy)
+    compare(legend.visible, screen.legendOpen)
+    if (screen.legendOpen) compare(screen.legendDocked, true)
+    else compare(view.anchors.rightMargin, 0, "folded, the graph takes the width back")
+    click("graphTopics")
+    compare(screen.legendOpen, screen.roomy)
+  }
+
+  // No titles until asked for. A topic switched on in the legend titles its
+  // pages; a title is then part of its node: hovering it lights the dot, and
+  // hovering shows the titles of the page and all it links to. A click on a
+  // title opens the page.
+  function test_graph_titles_come_from_topics_and_hover() {
+    app.nav.graphLocal = false
+    app.nav.setScreen("graph")
+    var screen = item("graphScreen"), view = item("graphView")
+    screen.activeTopics = ({})
+    wait(50)
+    // The open page keeps its title; nothing else is named unasked.
+    var others = function() { return view.titleBoxes.filter(function(b) { return b.n.id !== view.focusPath }) }
+    compare(others().length, 0, "no titles by default")
+    if (!screen.legendOpen) click("graphTopics")
+    click("graphTopic:web")
+    tryVerify(function() { return others().length > 0 }, 3000, "the topic's pages titled")
+    verify(others().every(function(b) { return b.n.folder.split("/")[0] === "web" }), "only web's")
+    // A spot on the title clear of its dot: its far end.
+    var t = others()[0]
+    var x = t.x1 - 3, y = (t.y0 + t.y1) / 2
+    mouseMove(view, x, y)
+    tryCompare(view, "hovered", t.n.id)
+    var linked = Object.keys(view.hoverNeighbours)
+    tryVerify(function() {
+      return linked.every(function(id) { return view.titleBoxes.some(function(b) { return b.n.id === id }) })
+    }, 2000, "every page it links to is titled")
+    mouseClick(view, x, y)
+    tryCompare(app.nav, "currentScreen", "wiki")
+    tryVerify(function() { return wiki.loadedPath === t.n.id }, 8000)
+    screen.activeTopics = ({})
+  }
+
   // The graph rail opens the graph screen around the page, and its left
   // edge drags it wider.
   function test_the_graph_rail_goes_full_screen_and_resizes() {

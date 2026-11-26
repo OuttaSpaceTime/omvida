@@ -64,6 +64,26 @@ TestCase {
     verify(isFinite(a.nodes[4].x) && isFinite(a.nodes[4].y))
   }
 
+  // Titles get their own room: ten linked pages with long titles settle with
+  // no two dot-and-title boxes overlapping, where the springs alone had them
+  // printing over each other.
+  function test_titles_do_not_overlap_at_rest() {
+    var nodes = [], links = []
+    for (let i = 0; i < 10; i++) {
+      nodes.push({ id: "n" + i, title: "A fairly long page title " + i, tags: ["t"], linkCount: 2 })
+      if (i > 0) links.push({ source: "n" + (i - 1), target: "n" + i })
+    }
+    var l = G.initLayout({ nodes: nodes, links: links }, null, { charWidth: 7, lineHeight: 16 })
+    var steps = 0
+    while (G.step(l) >= G.REST_ALPHA && steps < 3000) steps++
+    var boxes = l.nodes.map(G.box), overlaps = 0
+    for (let a = 0; a < boxes.length; a++)
+      for (let b = a + 1; b < boxes.length; b++)
+        if (Math.min(boxes[a].x1, boxes[b].x1) - Math.max(boxes[a].x0, boxes[b].x0) > 1
+            && Math.min(boxes[a].y1, boxes[b].y1) - Math.max(boxes[a].y0, boxes[b].y0) > 1) overlaps++
+    compare(overlaps, 0)
+  }
+
   function test_hit_and_neighbours() {
     var l = G.initLayout(graph)
     var n = l.nodes[1]

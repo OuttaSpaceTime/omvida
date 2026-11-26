@@ -22,7 +22,7 @@ Item {
     var g = view.shown
     var out = []
     if (g) out.push({ text: Format.plural(g.nodes.length, "page") + " · " + Format.plural(g.links.length, "link") })
-    out.push({ text: "click opens · drag moves · wheel zooms" + (view.local ? " · dashed: shares a tag" : ""), color: Theme.faint })
+    out.push({ text: "hover or a topic names pages · click opens · drag moves · wheel zooms" + (view.local ? " · dashed: shares a tag" : ""), color: Theme.faint })
     return out
   }
 
@@ -41,21 +41,73 @@ Item {
     }
   }
 
-  // Topic legend.
-  Column {
+  // ---- the topic legend ------------------------------------------------------
+  // Always shown, the column of topics printed over the graph's right side on
+  // any window short of full width, over dots and titles alike. So it docks
+  // beside the graph only while the graph keeps Theme.graphMinWidth without
+  // it (the graph is then fitted to what is left, and nothing overlaps);
+  // otherwise it folds to the Topics chip, which opens it over the graph on a
+  // solid panel. A click on the chip overrides that choice until the window
+  // crosses the line again. Each topic is a switch: on, its pages are titled.
+  readonly property var folders: app.store.wikiIndex ? app.store.wikiIndex.tree.folders : []
+  readonly property bool roomy: width - legend.implicitWidth - Theme.spaceXl * 3 >= Theme.graphMinWidth
+  property var legendChoice: null
+  // The topics switched on (top folder -> true): GraphView titles their pages.
+  property var activeTopics: ({})
+  onRoomyChanged: legendChoice = null
+  readonly property bool legendOpen: legendChoice !== null ? legendChoice : roomy
+  readonly property bool legendDocked: legendOpen && roomy
+
+  Chip {
+    id: topicsChip
+    objectName: "graphTopics"
     anchors.right: parent.right
     anchors.rightMargin: Theme.spaceXl
     y: Theme.spaceLg
-    spacing: Theme.spaceXs
+    label: "Topics"
+    count: root.folders.length
+    selected: root.legendOpen
+    onActivated: root.legendChoice = !root.legendOpen
+  }
+
+  Rectangle {
+    id: legendPanel
+    objectName: "graphLegend"
+    visible: root.legendOpen
     z: 1
-    Repeater {
-      model: root.app.store.wikiIndex ? root.app.store.wikiIndex.tree.folders : []
-      delegate: Row {
-        id: legendRow
-        required property var modelData
-        spacing: Theme.spaceSm
-        Rectangle { width: Theme.dotSize; height: Theme.dotSize; radius: Theme.dotSize / 2; color: Theme.topicColor(legendRow.modelData.path); anchors.verticalCenter: parent.verticalCenter }
-        UiText { text: legendRow.modelData.name; font.pixelSize: Theme.captionSize; color: Theme.dim }
+    // Docked it is part of the screen and needs no panel; floating over the
+    // graph it is opaque and outlined, so no dot or line shows through it.
+    color: root.legendDocked ? "transparent" : Theme.paper
+    border.color: root.legendDocked ? "transparent" : Theme.hairline
+    border.width: Theme.hairlineWidth
+    anchors.right: parent.right
+    anchors.rightMargin: Theme.spaceXl - Theme.spaceSm
+    y: topicsChip.y + topicsChip.height + Theme.spaceXs
+    width: legend.implicitWidth + Theme.spaceSm * 2
+    height: legend.implicitHeight + Theme.spaceSm * 2
+    // Clicks on the floating panel stop here, not on a dot beneath it.
+    MouseArea { anchors.fill: parent }
+    Column {
+      id: legend
+      x: Theme.spaceSm
+      y: Theme.spaceSm
+      spacing: 0
+      Repeater {
+        model: root.folders
+        delegate: Chip {
+          id: topicRow
+          required property var modelData
+          objectName: "graphTopic:" + topicRow.modelData.path
+          label: topicRow.modelData.name
+          dot: Theme.topicColor(topicRow.modelData.path)
+          selected: root.activeTopics[topicRow.modelData.path] === true
+          onActivated: {
+            var next = Object.assign({}, root.activeTopics), key = topicRow.modelData.path
+            if (next[key]) delete next[key]
+            else next[key] = true
+            root.activeTopics = next
+          }
+        }
       }
     }
   }
@@ -66,10 +118,13 @@ Item {
     anchors.top: bar.bottom
     anchors.left: parent.left
     anchors.right: parent.right
+    // Docked, the legend's column is the graph's to keep clear of.
+    anchors.rightMargin: root.legendDocked ? legendPanel.width + Theme.spaceXl : 0
     anchors.bottom: parent.bottom
     graph: root.app.store.graph
     focusPath: root.focusPath
     onPageChosen: function(path) { root.app.nav.openPage(path) }
     local: root.local && root.focusPath !== ""
+    activeTopics: root.activeTopics
   }
 }
