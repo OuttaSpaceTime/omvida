@@ -141,9 +141,65 @@ OmvidaTest {
     var faceEnd = stage().mapToItem(null, 0, stage().height).y, asideEnd = aside.mapToItem(null, 0, aside.height).y
     verify(faceEnd >= asideEnd - 1, "the filter column ends with the card or above it: " + faceEnd + " vs " + asideEnd)
     var front = item("flipFront")
-    compare(front.x, face.width - front.x - front.width, "equal margins")
-    var mid = front.y + front.height / 2
+    // In the card's own terms: the front sits in the face's scroller.
+    var at = front.mapToItem(face, 0, 0)
+    compare(at.x, face.width - at.x - front.width, "equal margins")
+    var mid = at.y + front.height / 2
     verify(Math.abs(mid - face.height / 2) < face.height / 10, "the front sits mid-card: " + mid + " of " + face.height)
+  }
+
+  // Every front is set at one size, and a card too long for the stage
+  // scrolls inside it rather than growing or spilling past its edge. The
+  // stage on its own, since the window cannot be made narrow; through
+  // Quickshell's own scheme, as the app loads its files (from a file:// URL
+  // the component would not see the Theme singleton).
+  function test_a_long_card_scrolls_inside_a_narrow_stage() {
+    const c = Qt.createComponent("qs:@/qs/FlipThrough.qml")
+    compare(c.status, Component.Ready, c.errorString())
+    const words = []
+    for (let i = 0; i < 60; i++) words.push("orthogonal")
+    const flip = c.createObject(target, { stage: true, width: 520,
+      cards: [{ id: "long", deck: "Test", state: "new", tags: [], front: words.join(" ") + "?", back: "b" }] })
+    try {
+      const card = findNamed(flip, "flipCard"), front = findNamed(flip, "flipFront"), scroll = findNamed(flip, "flipFrontScroll")
+      compare(front.size, item("flipFront").size, "the same size as the stage's short front")
+      // The face is a Column, laid out at the next polish.
+      tryVerify(function() { return scroll.interactive && scroll.contentHeight > scroll.height }, 2000, "the front scrolls")
+      verify(card.height < front.height, "the card did not grow to hold the front: " + card.height + " for " + front.height)
+      verify(scroll.contentHeight >= front.y + front.height, "the front ends inside what scrolls")
+    } finally {
+      flip.destroy()
+    }
+  }
+
+  // Over a card that scrolls, the wheel scrolls the card and never the page
+  // behind it, even once the card reaches its end.
+  function test_the_wheel_over_a_scrolling_card_leaves_the_page() {
+    const page = Qt.createQmlObject("import QtQuick; Flickable { width: 600; height: 400; contentHeight: 2000 }", target) as Flickable
+    const c = Qt.createComponent("qs:@/qs/FlipThrough.qml")
+    const words = []
+    for (let i = 0; i < 60; i++) words.push("orthogonal")
+    const flip = c.createObject(page.contentItem, { stage: true, width: 520,
+      cards: [{ id: "long", deck: "Test", state: "new", tags: [], front: words.join(" ") + "?", back: "b" }] })
+    try {
+      const card = findNamed(flip, "flipCard"), scroll = findNamed(flip, "flipFrontScroll")
+      tryVerify(function() { return scroll.interactive }, 2000, "the card scrolls")
+      // To the card's end, where a Flickable passes the wheel on, then on.
+      for (let n = 0; n < 100 && !scroll.atYEnd; n++) {
+        mouseWheel(card, card.width / 2, card.height / 2, 0, -120)
+        wait(20)
+      }
+      verify(scroll.atYEnd, "the card scrolled to its end")
+      for (let n = 0; n < 10; n++) {
+        mouseWheel(card, card.width / 2, card.height / 2, 0, -120)
+        wait(20)
+      }
+      wait(300)
+      compare(page.contentY, 0, "the page stayed put")
+    } finally {
+      flip.destroy()
+      page.destroy()
+    }
   }
 
   // A flip turns the card over, not a cut: partway through, it is still

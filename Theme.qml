@@ -314,11 +314,9 @@ QtObject {
   readonly property int cardsAsideWidth: 320
   readonly property int cardStageMinWidth: 480
   // The stage's card: a fixed height, about what retention and the folded
-  // filters beside it take, so the two columns end together; and a front
-  // set larger than a card elsewhere, centred, since it is the one thing
-  // the screen shows.
+  // filters beside it take, so the two columns end together. What is longer
+  // scrolls inside it; its front is cardFrontSize, as in Study.
   readonly property int cardStageFaceHeight: 300
-  readonly property int cardStageFrontSize: 26
   // The stage's text margin either side: wide, so the left-set lines sit as
   // a balanced block in the card.
   readonly property int cardStageInset: space4xl

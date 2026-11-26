@@ -1,6 +1,5 @@
 import QtQuick
 
-import "Cards.js" as Cards
 import "Format.js" as Format
 
 // One card at a time: the front, a flip to the back (click, Space or Enter),
@@ -15,9 +14,9 @@ import "Format.js" as Format
 //   - it draws no buttons of its own (the explorer's are quiet links, its
 //     keys are in the window's status line),
 //   - the card keeps one height (Theme.cardStageFaceHeight, so it ends with
-//     the column beside it) and its text is centred: the front both ways and
-//     large, the answer only up and down, since a list or a code block
-//     centred line by line reads badly,
+//     the column beside it), scrolls what is longer, and centres its text:
+//     the front both ways, the answer only up and down, since a list or a
+//     code block centred line by line reads badly,
 //   - it keeps its place: a new list that still holds the current card keeps
 //     it current (and flipped). The explorer's list is rebuilt on every
 //     refresh of the deck, behind the user's back whenever the window comes
@@ -53,23 +52,8 @@ FocusScope {
     else index = i
   }
 
-  // The stage's front in the largest size, from cardStageFrontSize down to
-  // titleSize, that fits the face under its label: a long question shrinks
-  // rather than growing the card or crowding the label.
-  property int frontFit: Theme.cardStageFrontSize
-  function fitFront() {
-    if (!stage) return
-    var room = faceHeight - frontFace.belowLabel - Theme.spaceXl
-    var size = Theme.cardStageFrontSize
-    for (; size > Theme.titleSize; size -= Theme.spaceXxs) {
-      frontProbe.size = size
-      if (frontProbe.implicitHeight <= room) break
-    }
-    frontFit = size
-  }
-  onCardChanged: Qt.callLater(fitFront)
-  onFaceHeightChanged: Qt.callLater(fitFront)
-  onWidthChanged: Qt.callLater(fitFront)
+  // A new card starts at its top, not where the last one was scrolled to.
+  onCardChanged: { frontScroll.contentY = 0; backScroll.contentY = 0 }
 
   // Make card i the current one, front up at once: turning back over from
   // the old card's answer would show the new card's answer on the way.
@@ -141,10 +125,14 @@ FocusScope {
       id: flipable
       objectName: "flipCard"
       width: parent.width
-      // On the stage the front fits the face (fitFront), so only a long
-      // answer can make the card taller.
-      height: root.stage ? Math.max(root.faceHeight, backCol.implicitHeight + Theme.spaceXl * 2)
-                         : Math.max(Theme.cardFaceMinHeight, Math.max(frontCol.implicitHeight, backCol.implicitHeight) + Theme.spaceXl * 2)
+      // On the stage the card keeps the face's height whatever it holds, and
+      // what does not fit (a long question, an answer, a code block) scrolls
+      // inside it. Growing the card pushed the grid down on every long card.
+      // Shrinking a long front to fit was tried and dropped: one card's text
+      // then read smaller than the next, and every front is set at one size,
+      // the Study screen's. Off the stage (a page's cards) it grows to hold both.
+      height: root.stage ? root.faceHeight
+                         : Math.max(Theme.cardFaceMinHeight, Math.max(frontFace.implicitHeight, backCol.implicitHeight) + Theme.spaceXl * 2)
 
       front: Rectangle {
         anchors.fill: parent
@@ -153,38 +141,28 @@ FocusScope {
         color: Theme.fill
         border.color: Theme.hairline
         border.width: Theme.borderWidth
-        // The label stays at the top; on the stage the front sits in the middle
-        // of what is left, never over the label. frontCol is only measured.
-        Column {
-          id: frontCol
-          x: Theme.spaceXl; y: Theme.spaceXl
-          width: parent.width - Theme.spaceXl * 2
-          spacing: Theme.spaceMd
-          SectionLabel { id: frontLabel; text: root.card ? root.card.deck + " · " + Cards.stateOf(root.card) : "" }
-          Item { width: parent.width; height: frontFace.implicitHeight }
-        }
-        // On the stage the text is set left, ragged right, as a block with
-        // the same wide margin either side: centred line by line, a long
-        // question read as a shape rather than a sentence.
-        CardFace {
-          id: frontFace
-          objectName: "flipFront"
-          readonly property real inset: root.stage ? Theme.cardStageInset : Theme.spaceXl
-          x: inset
-          width: parent.width - inset * 2
-          readonly property real belowLabel: frontCol.y + frontLabel.height + frontCol.spacing
-          y: root.stage ? Math.max(belowLabel, (parent.height - implicitHeight) / 2) : belowLabel
-          html: root.card ? root.card.front : ""
-          tags: root.card ? root.card.tags : []
-          size: root.stage ? root.frontFit : Theme.titleSize
-        }
-        // Unseen, the same front at a trial size: fitFront() measures with it.
-        CardFace {
-          id: frontProbe
-          visible: false
-          width: frontFace.width
-          html: frontFace.html
-          tags: frontFace.tags
+        // Just the question: the deck and state once above it were not worth
+        // their room. On the stage it is set left, ragged right, as a block
+        // with the same wide margin either side, in the middle of the card:
+        // centred line by line, a long question read as a shape rather than
+        // a sentence.
+        GlideFlickable {
+          id: frontScroll
+          objectName: "flipFrontScroll"
+          anchors.fill: parent
+          anchors.margins: Theme.borderWidth
+          interactive: contentHeight > height
+          contentHeight: Math.max(height, frontFace.implicitHeight + Theme.spaceXl * 2)
+          CardFace {
+            id: frontFace
+            objectName: "flipFront"
+            x: root.stage ? Theme.cardStageInset : Theme.spaceXl
+            width: frontScroll.width - x * 2
+            y: root.stage ? Math.max(Theme.spaceXl, (frontScroll.height - implicitHeight) / 2) : Theme.spaceXl
+            html: root.card ? root.card.front : ""
+            tags: root.card ? root.card.tags : []
+            size: root.stage ? Theme.cardFrontSize : Theme.titleSize
+          }
         }
       }
       back: Rectangle {
@@ -194,18 +172,25 @@ FocusScope {
         color: Theme.paper
         border.color: Theme.accentColor
         border.width: Theme.borderWidth
-        Column {
-          id: backCol
-          x: root.stage ? Theme.cardStageInset : Theme.spaceXl
-          y: root.stage ? Math.max(Theme.spaceXl, (parent.height - implicitHeight) / 2) : Theme.spaceXl
-          width: parent.width - x * 2
-          spacing: Theme.spaceMd
-          SectionLabel { text: "Answer" }
-          CardFace { width: parent.width; html: root.card ? root.card.back : ""; tags: root.card ? root.card.tags : [] }
-          UiText {
-            text: root.card ? "due " + root.card.dueDay + " · " + Format.plural(root.card.reps, "review") + " · " + Format.plural(root.card.lapses, "lapse") : ""
-            font.pixelSize: Theme.captionSize
-            color: Theme.faint
+        GlideFlickable {
+          id: backScroll
+          anchors.fill: parent
+          anchors.margins: Theme.borderWidth
+          interactive: contentHeight > height
+          contentHeight: Math.max(height, backCol.implicitHeight + Theme.spaceXl * 2)
+          Column {
+            id: backCol
+            x: root.stage ? Theme.cardStageInset : Theme.spaceXl
+            y: root.stage ? Math.max(Theme.spaceXl, (backScroll.height - implicitHeight) / 2) : Theme.spaceXl
+            width: backScroll.width - x * 2
+            spacing: Theme.spaceMd
+            SectionLabel { text: "Answer" }
+            CardFace { width: parent.width; html: root.card ? root.card.back : ""; tags: root.card ? root.card.tags : [] }
+            UiText {
+              text: root.card ? "due " + root.card.dueDay + " · " + Format.plural(root.card.reps, "review") + " · " + Format.plural(root.card.lapses, "lapse") : ""
+              font.pixelSize: Theme.captionSize
+              color: Theme.faint
+            }
           }
         }
       }
@@ -220,6 +205,19 @@ FocusScope {
         }
       }
       MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { root.forceActiveFocus(); root.flipped = !root.flipped } }
+
+      // While the face up scrolls, the wheel over it is the card's alone: a
+      // Flickable at its top or bottom passes the wheel on, and the page
+      // behind would scroll instead, carrying the card away mid-read. The
+      // face's scroller sees the wheel first (it lies above this item), so
+      // this takes only what it passed on. A card that fits takes nothing,
+      // and the page scrolls over it as before.
+      WheelHandler {
+        objectName: "flipWheelStop"
+        target: null
+        enabled: root.flipped ? backScroll.interactive : frontScroll.interactive
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+      }
     }
 
     Row {

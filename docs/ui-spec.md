@@ -168,7 +168,8 @@ before the reading column narrows below ~60% of its measure.
 
 Set in a wider column than the reading one (`Theme.pageWidth` with `Theme.cardsMeasure`, up to 1600px), since it is a
 grid. At the top, the stage: the current card at a fixed height (`Theme.cardStageFaceHeight`),
-its front set large (`Theme.cardStageFrontSize`) and centred, under a progress hairline; the
+its front alone (no deck or state above it) at Study's size (`Theme.cardFrontSize`, the same for
+every card) and centred, under a progress hairline; what does not fit scrolls inside the card; the
 position ("12/357") and the ←/→ keys are in the status line. Paging shows the next card front up. Beside it (above it when the stage would drop
 under 480px), a column that never scrolls; the stage takes its height, or its own least height
 when the column is shorter: retention (`Retention · 30 days` with the review count at its right
