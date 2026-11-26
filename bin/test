@@ -15,7 +15,7 @@
 # (a fixture study repo and deck, fake claude/kitty/qmd), with OMVIDA_TEST
 # pointing App.qml's test hook at the file. A failed run keeps its sandbox:
 # the app's log, a screenshot per failed test, and the files as left.
-# The deck server's own tests live in flashcard-mcp (npm test there).
+# The deck server's own tests live in agentic-spaced-repetition (npm test there).
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 QMLTESTRUNNER=/usr/lib/qt6/bin/qmltestrunner

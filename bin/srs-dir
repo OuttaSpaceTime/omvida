@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Prints the agentic-spaced-repetition checkout's path, the one place it is resolved.
+#
+# It is the study repo's machine-local setting (SRS_DIR in
+# ~/Code/study/.env.local, AGENTS.md "Machine-local configuration"); the
+# environment wins. FLASHCARD_MCP_DIR, the name before the rename, is read as a
+# fallback. Exits non-zero, with the reason on stderr, when it doesn't point at
+# an installed checkout.
+set -euo pipefail
+study="${OMVIDA_STUDY_DIR:-$HOME/Code/study}"
+dir="${SRS_DIR:-${FLASHCARD_MCP_DIR:-}}"
+if [ -z "$dir" ] && [ -f "$study/.env.local" ]; then
+  for key in SRS_DIR FLASHCARD_MCP_DIR; do
+    dir="$(sed -n "s/^$key=//p" "$study/.env.local" | tail -1)"
+    dir="${dir%\"}"; dir="${dir#\"}"
+    [ -n "$dir" ] && break
+  done
+fi
+dir="${dir/#\$HOME/$HOME}"
+dir="${dir/#\~/$HOME}"
+if [ -z "$dir" ] || [ ! -x "$dir/node_modules/.bin/tsx" ]; then
+  echo "no installed agentic-spaced-repetition checkout at ${dir:-(unset)}: set SRS_DIR (or the old FLASHCARD_MCP_DIR) in $study/.env.local, and run npm install there" >&2
+  exit 1
+fi
+printf '%s\n' "$dir"

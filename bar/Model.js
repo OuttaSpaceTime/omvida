@@ -1,7 +1,7 @@
 .pragma library
 
-// What the panel says, from the deck's overview (flashcard-mcp's
-// src/core/overview.ts, through `master overview`). Pure: tests/unit in the
+// What the panel says, from the deck's overview (agentic-spaced-repetition's
+// src/core/overview.ts, through `srs overview`). Pure: tests/unit in the
 // Omvida repo runs it under qmltestrunner. The verdicts are the deck's own,
 // shown verbatim, never re-derived here.
 
@@ -35,7 +35,7 @@ function headline(o) {
 // ---- rest days ------------------------------------------------------------------
 // A rest day is a weekday Anki's Easy Days set to Minimum; the deck's overview
 // then carries `ahead`, the share of the week it offers to study ahead
-// (flashcard-mcp's study-ahead.ts), and null on a study day. Absent from a
+// (agentic-spaced-repetition's study-ahead.ts), and null on a study day. Absent from a
 // deck server started before it had them: no rest day then.
 
 function restDay(o) { return !!(o && o.ahead) }

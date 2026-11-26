@@ -7,7 +7,7 @@ import "Format.js" as Format
 import "NoteEdit.js" as NoteEdit
 
 // The whole deck, the viewer's /flashcards, as one screen: a flip-through
-// stage at the top, retention over the last 30 days (flashcard-mcp's
+// stage at the top, retention over the last 30 days (agentic-spaced-repetition's
 // calibration verdict, shown verbatim) and the filters beside it, and a grid
 // of the cards still to come below.
 //

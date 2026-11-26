@@ -3,7 +3,7 @@ import QtQuick
 
 import "Format.js" as Format
 
-// Retention over the last 30 days on the Cards screen: flashcard-mcp's
+// Retention over the last 30 days on the Cards screen: agentic-spaced-repetition's
 // calibration verdict, shown verbatim (the figure, the verdict, the rating
 // mix), never worked out here.
 Column {

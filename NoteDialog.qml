@@ -7,7 +7,7 @@ import "NoteEdit.js" as NoteEdit
 // A card's note: what to do about it later, written without leaving the
 // session (Ctrl+N in Study; a click on a note on the Cards stage). An edit to
 // make, something to understand better, anything: free markdown, kept with
-// the card in the deck (flashcard-mcp's CardNote) until a fix session
+// the card in the deck (agentic-spaced-repetition's CardNote) until a fix session
 // (Launch.fixNotesArgv, "fix all" on Home, "fix it" on Cards) resolves it.
 // One per card, so noting a card again opens its note.
 //

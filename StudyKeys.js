@@ -61,7 +61,7 @@
 //   Enter         starts nothing: a rest day is off by default, and a reflex
 //                 Enter on Study must not undo that. (On an error it still
 //                 tries again: that session was asked for.)
-//   A             study ahead: today's share of the week (flashcard-mcp's
+//   A             study ahead: today's share of the week (agentic-spaced-repetition's
 //                 study-ahead.ts), the one session a rest day offers. A key
 //                 of its own, so it is always a choice. Nothing once the share
 //                 is studied: there is no session to start.

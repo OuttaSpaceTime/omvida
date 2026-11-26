@@ -4,7 +4,7 @@ import QtQuick
 import "Exercise.js" as Exercise
 import "Format.js" as Format
 
-// A code card: a card answered by running it (CodeAttempt, flashcard-mcp's
+// A code card: a card answered by running it (CodeAttempt, agentic-spaced-repetition's
 // exercises.ts).
 //
 //   what to solve, large

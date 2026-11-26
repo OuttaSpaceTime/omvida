@@ -1,7 +1,7 @@
 import QtQuick
 
 // Card notes: Ctrl+N notes the card in Study and the session goes on; the
-// note is kept in the deck (flashcard-mcp's CardNote) and shows on Cards
+// note is kept in the deck (agentic-spaced-repetition's CardNote) and shows on Cards
 // (the "noted" filter, "fix it", the stage) and on Home (past sessions,
 // "fix all"), which hand the noted cards to one Claude Code session. Also
 // that a session's pages are in the wiki's side panel once one is open

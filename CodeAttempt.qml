@@ -3,7 +3,7 @@ import QtQuick
 
 import "Exercise.js" as Exercise
 
-// One try at a code card (flashcard-mcp's exercises.ts, after Execute Program):
+// One try at a code card (agentic-spaced-repetition's exercises.ts, after Execute Program):
 // what is typed in its blanks, the last result of running it, and the three ways
 // the card ends up: a pass, a give-up, or neither yet. A logic object, as
 // Navigator is: it holds no phases and no window. The session hands it the card

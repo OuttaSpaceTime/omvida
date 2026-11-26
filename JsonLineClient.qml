@@ -4,7 +4,7 @@ import Quickshell.Io
 // One long-lived backend process, spoken to in newline-delimited JSON:
 // requests {id, method, params} on its stdin, responses {id, result|error}
 // on its stdout, and one {"ready": true} line once it is up. Both backends
-// speak it: the deck (flashcard-mcp's src/app/server.ts, via bin/omvida-deck)
+// speak it: the deck (agentic-spaced-repetition's src/app/server.ts, via bin/omvida-deck)
 // and the wiki (backend/omvida_backend/server.py, via bin/omvida-wiki).
 //
 // call() before the ready line is queued, not dropped, so screens can ask

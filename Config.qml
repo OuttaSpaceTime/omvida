@@ -22,7 +22,7 @@ QtObject {
   // (JsonLineClient.qml): a backstop for a backend that hangs, counted from
   // when the line is written, so a slow first start does not count. Past
   // the backends' own deadlines, which say better what went wrong: a grade
-  // (flashcard-mcp's GRADE_TIMEOUT_MS) and a deep qmd search
+  // (agentic-spaced-repetition's GRADE_TIMEOUT_MS) and a deep qmd search
   // (omvida_backend/search.py) each give up at 60s.
   readonly property int requestTimeout: 90000
 

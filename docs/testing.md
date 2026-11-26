@@ -27,7 +27,7 @@ and stops.
 - `study/`: a copy of `tests/fixtures/study`: four wiki pages (Cookies links nothing and
   nothing links it, but it shares a tag), with a broken link, links in code, an embed, a
   callout, a table, a task list and highlighted code.
-- `master.db`: the fixture deck, built by `tests/fixtures/make-deck.sh` with flashcard-mcp's
+- `master.db`: the fixture deck, built by `tests/fixtures/make-deck.sh` with agentic-spaced-repetition's
   own start-up (its CLI's `overview` runs the `prisma db push` every start does, so its schema can never drift) and seeded by `seed_deck.py`: three
   review cards due, one new, one suspended, a few days of history. The card ids are the
   fixture wiki's `flashcard_ids`. `seed_deck.py <db> --notes` adds a past session (four

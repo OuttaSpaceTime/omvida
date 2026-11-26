@@ -20,7 +20,7 @@ import "bar/Model.js" as Overview
 //   then: submit the suggestion, Good, or any rating
 //
 // The answer is graded once, on the reveal, and on what was typed by then. A
-// grade bills an API call (flashcard-mcp's grading.ts), so nothing is graded
+// grade bills an API call (agentic-spaced-repetition's grading.ts), so nothing is graded
 // ahead. Until 2026-10-30, when grades ran on `claude -p` under the Claude
 // subscription, every pause in the typing graded the answer so far, to have
 // the verdict in by the reveal; that cost a grade per pause, mostly thrown
@@ -29,7 +29,7 @@ import "bar/Model.js" as Overview
 // a rating given without Claude's leaves none running.
 //
 // StudyKeys.js decides what a key means; handleKey() carries it out. The
-// session itself is flashcard-mcp's: the queue, the scheduling, the leech
+// session itself is agentic-spaced-repetition's: the queue, the scheduling, the leech
 // block and the new-card cap live in the deck server, and what is shown
 // (Card 3/12, the next-review line) is its own numbers.
 //
@@ -67,7 +67,7 @@ QtObject {
   // ---- rest days ------------------------------------------------------------------
   // A rest day (Easy Days at Minimum, mirrored from Anki) is off by default:
   // Study opens on nothing, and what it offers is studying ahead, today's
-  // share of the week (flashcard-mcp's study-ahead.ts, the overview's
+  // share of the week (agentic-spaced-repetition's study-ahead.ts, the overview's
   // `ahead`, null on a study day). The share and its mix are the deck
   // server's; this only shows them and asks for them.
   readonly property var aheadPlan: store.overview && store.overview.ahead ? store.overview.ahead : null
@@ -626,9 +626,9 @@ QtObject {
   // (deleteAsked: its accept calls deleteCard with the card asked about).
   // The deck server deletes it and its history (deleteCard, as for a leech)
   // and its session passes over a deleted card's place in the queue
-  // (flashcard-mcp's getNextCard), so the next card follows as after a
+  // (agentic-spaced-repetition's getNextCard), so the next card follows as after a
   // rating. The session record notes nothing: the card was not rated, and
-  // the log's lines are flashcard-mcp's format.
+  // the log's lines are agentic-spaced-repetition's format.
   function askDelete() {
     if (!root.card || !root.cardOpen) return
     root.deleteAsked(root.card)

@@ -2,7 +2,7 @@
 
 // A code card's parts as lines to draw, and its results as words. Pure, so
 // tests/unit pins them. What a result means (pass, wrong, the rating it writes)
-// is the deck server's (flashcard-mcp's exercises.ts): this only says it.
+// is the deck server's (agentic-spaced-repetition's exercises.ts): this only says it.
 
 // The server's parts, cut at newlines into lines of pieces:
 //   { text, segment }      code; `segment` numbers it among all the code, for

@@ -6,11 +6,11 @@
           │                     │               │                      │
    JsonLineClient        JsonLineClient     claude / kitty         bin/omvida-overview
           │                     │           (Launch.js)                │
-   bin/omvida-deck        bin/omvida-wiki                         master overview
+   bin/omvida-deck        bin/omvida-wiki                         srs overview
           │                     │                                      │
- flashcard-mcp src/app    backend/omvida_backend                       │
-   handlers · grading       wiki · render · rank                       │
-   overview                 search (qmd) · logs                        │
+agentic-spaced-repetition backend/omvida_backend                       │
+   src/app: grading       wiki · render · rank                         │
+   handlers · overview    search (qmd) · logs                          │
           │                     │                                      │
    prisma/master.db       ~/Code/study/wiki, logs/  ◄──────────────────┘
 ```
@@ -53,10 +53,10 @@ every prompt handed to Claude), `StatusBits.js` (the status line's shared hints 
 `Exercise.js` (a code card's lines and its result in words), `Icons.js` (the Nerd Font glyphs, by name). `Navigator.qml` uses no singleton, so it is
 unit-tested the same way.
 
-**The deck server** is flashcard-mcp's `src/app/server.ts`, started by `bin/omvida-deck`.
+**The deck server** is agentic-spaced-repetition's `src/app/server.ts`, started by `bin/omvida-deck`.
 It runs for the app's whole life rather than per call: a tsx start costs about a second, and
 the session cache lives in it (queues are also saved in the deck, so a restart resumes them). It derives `maxNewCards` from the pressure verdict and returns a leech block as
-data; flashcard-mcp's CLAUDE.md has the method table and the why. `grade` calls the Claude API
+data; agentic-spaced-repetition's CLAUDE.md has the method table and the why. `grade` calls the Claude API
 (Haiku, structured output, no tools, effort low) with /study's fixed rubric, once per card on the
 reveal, and only suggests: `review` writes whatever rating the developer chose, and `undoReview`
 takes the session's newest one back (Ctrl+Z, as many times as there are ratings), scheduling, review
@@ -90,7 +90,7 @@ talk about the card itself that ends in an `update_card` once the developer agre
 (`/study-flashcard`), Add → Wiki entry (`/study-walkthrough --write`), a leech rewrite or split,
 "Continue in Claude" after an Ask; and Ctrl+Q's card check, headless (below). Their results show up on their own.
 The wiki: the app polls the wiki service's stamp. The deck: the study repo's PostToolUse hook
-runs `bin/omvida-deck-changed` after every flashcard-mcp tool that writes a card, which calls
+runs `bin/omvida-deck-changed` after every agentic-spaced-repetition tool that writes a card, which calls
 the app's `deckChanged` IPC, so the card shows the moment it is saved, even with the window in
 the background (one reload per batch: the IPC is debounced). Behind that, the app polls the deck
 server's `stamp` while the window is in front and on coming back to it, for writes the hook does
@@ -115,7 +115,7 @@ judges the card with `claude -p` and refuses a flawed one, so a flaw is stopped 
 ever shows it.
 
 **Code cards** are cards answered by running them, after Execute Program, which the developer has
-used and rates highly. What a card is and what counts as passing are flashcard-mcp's (its
+used and rates highly. What a card is and what counts as passing are agentic-spaced-repetition's (its
 `exercises.ts` and `exercise-sandbox.ts`): `nextCard` sends what to draw and no answer, `runExercise`
 and `revealExercise` send back verdicts, shown verbatim. The app runs a card only on a check, with the
 animation, never at a pause in the typing: the developer asked for that, some runs are slow
@@ -126,12 +126,12 @@ nothing, and no rating is asked for. That replaced the "suggest, you confirm" th
 Execute Program asks for no grade either. It moved on by itself at first; the developer wants to read the result. A slip can still be fixed: Ctrl+Z brings the card back, with the keycaps. `StudySession` holds
 the state, on its existing phases (answering, then revealed, then submitting), so undo, catching up and
 the log needed nothing new. On Anki it is an ordinary card, rated by hand; the study repo's anki-sync
-carries the exercise in a hidden field. flashcard-mcp's CLAUDE.md has the rest.
+carries the exercise in a hidden field. agentic-spaced-repetition's CLAUDE.md has the rest.
 
 **Card notes** are the one thing the app writes about a card without changing it. Ctrl+N in
 Study (N on the Cards stage) notes what should change about a card, or what to understand
 better, in markdown (`NoteDialog.qml`, `NoteEdit.js`), so the session goes on instead of
-breaking off into Claude Code per card. They live in the deck (flashcard-mcp's `CardNote`, one
+breaking off into Claude Code per card. They live in the deck (agentic-spaced-repetition's `CardNote`, one
 per card, deleted with it; `notes` and `setNote`), so they outlast the app and a fix session can
 read them too. "Fix all" (Home's past sessions, the summary, "fix it" on Cards with the noted
 filter) hands them to one Claude Code session, the study repo's `/study-fix-notes` with the
@@ -146,7 +146,7 @@ hand.
 
 **The bar plugin** (`bar/`) runs inside omarchy-shell, so it uses the shell's `qs.Commons`
 and `qs.Ui` (Panel, KeyboardPanel, PanelKeyCatcher) and none of this repo's QML. Its numbers
-come from `bin/omvida-overview`, which prints flashcard-mcp's overview, the same object the app
+come from `bin/omvida-overview`, which prints agentic-spaced-repetition's overview, the same object the app
 shows. It runs that every ten minutes and when the panel opens; while the app is open, the app
 also hands the bar each new overview it loads (`omarchy-shell -q omvida.bar setOverview`), so
 the count follows a session rating by rating. The reviews-by-day chart, in the panel and on Home,
@@ -178,7 +178,7 @@ markdown todo, Okomart's storefront). What was taken:
 
 ## Data and safety
 
-- The real deck is written only through flashcard-mcp's own code (reviews, leech keep, card
+- The real deck is written only through agentic-spaced-repetition's own code (reviews, leech keep, card
   delete after a confirm: a leech drop, or Del in Study or on Cards, card notes). Everything
   else that changes a card is a skill.
 - The wiki is never written by the app. The study log is appended (never rewritten), with the

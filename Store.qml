@@ -2,9 +2,9 @@ import QtQuick
 import Quickshell
 
 // The app's data, apart from the window that shows it: the two backends
-// (flashcard-mcp's app server for the deck, backend/omvida_backend for the
+// (agentic-spaced-repetition's app server for the deck, backend/omvida_backend for the
 // wiki, both JSON lines through JsonLineClient.qml) and what has been loaded
-// from them. It holds no business rules: the deck's live in flashcard-mcp,
+// from them. It holds no business rules: the deck's live in agentic-spaced-repetition,
 // the wiki's in the study repo's scripts/wiki. Screens, dialogs and the
 // sessions read it as app.store, backends included (app.store.deck,
 // app.store.wiki): none is handed a client of its own, so there is one way in.
@@ -47,7 +47,7 @@ Item {
     allCards.forEach(function(c) { m[c.id] = c })
     return m
   }
-  // Card notes (flashcard-mcp's CardNote), card id -> { cardId, body,
+  // Card notes (agentic-spaced-repetition's CardNote), card id -> { cardId, body,
   // createdAt }, oldest first as the server sends them; written mid-study,
   // handled in a fix session.
   property var notes: ({})
@@ -128,7 +128,7 @@ Item {
     })
   }
 
-  // Deletes a card and its review history (flashcard-mcp's deleteCard: a
+  // Deletes a card and its review history (agentic-spaced-repetition's deleteCard: a
   // leech dropped, Del in Study or on the Cards stage), then checks the deck:
   // a delete moves the cards' stamp, so that is one reload, even mid-session,
   // and the poll does not repeat it. `done(err)` runs once the deck has it.

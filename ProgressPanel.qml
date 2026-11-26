@@ -4,7 +4,7 @@ import QtQuick
 import "Format.js" as Format
 import "bar/Model.js" as Overview
 
-// Where studying stands, from the deck's overview (flashcard-mcp
+// Where studying stands, from the deck's overview (agentic-spaced-repetition
 // src/core/overview.ts), laid out as the bar overlay's "Glance": the reviews
 // due as one big figure with its word, the pressure
 // verdict in a small outlined chip, one dim sentence (what clears the

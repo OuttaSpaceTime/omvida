@@ -15,7 +15,7 @@ OmvidaTest {
     sqlWrite("UPDATE Card SET due = '2020-01-01T00:00:00.000+00:00' WHERE suspended = 0")
   }
 
-  // Now, as flashcard-mcp writes it (ISO text, +00:00).
+  // Now, as agentic-spaced-repetition writes it (ISO text, +00:00).
   readonly property string sqlNow: "strftime('%Y-%m-%dT%H:%M:%f+00:00', 'now')"
 
   function test_a_a_rewritten_card_replaces_the_shown_one_and_drops_the_suggestion() {
@@ -74,7 +74,7 @@ OmvidaTest {
   }
 
   // A leech rewritten through update_card has its lapses reset and its flag
-  // cleared (flashcard-mcp leechResolutionFor): the block lifts without
+  // cleared (agentic-spaced-repetition leechResolutionFor): the block lifts without
   // pressing Continue.
   function test_d_a_rewritten_leech_lifts_the_block() {
     blockOnLeech("fixturecard0003")

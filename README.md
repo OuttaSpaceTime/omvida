@@ -2,7 +2,7 @@
 
 The study wiki and its flashcards as a desktop app: a [Quickshell](https://quickshell.org/)
 (QML) app beside [Omvision](../omvision), for Omarchy. It reads the wiki in
-`~/Code/study/wiki` and the deck in [flashcard-mcp](../flashcard-mcp), and adds what a browser
+`~/Code/study/wiki` and the deck in [agentic-spaced-repetition](../agentic-spaced-repetition), and adds what a browser
 viewer could not: a study loop you answer in, graded by Claude.
 
 ```
@@ -58,7 +58,7 @@ restarts, until you clear it.
 nothing. If you have time, **A** studies ahead: a seventh of what is left of the week, its reviews
 (lowest retrievability first) and new cards in the week's own mix. The new cards are borrowed from
 the study days after, never added, and the share is fixed for the day, so a rest day can't turn
-into a run of new cards. The deck server (flashcard-mcp's `study-ahead.ts`) decides all of it.
+into a run of new cards. The deck server (agentic-spaced-repetition's `study-ahead.ts`) decides all of it.
 
 ## The rest
 
@@ -87,18 +87,18 @@ Ctrl+1–5 switch screens, Alt+←/→ go back and forward.
 `bar/` is an omarchy-shell plugin, `omvida.bar`: the Omvida mark with the number of reviews
 due. Click for a panel with your progress (pressure, calibration, maturity) and Study
 now; right-click starts a session; middle-click refreshes. It reads `bin/omvida-overview`
-(flashcard-mcp's `master overview`), so it needs neither the app nor its own copy of any rule.
+(agentic-spaced-repetition's `srs overview`), so it needs neither the app nor its own copy of any rule.
 
 ## How it fits together
 
 See [`docs/architecture.md`](docs/architecture.md). In short: QML for the app, two long-lived
-backends speaking JSON lines (the deck through flashcard-mcp's app server, the wiki through a
+backends speaking JSON lines (the deck through agentic-spaced-repetition's app server, the wiki through a
 small Python service here), and Claude Code for everything that writes cards or pages.
 
 ## Requirements
 
 Quickshell, Qt 6, a Nerd Font monospace (JetBrainsMono on Omarchy), `uv` (the wiki service's
-venv builds itself on first launch), node via mise (flashcard-mcp), `claude`, `kitty`, `qmd`.
+venv builds itself on first launch), node via mise (agentic-spaced-repetition), `claude`, `kitty`, `qmd`.
 Tests need `qmltestrunner`/`qmllint` from `qt6-declarative`; `bin/check` also needs a checkout of
 [qs-kit](../qs-kit) beside this repo (or `QS_KIT` pointing at one).
 

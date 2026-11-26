@@ -71,7 +71,7 @@ function discussPrompt(card, answer, suggestion) {
 // shortcut: the server command repeats the study repo's .mcp.json; if that
 // changes, change it here too, or move alwaysLoad into that file.
 var DISCUSS_FLAGS = [
-  "--mcp-config", JSON.stringify({ mcpServers: { "flashcard-mcp": { command: "scripts/flashcard-mcp-server", alwaysLoad: true } } }),
+  "--mcp-config", JSON.stringify({ mcpServers: { "srs": { command: "scripts/srs-mcp-server", alwaysLoad: true } } }),
   "--settings", JSON.stringify({ enabledPlugins: { "ponytail@ponytail": false } })
 ]
 
@@ -121,9 +121,9 @@ function headlessArgv(prompt, flags) {
 var CARD_CHECK_TOOLS = [
   "Read", "Glob", "Grep",
   "Bash(scripts/card-quality-gate --judge *)", "Bash(scripts/card-links-sync)",
-  "mcp__flashcard-mcp__get_card", "mcp__flashcard-mcp__find_similar_cards",
-  "mcp__flashcard-mcp__update_card", "mcp__flashcard-mcp__create_card", "mcp__flashcard-mcp__delete_card",
-  "mcp__flashcard-mcp__update_code_card", "mcp__flashcard-mcp__create_code_card", "mcp__flashcard-mcp__check_code_card",
+  "mcp__srs__get_card", "mcp__srs__find_similar_cards",
+  "mcp__srs__update_card", "mcp__srs__create_card", "mcp__srs__delete_card",
+  "mcp__srs__update_code_card", "mcp__srs__create_code_card", "mcp__srs__check_code_card",
   "mcp__qmd__query", "mcp__qmd__search", "mcp__qmd__get",
   "WebSearch", "WebFetch"
 ]
@@ -240,7 +240,7 @@ function resumeArgv(studyDir, sessionId) {
 // rules never match, only Read(path) does, and the default already covers it.
 var ASK_TOOLS = [
   "mcp__qmd__query", "mcp__qmd__search", "mcp__qmd__get",
-  "mcp__flashcard-mcp__search_cards", "mcp__flashcard-mcp__get_card",
+  "mcp__srs__search_cards", "mcp__srs__get_card",
   "WebSearch", "WebFetch",
   "Edit(logs/**)", "Write(logs/**)"
 ]
@@ -248,7 +248,7 @@ var ASK_TOOLS = [
 var ASK_SYSTEM = "You are answering a question typed into Omvida, a study app, as a one-shot run. "
   + "Follow the Query Protocol in AGENTS.md, adapted to a run with no follow-up turn: "
   + "1) Start with the answer from memory, concise, in markdown. Do not call any tool before this first answer. "
-  + "2) Then do the lookups yourself rather than in a subagent: mcp__qmd__query (rerank false) and mcp__flashcard-mcp__search_cards with the question, and verify the answer against the web (WebSearch, then WebFetch on the most authoritative result when there is a specific claim to check). "
+  + "2) Then do the lookups yourself rather than in a subagent: mcp__qmd__query (rerank false) and mcp__srs__search_cards with the question, and verify the answer against the web (WebSearch, then WebFetch on the most authoritative result when there is a specific claim to check). "
   + "3) Append the `## Query N (HH:MM)` entry to today's logs/<MM>/<YYYY-MM-DD>.md as AGENTS.md describes. "
   + "4) End with a section headed `**Saved knowledge**`: wiki pages as [[folder/slug]], card ids, and the web check verdict (confirms, contradicts, refines or inconclusive) with the URL. If the web or the wiki contradicts your first answer, say so plainly there and give the correction. "
   + "Never narrate tool calls, and never print file contents or JSON."

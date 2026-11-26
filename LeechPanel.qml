@@ -1,7 +1,7 @@
 import QtQuick
 
 // A leech: a card that keeps failing blocks the session until it is
-// rewritten or split in Claude Code, deleted, or kept as is (flashcard-mcp
+// rewritten or split in Claude Code, deleted, or kept as is (agentic-spaced-repetition
 // leeches.ts). The session's `blocked` holds the card.
 //
 // Drawn as quietly as the card it replaces: the why in prose, the card

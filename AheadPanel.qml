@@ -5,7 +5,7 @@ import "Format.js" as Format
 import "bar/Model.js" as Overview
 
 // A rest day's offer on Study: today's share of the week to study ahead, if
-// there is time (the overview's `ahead`, flashcard-mcp's study-ahead.ts). What
+// there is time (the overview's `ahead`, agentic-spaced-repetition's study-ahead.ts). What
 // it holds, the study days ahead as they stand and as the share leaves them,
 // and the one way in, A. Once the share is studied it says so and offers
 // nothing: the share is the day's, fixed, so there is no "again".

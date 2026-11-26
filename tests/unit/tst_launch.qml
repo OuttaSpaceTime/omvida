@@ -29,7 +29,7 @@ TestCase {
   function test_discuss_loads_flashcard_tools_up_front_and_without_ponytail() {
     var argv = L.discussArgv("/s", card, "", null)
     compare(argv[9], "--mcp-config")
-    compare(JSON.parse(argv[10]).mcpServers["flashcard-mcp"].alwaysLoad, true)
+    compare(JSON.parse(argv[10]).mcpServers["srs"].alwaysLoad, true)
     compare(argv[11], "--settings")
     compare(JSON.parse(argv[12]).enabledPlugins["ponytail@ponytail"], false)
   }
@@ -79,11 +79,11 @@ TestCase {
     compare(argv.slice(0, 3), ["claude", "-p", "/study-card-check c1"])
     compare(argv[argv.indexOf("--model") + 1], "sonnet")
     var tools = argv[argv.indexOf("--allowedTools") + 1].split(",")
-    verify(tools.indexOf("mcp__flashcard-mcp__update_card") !== -1)
-    verify(tools.indexOf("mcp__flashcard-mcp__create_card") !== -1)
+    verify(tools.indexOf("mcp__srs__update_card") !== -1)
+    verify(tools.indexOf("mcp__srs__create_card") !== -1)
     verify(tools.indexOf("Bash") === -1, "no shell at large")
     verify(tools.indexOf("Bash(scripts/card-quality-gate --judge *)") !== -1, "the one command: the gate's verdict")
-    verify(tools.indexOf("mcp__flashcard-mcp__submit_review") === -1)
+    verify(tools.indexOf("mcp__srs__submit_review") === -1)
     var schema = JSON.parse(argv[argv.indexOf("--json-schema") + 1])
     compare(schema.required, ["outcome", "summary", "asked", "extra", "cards"])
   }

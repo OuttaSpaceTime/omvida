@@ -1,7 +1,7 @@
 import QtQuick
 
 // A card at five or more lapses: the server flags it when served, and the
-// next card is blocked until it is dealt with (flashcard-mcp leeches.ts).
+// next card is blocked until it is dealt with (agentic-spaced-repetition leeches.ts).
 OmvidaTest {
   name: "leech"
 

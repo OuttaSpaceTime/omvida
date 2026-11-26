@@ -47,11 +47,11 @@ else
   "$ROOT/tests/fixtures/make-deck.sh" "$dir/master.db"
 fi
 
-# The fixture study has no .env.local, so flashcard-mcp is found through the
+# The fixture study has no .env.local, so agentic-spaced-repetition is found through the
 # real one, before HOME and OMVIDA_STUDY_DIR move to the sandbox.
-fmd="$(env -u OMVIDA_STUDY_DIR "$ROOT/bin/flashcard-mcp-dir")"
+fmd="$(env -u OMVIDA_STUDY_DIR "$ROOT/bin/srs-dir")"
 
-export FLASHCARD_MCP_DIR="$fmd"
+export SRS_DIR="$fmd"
 # The wiki service imports the study repo's scripts/wiki: the real checkout's
 # code, over the fixture's data.
 export OMVIDA_STUDY_CODE="${OMVIDA_STUDY_CODE:-$HOME/Code/study}"

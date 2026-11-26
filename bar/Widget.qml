@@ -16,7 +16,7 @@ import "Model.js" as Model
 // session in Omvida, middle click refreshes.
 //
 // The figures come from `bin/omvida-overview` in the Omvida checkout, which
-// prints flashcard-mcp's overview: the same numbers, from the same code, as
+// prints agentic-spaced-repetition's overview: the same numbers, from the same code, as
 // the app and the /study skill. It runs on a timer (the settings'
 // refreshIntervalSec) and whenever the panel opens; it is about a second of
 // node, so never per frame. While Omvida is open, it hands over each

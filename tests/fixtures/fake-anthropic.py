@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """A stand-in for the Claude Messages API in the app tests and screenshots: no
-network, no cost, the shape flashcard-mcp's grading.ts reads.
+network, no cost, the shape agentic-spaced-repetition's grading.ts reads.
 
     fake-anthropic.py <out-dir> <owner-pid>
 

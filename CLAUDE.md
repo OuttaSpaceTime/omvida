@@ -3,14 +3,14 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 Omvida is a standalone Quickshell (QML) app for the study wiki (`~/Code/study/wiki`) and its
-flashcards (flashcard-mcp), with a study loop graded by the Claude API (through the deck server). It is Omvision's sibling
+flashcards (agentic-spaced-repetition), with a study loop graded by the Claude API (through the deck server). It is Omvision's sibling
 and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
 
 ## Running and verifying
 
 - **Never open the app on the user's desktop to test a change**, and never point a test at
   real data. Everything runs offscreen in a sandbox (`bin/sandbox`): a fixture study repo, a
-  fixture deck built from flashcard-mcp's own schema, and fake `claude`, `kitty`, `qmd`,
+  fixture deck built from agentic-spaced-repetition's own schema, and fake `claude`, `kitty`, `qmd`,
   `omarchy-shell` and `omarchy-launch-webapp` first on PATH.
 - `bin/check` runs everything a change should pass: lint (against `.qmllint-baseline`), the
   no-pixel-numbers rule, the no-scrim rule, an offscreen load, `omarchy plugin validate` on `bar/`, and `bin/test`.
@@ -22,7 +22,7 @@ and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
   real wiki and deck read-only, and refuses anything that could write.
 - A change to what a key or click does comes with an app test; a change to a JS module or the
   wiki service, with a unit or pytest case. Keep the objectNames in `docs/testing.md`.
-- The deck server is flashcard-mcp's (`src/app/`); its tests are `npm test` there. Changing
+- The deck server is agentic-spaced-repetition's (`src/app/`); its tests are `npm test` there. Changing
   the protocol means changing both repos.
 
 ## Rules
@@ -30,9 +30,9 @@ and copies its practices; `~/Code/omvision/CLAUDE.md` has their history.
 - Read `docs/layout-rules.md` before UI work. Colours, type and spacing come from `Theme.qml`;
   never type a pixel number (`bin/check px`; `// check: allow-px <reason>` for the exceptions).
 - No business rule lives here. Pressure, calibration, scheduling, leeches and the grading
-  rubric are flashcard-mcp's; the wiki's link resolution mirrors the study repo's viewer
+  rubric are agentic-spaced-repetition's; the wiki's link resolution mirrors the study repo's viewer
   (`backend/omvida_backend/wiki.py` says which rules). Show verdicts verbatim; never recompute.
-- A code card's verdict and rating are the deck server's (flashcard-mcp's `exercises.ts`), after Execute
+- A code card's verdict and rating are the deck server's (agentic-spaced-repetition's `exercises.ts`), after Execute
   Program: the app shows them. It never compares an answer itself, and never asks for a rating on one: a second Shift+Enter moves on from the result, and that is all it says. The keycaps appear only on one brought back by Ctrl+Z, to correct a rating by hand.
 - The app never edits cards or wiki pages. Those go through Claude Code skills in kitty
   (`Launch.js`), which own the content rules; Ctrl+Q's quality check is the same, a skill

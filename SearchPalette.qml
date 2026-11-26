@@ -9,7 +9,7 @@ import "Launch.js" as Launch
 // Search, and asking. One box (Ctrl+K or /):
 //   - pages whose title, alias or path match, as you type (no backend)
 //   - the wiki's text through qmd's keyword search (~0.2s, AGENTS.md Search)
-//   - the deck's cards through flashcard-mcp's search
+//   - the deck's cards through agentic-spaced-repetition's search
 //   - "Ask Claude": the question goes to `claude -p` in the study repo under
 //     the Query Protocol (answer from memory first, then the wiki, the cards
 //     and a web check, then the log entry), streamed in here (AskSession.qml).

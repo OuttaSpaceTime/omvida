@@ -8,7 +8,7 @@ import "Launch.js" as Launch
 // flawed, by Claude Code headless in the study repo (the /study-card-check
 // skill, Launch.cardCheckArgv), while the developer studies on. The skill
 // owns the rules (references/card-quality.md) and writes through
-// flashcard-mcp like every other card edit; the study repo's card-quality
+// agentic-spaced-repetition like every other card edit; the study repo's card-quality
 // gate holds its writes too. The app learns of a change the usual way, by
 // polling the deck, and a session showing the card catches up
 // (StudySession.catchUp).
