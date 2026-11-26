@@ -4,8 +4,8 @@
     tests/fixtures/seed_deck.py <master.db>
     tests/fixtures/seed_deck.py <master.db> --notes
 
-Run by tests/fixtures/make-deck.sh after flashcard-mcp's db:sync has created
-the tables. Datetimes are ISO text with +00:00, the format flashcard-mcp writes
+Run by tests/fixtures/make-deck.sh after a flashcard-mcp start (its CLI's
+`overview`) has created the tables. Datetimes are ISO text with +00:00, the format flashcard-mcp writes
 today. The card ids match the fixture wiki's flashcard_ids, so related pages
 and per-page cards line up. Nothing here comes from the real deck.
 
